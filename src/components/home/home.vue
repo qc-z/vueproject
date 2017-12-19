@@ -2,7 +2,7 @@
 	<div>
 		<!-- home swip -->
 		<mt-swipe :auto="4000">
-		  <mt-swipe-item v-for="(img,index) in imgs" :key="index"><a :href="img.adUrl"><img :src="img.imgUrl"></a></mt-swipe-item>
+		  <mt-swipe-item v-for="(img,index) in imgs" :key="index"><a :href="img.adUrl"><img :src="img.imgUrl" class="scollImg"></a></mt-swipe-item>
 		</mt-swipe>
 		<!-- 9 -->
 		<div class="mui-content">
@@ -16,7 +16,7 @@
 		   	        <li class="mui-table-view-cell mui-media mui-col-xs-4 mui-col-sm-3">
 		                <router-link :to="{name:'news.list'}">
 		                    <span class="mui-icon mui-icon-email"></span>
-		                    <div class="mui-media-body">图文分享</div>
+		                    <div class="mui-media-body">明星面对面</div>
 		                </router-link>
 		            </li>
 		            <li class="mui-table-view-cell mui-media mui-col-xs-4 mui-col-sm-3">
@@ -61,8 +61,13 @@
 			).then(res=>{
 
 				if(res.data.code == 1){
-					console.log(res.data.results)
 					this.imgs = res.data.results
+					if(this.imgs.length == 0){
+						this.imgs = [{imgUrl:"http://arpt-user.oss-cn-shenzhen.aliyuncs.com/user/yNT8z4xrac.jpg"},{imgUrl:"http://arpt-user.oss-cn-shenzhen.aliyuncs.com/user/Kc7D6PD45E.jpg"},{imgUrl:"http://arpt-user.oss-cn-shenzhen.aliyuncs.com/user/6KYKjZJR7T.jpg"}]
+					}
+					console.log(this.imgs)
+
+					
 				}
 			}).catch(error=> {
 			    console.log(error);
@@ -73,7 +78,7 @@
 <style scoped>
 /*轮播图*/
 	.mint-swipe{
-		max-height: 7rem;
+		max-height: 8.2rem;
 	}
 	.mint-swipe img{
 		height: 100%;
@@ -120,5 +125,8 @@
 .mui-icon{
     height: 50px;
     width:50px;
+}
+.scollImg{
+	width: 100%;
 }
 </style>

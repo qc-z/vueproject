@@ -24,6 +24,7 @@ Axios.defaults.withCredentials = true
 
 //引入全局组件需要的组件对象 开始
 import NavBar from './components/common/navBar.vue';
+import Upload from './components/common/Upload.vue';
 //moment
 import Moment from 'moment'
 //定义全局过滤器
@@ -31,6 +32,7 @@ Vue.filter('convertDate',function(value){
     return Moment(value).format('YYYY-MM-DD');
 });
 Vue.component('navBar',NavBar); //使用最好以nav-bar
+Vue.component('upload',Upload); //使用最好以upload
 
 //引入自己的vue文件
 import App from './app.vue'
