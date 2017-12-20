@@ -16,7 +16,7 @@
 // 	baseUrl = 'http://test.legle.cc:82';
 // }
 
-let baseUrl = 'http://test.legle.cc/'; 
+let baseUrl = 'http://test.legle.cc:82/'; 
 let routerMode = 'history';
 let baseImgPath = 'http://azz.leglear.com/';
 

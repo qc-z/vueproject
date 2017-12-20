@@ -209,5 +209,6 @@
         background: url('../../static/img/add_upload.png');
         background-size: contain;
         float:left;
+        margin-bottom: 2rem;
       }
 </style>

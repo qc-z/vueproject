@@ -6,16 +6,20 @@
         <div class="upl">
             <upload :id="id" :multiple="false" :url.sync="urls"  @select-type="onSelectType"  @select-url="onSelectUrl"  :url="wurl"  v-bind:class="{ active: isHide }"></upload>
             <img :src="reply" class="upimg" v-bind:class="{ active: !isHide }"></img>
-
+        <div>
+        <mt-button type="primary" class="testBtn"  @click="onSub" v-bind:class="{ active: !isHide }">测试</mt-button>
+        </div>
+        </div>
         </div>
 
     <!-- MUI 图文列表 -->
-        <mt-button type="primary" class="testBtn"  @click="onSub">测试</mt-button>
-        </div>
+        
     </div>
 </template>
 <script>
 import { Toast } from 'mint-ui';
+import {starTestUrl} from '../../api/getData';
+
 export default {
     data(){
         return {
@@ -28,7 +32,8 @@ export default {
                 sex:'0',
                 file:"",
                 isHide:false,
-                reply:""
+                reply:"",
+                btnIsShow:false
         }
     },
     created(){
@@ -44,21 +49,32 @@ export default {
             this.reply = url[0]
             this.isHide = true
 
-        },onSub(){
-            this.$ajax.post('http://test.legle.cc:82/starTestUrl',{clientId:this.clientId,deviceId:this.deviceId,sex:this.sex,file:this.file})
-        .then(res=>{
-            if(res.data.code == 1){
-                let data = res.data.starsData
+        },async onSub(){
+        //     this.$ajax.post('http://test.legle.cc:82/starTestUrl',{clientId:this.clientId,deviceId:this.deviceId,sex:this.sex,file:this.file})
+        // .then(res=>{
+        //     if(res.data.code == 1){
+        //         let data = res.data.starsData
+        //         console.log(data)
+        //     }else{
+        //         console.log(res.data.err)
+        //         Toast(res.data.err);
+                
+        //     }
+            
+        // }).catch((err) => {
+        //     console.log(err)
+        // })
+            let start = await starTestUrl({clientId:this.clientId,deviceId:this.deviceId,sex:this.sex,file:this.file})
+            console.log("start",start)
+            if(start.code == 1){
+                let data = start.starsData
                 console.log(data)
+                this.btnIsShow = true
             }else{
-                console.log(res.data.err)
-                Toast(res.data.err);
+                console.log(start.err)
+                Toast(start.err);
                 
             }
-            
-        }).catch((err) => {
-            console.log(err)
-        })
         }
     }
 }
@@ -80,6 +96,7 @@ export default {
         max-width: 10rem;
         max-height: 10rem;
         margin-left: -1.6rem;
+        margin-bottom: 2rem;
       }
       .active {
         display: none;
@@ -96,9 +113,6 @@ export default {
         left: 34%;
     }
     .testBtn{
-        position: absolute;
-        top:54%;
-        left: 37%;
-        width: 5rem;
+        width: 6rem;
     }
 </style>
