@@ -50,6 +50,11 @@
 	</div>
 </template>
 <script>
+	
+	
+
+	import {getAdvertisementList} from '../../api/getData';
+	import ajax from '../config/selfAjax.js';
 	export default {
 		data(){
 			return {
@@ -57,21 +62,34 @@
 			}
 		},created(){
 			//获取图片
-			this.$ajax.get('getAdvertisementList',
-			).then(res=>{
+			// this.$ajax.get('getAdvertisementList',
+			// ).then(res=>{
 
-				if(res.data.code == 1){
-					this.imgs = res.data.results
-					if(this.imgs.length == 0){
-						this.imgs = [{imgUrl:"http://arpt-user.oss-cn-shenzhen.aliyuncs.com/user/yNT8z4xrac.jpg"},{imgUrl:"http://arpt-user.oss-cn-shenzhen.aliyuncs.com/user/Kc7D6PD45E.jpg"},{imgUrl:"http://arpt-user.oss-cn-shenzhen.aliyuncs.com/user/6KYKjZJR7T.jpg"}]
-					}
-					console.log(this.imgs)
+			// 	if(res.data.code == 1){
+			// 		this.imgs = res.data.results
+			// 		if(this.imgs.length == 0){
+			// 			this.imgs = [{imgUrl:"http://arpt-user.oss-cn-shenzhen.aliyuncs.com/user/yNT8z4xrac.jpg"},{imgUrl:"http://arpt-user.oss-cn-shenzhen.aliyuncs.com/user/Kc7D6PD45E.jpg"},{imgUrl:"http://arpt-user.oss-cn-shenzhen.aliyuncs.com/user/6KYKjZJR7T.jpg"}]
+			// 		}
+			// 		console.log(this.imgs)
 
 					
-				}
-			}).catch(error=> {
-			    console.log(error);
-			  });
+			// 	}
+			// }).catch(error=> {
+			//     console.log(error);
+			//   });
+			
+			// this.ajax('GET', this.baseUrl+'getAdvertisementList',{username:'jige',password:"123321"}).then(res=>{
+			// 	console.log("res",res)
+			// }).catch(err=>{
+			// 	console.log("err",err)
+
+			// })
+			this.get()
+		},methods:{
+			async get(){
+			let ad = await getAdvertisementList()
+			console.log("fetch",ad)
+		}
 		}
 	}
 </script>

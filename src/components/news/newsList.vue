@@ -5,7 +5,7 @@
         <!-- <nav-bar title="明星面对面"></nav-bar> -->
         <div class="upl">
             <upload :id="id" :multiple="false" :url.sync="urls"  @select-type="onSelectType"  @select-url="onSelectUrl"  :url="wurl"  v-bind:class="{ active: isHide }"></upload>
-            <img :src="reply" class="upimg"></img>
+            <img :src="reply" class="upimg" v-bind:class="{ active: !isHide }"></img>
 
         </div>
 

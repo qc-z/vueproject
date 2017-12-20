@@ -25,6 +25,7 @@
 		<!-- 底部 -->
 	</div>
 </template>
+<script src="https://cdn.staticfile.org/babel-polyfill/6.16.0/polyfill.min.js"></script>
 <script>
 	export default {
 		data(){
@@ -32,14 +33,22 @@
 			}
 		},created(){
 			// 用户登录
-			this.$ajax.post('clientLogin',
-				{username:'jige',password:"123321"}
-			).then(res=>{
-					// console.log(res)
+			// this.$ajax.post('clientLogin',
+			// 	{username:'jige',password:"123321"}
+			// ).then(res=>{
+			// 		// console.log(res)
 				
-				}).catch(error=> {
-			    console.log(error);
-			  });
+			// 	}).catch(error=> {
+			//     console.log(error);
+			//   });
+			this.ajax('POST', this.baseUrl+'clientLogin',{username:'jige',password:"123321"}).then(res=>{
+				console.log("res",res)
+			}).catch(err=>{
+				console.log("err",err)
+
+			})
+
+			
 			
 		}
 	}

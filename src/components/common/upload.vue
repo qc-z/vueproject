@@ -18,15 +18,12 @@
     props:{
       multiple:{
         type: Boolean,
-        twoWay:false
       },
       id:{
         type: String,
-        twoWay:false
       },
       bucketUrl:{
         type: String,
-        twoWay:false
       },url: Array,text: Array
     },
     data(){
