@@ -89,6 +89,11 @@
 			async get(){
 			let ad = await getAdvertisementList()
 			console.log("fetch",ad)
+			if(ad.code == 1 && ad.results.length !== 0){
+				this.imgs = ad.results
+			}else{
+				this.imgs = [{imgUrl:"http://arpt-user.oss-cn-shenzhen.aliyuncs.com/user/yNT8z4xrac.jpg"},{imgUrl:"http://arpt-user.oss-cn-shenzhen.aliyuncs.com/user/Kc7D6PD45E.jpg"},{imgUrl:"http://arpt-user.oss-cn-shenzhen.aliyuncs.com/user/6KYKjZJR7T.jpg"}]
+			}
 		}
 		}
 	}

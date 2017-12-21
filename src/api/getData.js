@@ -11,3 +11,8 @@ export const getAdvertisementList = () => fetch('getAdvertisementList');
  */
 
 export const starTestUrl = data => fetch('starTestUrl',data,'POST');
+/**
+ * 登陆
+ */
+
+export const clientLogin = data => fetch('clientLogin',data,'POST');

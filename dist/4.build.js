@@ -1,19 +1,19 @@
 webpackJsonp([4],{
 
-/***/ 203:
+/***/ 301:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_script_index_0_bustCache_newsList_vue__ = __webpack_require__(215);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_script_index_0_bustCache_newsList_vue__ = __webpack_require__(313);
 /* empty harmony namespace reexport */
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_13_6_0_vue_loader_lib_template_compiler_index_id_data_v_27831126_hasScoped_true_buble_transforms_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_template_index_0_bustCache_newsList_vue__ = __webpack_require__(235);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_13_6_0_vue_loader_lib_template_compiler_index_id_data_v_27831126_hasScoped_true_buble_transforms_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_template_index_0_bustCache_newsList_vue__ = __webpack_require__(333);
 var disposed = false
 function injectStyle (ssrContext) {
   if (disposed) return
-  __webpack_require__(229)
+  __webpack_require__(327)
 }
-var normalizeComponent = __webpack_require__(6)
+var normalizeComponent = __webpack_require__(27)
 /* script */
 
 
@@ -58,12 +58,14 @@ if (false) {(function () {
 
 /***/ }),
 
-/***/ 215:
+/***/ 313:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_mint_ui__ = __webpack_require__(232);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_mint_ui__ = __webpack_require__(330);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_mint_ui___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_mint_ui__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__api_getData__ = __webpack_require__(191);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__api_getData___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1__api_getData__);
 //
 //
 //
@@ -80,6 +82,10 @@ if (false) {(function () {
 //
 //
 //
+//
+//
+
+
 
 
 /* harmony default export */ __webpack_exports__["a"] = ({
@@ -94,7 +100,9 @@ if (false) {(function () {
             sex: '0',
             file: "",
             isHide: false,
-            reply: ""
+            reply: "",
+            btnIsShow: false,
+            data: []
         };
     },
     created() {}, methods: {
@@ -106,35 +114,49 @@ if (false) {(function () {
             this.file = url[0];
             this.reply = url[0];
             this.isHide = true;
-        }, onSub() {
-            this.$ajax.post('http://test.legle.cc:82/starTestUrl', { clientId: this.clientId, deviceId: this.deviceId, sex: this.sex, file: this.file }).then(res => {
-                if (res.data.code == 1) {
-                    let data = res.data.starsData;
-                    console.log(data);
-                } else {
-                    console.log(res.data.err);
-                    Object(__WEBPACK_IMPORTED_MODULE_0_mint_ui__["Toast"])(res.data.err);
-                }
-            }).catch(err => {
-                console.log(err);
-            });
+        }, async onSub() {
+            //     this.$ajax.post('http://test.legle.cc:82/starTestUrl',{clientId:this.clientId,deviceId:this.deviceId,sex:this.sex,file:this.file})
+            // .then(res=>{
+            //     if(res.data.code == 1){
+            //         let data = res.data.starsData
+            //         console.log(data)
+            //     }else{
+            //         console.log(res.data.err)
+            //         Toast(res.data.err);
+
+            //     }
+
+            // }).catch((err) => {
+            //     console.log(err)
+            // })
+            let start = await Object(__WEBPACK_IMPORTED_MODULE_1__api_getData__["starTestUrl"])({ clientId: this.clientId, deviceId: this.deviceId, sex: this.sex, file: this.file });
+            console.log("start", start);
+            if (start.code == 1) {
+                let data = start.starsData;
+                console.log(data);
+                this.btnIsShow = true;
+                Object(__WEBPACK_IMPORTED_MODULE_0_mint_ui__["Toast"])(data[data.length - 1].star.name);
+            } else {
+                console.log(start.err);
+                Object(__WEBPACK_IMPORTED_MODULE_0_mint_ui__["Toast"])(start.err);
+            }
         }
     }
 });
 
 /***/ }),
 
-/***/ 229:
+/***/ 327:
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(230);
+var content = __webpack_require__(328);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(5)("3372ac9f", content, false);
+var update = __webpack_require__(26)("3372ac9f", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
@@ -151,29 +173,29 @@ if(false) {
 
 /***/ }),
 
-/***/ 230:
+/***/ 328:
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(2)(undefined);
+exports = module.exports = __webpack_require__(5)(undefined);
 // imports
 
 
 // module
-exports.push([module.i, "\n.mui-media-body p[data-v-27831126] {\n    color: #0bb0f5;\n}\n.news-desc p[data-v-27831126]:nth-child(1) {\n    float: left;\n}\n.news-desc p[data-v-27831126]:nth-child(2) {\n    float: right;\n}\n.upimg[data-v-27831126]{\n        max-width: 10rem;\n        max-height: 10rem;\n        margin-left: -1.6rem;\n}\n.active[data-v-27831126] {\n        display: none;\n}\n.body[data-v-27831126] {\n        width:100%;\n        height: 84%;\n        background-size:contain;\n        background-image: url(" + __webpack_require__(231) + ") !important\n}\n.upl[data-v-27831126]{\n        position: absolute;\n        top:34%;\n        left: 34%;\n}\n.testBtn[data-v-27831126]{\n        position: absolute;\n        top:54%;\n        left: 37%;\n        width: 5rem;\n}\n", ""]);
+exports.push([module.i, "\n.mui-media-body p[data-v-27831126] {\n    color: #0bb0f5;\n}\n.news-desc p[data-v-27831126]:nth-child(1) {\n    float: left;\n}\n.news-desc p[data-v-27831126]:nth-child(2) {\n    float: right;\n}\n.upimg[data-v-27831126]{\n        max-width: 10rem;\n        max-height: 10rem;\n        margin-left: -1.6rem;\n        margin-bottom: 2rem;\n}\n.active[data-v-27831126] {\n        display: none;\n}\n.body[data-v-27831126] {\n        width:100%;\n        height: 84%;\n        background-size:contain;\n        background-image: url(" + __webpack_require__(329) + ") !important\n}\n.upl[data-v-27831126]{\n        position: absolute;\n        top:34%;\n        left: 34%;\n}\n.testBtn[data-v-27831126]{\n        width: 6rem;\n}\n", ""]);
 
 // exports
 
 
 /***/ }),
 
-/***/ 231:
+/***/ 329:
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__.p + "vstartbg.png";
 
 /***/ }),
 
-/***/ 232:
+/***/ 330:
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports =
@@ -346,7 +368,7 @@ module.exports = function normalizeComponent (
 /* 1 */
 /***/ function(module, exports) {
 
-module.exports = __webpack_require__(7);
+module.exports = __webpack_require__(28);
 
 /***/ },
 /* 2 */
@@ -10070,19 +10092,19 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
 /* 199 */
 /***/ function(module, exports) {
 
-module.exports = __webpack_require__(233);
+module.exports = __webpack_require__(331);
 
 /***/ },
 /* 200 */
 /***/ function(module, exports) {
 
-module.exports = __webpack_require__(234);
+module.exports = __webpack_require__(332);
 
 /***/ },
 /* 201 */
 /***/ function(module, exports) {
 
-module.exports = __webpack_require__(137);
+module.exports = __webpack_require__(192);
 
 /***/ },
 /* 202 */
@@ -10096,7 +10118,7 @@ module.exports = __webpack_require__(14);
 
 /***/ }),
 
-/***/ 233:
+/***/ 331:
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10129,7 +10151,7 @@ module.exports = function (arr, predicate, ctx) {
 
 /***/ }),
 
-/***/ 234:
+/***/ 332:
 /***/ (function(module, exports) {
 
 /*
@@ -10177,7 +10199,7 @@ module.exports = function (arr, predicate, ctx) {
 
 /***/ }),
 
-/***/ 235:
+/***/ 333:
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -10186,52 +10208,54 @@ var render = function() {
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
   return _c("div", { staticClass: "tmpl" }, [
-    _c(
-      "div",
-      { staticClass: "body" },
-      [
-        _c(
-          "div",
-          { staticClass: "upl" },
-          [
-            _c("upload", {
-              class: { active: _vm.isHide },
-              attrs: {
-                id: _vm.id,
-                multiple: false,
-                url: _vm.urls,
-                url: _vm.wurl
+    _c("div", { staticClass: "body" }, [
+      _c(
+        "div",
+        { staticClass: "upl" },
+        [
+          _c("upload", {
+            class: { active: _vm.isHide },
+            attrs: {
+              id: _vm.id,
+              multiple: false,
+              url: _vm.urls,
+              url: _vm.wurl
+            },
+            on: {
+              "update:url": function($event) {
+                _vm.urls = $event
               },
-              on: {
-                "update:url": function($event) {
-                  _vm.urls = $event
+              "select-type": _vm.onSelectType,
+              "select-url": _vm.onSelectUrl
+            }
+          }),
+          _vm._v(" "),
+          _c("img", {
+            staticClass: "upimg",
+            class: { active: !_vm.isHide },
+            attrs: { src: _vm.reply }
+          }),
+          _vm._v(" "),
+          _c(
+            "div",
+            [
+              _c(
+                "mt-button",
+                {
+                  staticClass: "testBtn",
+                  class: { active: !_vm.isHide },
+                  attrs: { type: "primary" },
+                  on: { click: _vm.onSub }
                 },
-                "select-type": _vm.onSelectType,
-                "select-url": _vm.onSelectUrl
-              }
-            }),
-            _vm._v(" "),
-            _c("img", {
-              staticClass: "upimg",
-              class: { active: !_vm.isHide },
-              attrs: { src: _vm.reply }
-            })
-          ],
-          1
-        ),
-        _vm._v(" "),
-        _c(
-          "mt-button",
-          {
-            staticClass: "testBtn",
-            attrs: { type: "primary" },
-            on: { click: _vm.onSub }
-          },
-          [_vm._v("测试")]
-        )
-      ],
-      1
-    )
+                [_vm._v("测试")]
+              )
+            ],
+            1
+          )
+        ],
+        1
+      )
+    ])
   ])
 }
 var staticRenderFns = []

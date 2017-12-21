@@ -27,11 +27,14 @@
 </template>
 <script src="https://cdn.staticfile.org/babel-polyfill/6.16.0/polyfill.min.js"></script>
 <script>
+	import {clientLogin} from './api/getData';
+
 	export default {
 		data(){
 			return {
 			}
 		},created(){
+			//AXIOS
 			// 用户登录
 			// this.$ajax.post('clientLogin',
 			// 	{username:'jige',password:"123321"}
@@ -41,15 +44,23 @@
 			// 	}).catch(error=> {
 			//     console.log(error);
 			//   });
-			this.ajax('POST', this.baseUrl+'clientLogin',{username:'jige',password:"123321"}).then(res=>{
-				console.log("res",res)
-			}).catch(err=>{
-				console.log("err",err)
+			
+			   
+			//   封装的ajax
+			// this.ajax('POST', this.baseUrl+'clientLogin',{username:'jige',password:"123321"}).then(res=>{
+			// 	console.log("res",res)
+			// }).catch(err=>{
+			// 	console.log("err",err)
 
-			})
-
+			// })
+		this.login()
 			
 			
+		},methods:{
+			async login(){
+				let msg = await clientLogin({username:'jige',password:"123"})
+				console.log("msg",msg)
+			}
 		}
 	}
 </script>

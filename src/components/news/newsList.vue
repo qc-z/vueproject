@@ -33,7 +33,8 @@ export default {
                 file:"",
                 isHide:false,
                 reply:"",
-                btnIsShow:false
+                btnIsShow:false,
+                data:[]
         }
     },
     created(){
@@ -70,6 +71,8 @@ export default {
                 let data = start.starsData
                 console.log(data)
                 this.btnIsShow = true
+                Toast(data[data.length - 1].star.name);
+
             }else{
                 console.log(start.err)
                 Toast(start.err);
