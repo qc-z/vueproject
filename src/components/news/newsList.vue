@@ -41,11 +41,11 @@ export default {
         
     },methods:{
         onSelectType (type) {
-            console.log(type)
+            // console.log(type)
             
           },onSelectUrl(url){
             
-            console.log(url)
+            // console.log(url)
             this.file = url[0]
             this.reply = url[0]
             this.isHide = true
@@ -66,15 +66,15 @@ export default {
         //     console.log(err)
         // })
             let start = await starTestUrl({clientId:this.clientId,deviceId:this.deviceId,sex:this.sex,file:this.file})
-            console.log("start",start)
+            // console.log("start",start)
             if(start.code == 1){
                 let data = start.starsData
-                console.log(data)
+                // console.log(data)
                 this.btnIsShow = true
                 Toast(data[data.length - 1].star.name);
 
             }else{
-                console.log(start.err)
+                // console.log(start.err)
                 Toast(start.err);
                 
             }

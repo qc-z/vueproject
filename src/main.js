@@ -76,6 +76,8 @@ const Shopcart = r => require(['./components/shopcart/shopcart.vue'],r);
 const Search = r => require(['./components/search/search.vue'],r);
 const NewsList = r => require(['./components/news/newsList.vue'],r);
 const NewsDetail = r => require(['./components/news/newsDetail.vue'],r);
+const Camera = r => require(['./components/Camera/Camera.vue'],r);
+const newCamera = r => require(['./components/Camera/newCamera.vue'],r);
 
 //路由规则
 let router = new VueRouter({
@@ -89,6 +91,8 @@ let router = new VueRouter({
         { name: 'search',path:'/search',component:Search}, //查找
         { name:'news.list',path:'/news/list',component:NewsList}, //手术列表
         { name:'news.detail',path:'/news/detail',component:NewsDetail}, //手术详情
+        { name:'Camera',path:'/camera',component:Camera}, //照相机
+        { name:'newCamera',path:'/newCamera',component:newCamera}, //照相机
 
 	]
 })

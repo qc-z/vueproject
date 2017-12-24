@@ -29,7 +29,7 @@
 /******/
 /******/ 	// objects to store loaded and loading chunks
 /******/ 	var installedChunks = {
-/******/ 		6: 0
+/******/ 		8: 0
 /******/ 	};
 /******/
 /******/ 	// The require function
@@ -142,15 +142,15 @@
 /******/ 	__webpack_require__.oe = function(err) { console.error(err); throw err; };
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 194);
+/******/ 	return __webpack_require__(__webpack_require__.s = 187);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(module) {var require;//! moment.js
-//! version : 2.20.1
+/* WEBPACK VAR INJECTION */(function(module) {//! moment.js
+//! version : 2.18.1
 //! authors : Tim Wood, Iskren Chernev, Moment.js contributors
 //! license : MIT
 //! momentjs.com
@@ -184,17 +184,12 @@ function isObject(input) {
 }
 
 function isObjectEmpty(obj) {
-    if (Object.getOwnPropertyNames) {
-        return (Object.getOwnPropertyNames(obj).length === 0);
-    } else {
-        var k;
-        for (k in obj) {
-            if (obj.hasOwnProperty(k)) {
-                return false;
-            }
-        }
-        return true;
+    var k;
+    for (k in obj) {
+        // even if its not own property I'd still call it non-empty
+        return false;
     }
+    return true;
 }
 
 function isUndefined(input) {
@@ -288,10 +283,12 @@ if (Array.prototype.some) {
     };
 }
 
+var some$1 = some;
+
 function isValid(m) {
     if (m._isValid == null) {
         var flags = getParsingFlags(m);
-        var parsedParts = some.call(flags.parsedDateParts, function (i) {
+        var parsedParts = some$1.call(flags.parsedDateParts, function (i) {
             return i != null;
         });
         var isNowValid = !isNaN(m._d.getTime()) &&
@@ -299,7 +296,6 @@ function isValid(m) {
             !flags.empty &&
             !flags.invalidMonth &&
             !flags.invalidWeekday &&
-            !flags.weekdayMismatch &&
             !flags.nullInput &&
             !flags.invalidFormat &&
             !flags.userInvalidated &&
@@ -565,6 +561,8 @@ if (Object.keys) {
     };
 }
 
+var keys$1 = keys;
+
 var defaultCalendar = {
     sameDay : '[Today at] LT',
     nextDay : '[Tomorrow at] LT',
@@ -690,6 +688,56 @@ function getPrioritizedUnits(unitsObj) {
     return units;
 }
 
+function makeGetSet (unit, keepTime) {
+    return function (value) {
+        if (value != null) {
+            set$1(this, unit, value);
+            hooks.updateOffset(this, keepTime);
+            return this;
+        } else {
+            return get(this, unit);
+        }
+    };
+}
+
+function get (mom, unit) {
+    return mom.isValid() ?
+        mom._d['get' + (mom._isUTC ? 'UTC' : '') + unit]() : NaN;
+}
+
+function set$1 (mom, unit, value) {
+    if (mom.isValid()) {
+        mom._d['set' + (mom._isUTC ? 'UTC' : '') + unit](value);
+    }
+}
+
+// MOMENTS
+
+function stringGet (units) {
+    units = normalizeUnits(units);
+    if (isFunction(this[units])) {
+        return this[units]();
+    }
+    return this;
+}
+
+
+function stringSet (units, value) {
+    if (typeof units === 'object') {
+        units = normalizeObjectUnits(units);
+        var prioritized = getPrioritizedUnits(units);
+        for (var i = 0; i < prioritized.length; i++) {
+            this[prioritized[i].unit](units[prioritized[i].unit]);
+        }
+    } else {
+        units = normalizeUnits(units);
+        if (isFunction(this[units])) {
+            return this[units](value);
+        }
+    }
+    return this;
+}
+
 function zeroFill(number, targetLength, forceSign) {
     var absNumber = '' + Math.abs(number),
         zerosToFill = targetLength - absNumber.length,
@@ -810,7 +858,7 @@ var matchTimestamp = /[+-]?\d+(\.\d{1,3})?/; // 123456789 123456789.123
 
 // any word (or two) characters or numbers including two/three word month in arabic.
 // includes scottish gaelic two word and hyphenated months
-var matchWord = /[0-9]{0,256}['a-z\u00A0-\u05FF\u0700-\uD7FF\uF900-\uFDCF\uFDF0-\uFF07\uFF10-\uFFEF]{1,256}|[\u0600-\u06FF\/]{1,256}(\s*?[\u0600-\u06FF]{1,256}){1,2}/i;
+var matchWord = /[0-9]*['a-z\u00A0-\u05FF\u0700-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]+|[\u0600-\u06FF\/]+(\s*?[\u0600-\u06FF]+){1,2}/i;
 
 
 var regexes = {};
@@ -880,131 +928,6 @@ var MILLISECOND = 6;
 var WEEK = 7;
 var WEEKDAY = 8;
 
-// FORMATTING
-
-addFormatToken('Y', 0, 0, function () {
-    var y = this.year();
-    return y <= 9999 ? '' + y : '+' + y;
-});
-
-addFormatToken(0, ['YY', 2], 0, function () {
-    return this.year() % 100;
-});
-
-addFormatToken(0, ['YYYY',   4],       0, 'year');
-addFormatToken(0, ['YYYYY',  5],       0, 'year');
-addFormatToken(0, ['YYYYYY', 6, true], 0, 'year');
-
-// ALIASES
-
-addUnitAlias('year', 'y');
-
-// PRIORITIES
-
-addUnitPriority('year', 1);
-
-// PARSING
-
-addRegexToken('Y',      matchSigned);
-addRegexToken('YY',     match1to2, match2);
-addRegexToken('YYYY',   match1to4, match4);
-addRegexToken('YYYYY',  match1to6, match6);
-addRegexToken('YYYYYY', match1to6, match6);
-
-addParseToken(['YYYYY', 'YYYYYY'], YEAR);
-addParseToken('YYYY', function (input, array) {
-    array[YEAR] = input.length === 2 ? hooks.parseTwoDigitYear(input) : toInt(input);
-});
-addParseToken('YY', function (input, array) {
-    array[YEAR] = hooks.parseTwoDigitYear(input);
-});
-addParseToken('Y', function (input, array) {
-    array[YEAR] = parseInt(input, 10);
-});
-
-// HELPERS
-
-function daysInYear(year) {
-    return isLeapYear(year) ? 366 : 365;
-}
-
-function isLeapYear(year) {
-    return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-}
-
-// HOOKS
-
-hooks.parseTwoDigitYear = function (input) {
-    return toInt(input) + (toInt(input) > 68 ? 1900 : 2000);
-};
-
-// MOMENTS
-
-var getSetYear = makeGetSet('FullYear', true);
-
-function getIsLeapYear () {
-    return isLeapYear(this.year());
-}
-
-function makeGetSet (unit, keepTime) {
-    return function (value) {
-        if (value != null) {
-            set$1(this, unit, value);
-            hooks.updateOffset(this, keepTime);
-            return this;
-        } else {
-            return get(this, unit);
-        }
-    };
-}
-
-function get (mom, unit) {
-    return mom.isValid() ?
-        mom._d['get' + (mom._isUTC ? 'UTC' : '') + unit]() : NaN;
-}
-
-function set$1 (mom, unit, value) {
-    if (mom.isValid() && !isNaN(value)) {
-        if (unit === 'FullYear' && isLeapYear(mom.year()) && mom.month() === 1 && mom.date() === 29) {
-            mom._d['set' + (mom._isUTC ? 'UTC' : '') + unit](value, mom.month(), daysInMonth(value, mom.month()));
-        }
-        else {
-            mom._d['set' + (mom._isUTC ? 'UTC' : '') + unit](value);
-        }
-    }
-}
-
-// MOMENTS
-
-function stringGet (units) {
-    units = normalizeUnits(units);
-    if (isFunction(this[units])) {
-        return this[units]();
-    }
-    return this;
-}
-
-
-function stringSet (units, value) {
-    if (typeof units === 'object') {
-        units = normalizeObjectUnits(units);
-        var prioritized = getPrioritizedUnits(units);
-        for (var i = 0; i < prioritized.length; i++) {
-            this[prioritized[i].unit](units[prioritized[i].unit]);
-        }
-    } else {
-        units = normalizeUnits(units);
-        if (isFunction(this[units])) {
-            return this[units](value);
-        }
-    }
-    return this;
-}
-
-function mod(n, x) {
-    return ((n % x) + x) % x;
-}
-
 var indexOf;
 
 if (Array.prototype.indexOf) {
@@ -1022,13 +945,10 @@ if (Array.prototype.indexOf) {
     };
 }
 
+var indexOf$1 = indexOf;
+
 function daysInMonth(year, month) {
-    if (isNaN(year) || isNaN(month)) {
-        return NaN;
-    }
-    var modMonth = mod(month, 12);
-    year += (month - modMonth) / 12;
-    return modMonth === 1 ? (isLeapYear(year) ? 29 : 28) : (31 - modMonth % 7 % 2);
+    return new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
 }
 
 // FORMATTING
@@ -1117,26 +1037,26 @@ function handleStrictParse(monthName, format, strict) {
 
     if (strict) {
         if (format === 'MMM') {
-            ii = indexOf.call(this._shortMonthsParse, llc);
+            ii = indexOf$1.call(this._shortMonthsParse, llc);
             return ii !== -1 ? ii : null;
         } else {
-            ii = indexOf.call(this._longMonthsParse, llc);
+            ii = indexOf$1.call(this._longMonthsParse, llc);
             return ii !== -1 ? ii : null;
         }
     } else {
         if (format === 'MMM') {
-            ii = indexOf.call(this._shortMonthsParse, llc);
+            ii = indexOf$1.call(this._shortMonthsParse, llc);
             if (ii !== -1) {
                 return ii;
             }
-            ii = indexOf.call(this._longMonthsParse, llc);
+            ii = indexOf$1.call(this._longMonthsParse, llc);
             return ii !== -1 ? ii : null;
         } else {
-            ii = indexOf.call(this._longMonthsParse, llc);
+            ii = indexOf$1.call(this._longMonthsParse, llc);
             if (ii !== -1) {
                 return ii;
             }
-            ii = indexOf.call(this._shortMonthsParse, llc);
+            ii = indexOf$1.call(this._shortMonthsParse, llc);
             return ii !== -1 ? ii : null;
         }
     }
@@ -1293,6 +1213,72 @@ function computeMonthsParse () {
     this._monthsShortRegex = this._monthsRegex;
     this._monthsStrictRegex = new RegExp('^(' + longPieces.join('|') + ')', 'i');
     this._monthsShortStrictRegex = new RegExp('^(' + shortPieces.join('|') + ')', 'i');
+}
+
+// FORMATTING
+
+addFormatToken('Y', 0, 0, function () {
+    var y = this.year();
+    return y <= 9999 ? '' + y : '+' + y;
+});
+
+addFormatToken(0, ['YY', 2], 0, function () {
+    return this.year() % 100;
+});
+
+addFormatToken(0, ['YYYY',   4],       0, 'year');
+addFormatToken(0, ['YYYYY',  5],       0, 'year');
+addFormatToken(0, ['YYYYYY', 6, true], 0, 'year');
+
+// ALIASES
+
+addUnitAlias('year', 'y');
+
+// PRIORITIES
+
+addUnitPriority('year', 1);
+
+// PARSING
+
+addRegexToken('Y',      matchSigned);
+addRegexToken('YY',     match1to2, match2);
+addRegexToken('YYYY',   match1to4, match4);
+addRegexToken('YYYYY',  match1to6, match6);
+addRegexToken('YYYYYY', match1to6, match6);
+
+addParseToken(['YYYYY', 'YYYYYY'], YEAR);
+addParseToken('YYYY', function (input, array) {
+    array[YEAR] = input.length === 2 ? hooks.parseTwoDigitYear(input) : toInt(input);
+});
+addParseToken('YY', function (input, array) {
+    array[YEAR] = hooks.parseTwoDigitYear(input);
+});
+addParseToken('Y', function (input, array) {
+    array[YEAR] = parseInt(input, 10);
+});
+
+// HELPERS
+
+function daysInYear(year) {
+    return isLeapYear(year) ? 366 : 365;
+}
+
+function isLeapYear(year) {
+    return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+// HOOKS
+
+hooks.parseTwoDigitYear = function (input) {
+    return toInt(input) + (toInt(input) > 68 ? 1900 : 2000);
+};
+
+// MOMENTS
+
+var getSetYear = makeGetSet('FullYear', true);
+
+function getIsLeapYear () {
+    return isLeapYear(this.year());
 }
 
 function createDate (y, m, d, h, M, s, ms) {
@@ -1562,48 +1548,48 @@ function handleStrictParse$1(weekdayName, format, strict) {
 
     if (strict) {
         if (format === 'dddd') {
-            ii = indexOf.call(this._weekdaysParse, llc);
+            ii = indexOf$1.call(this._weekdaysParse, llc);
             return ii !== -1 ? ii : null;
         } else if (format === 'ddd') {
-            ii = indexOf.call(this._shortWeekdaysParse, llc);
+            ii = indexOf$1.call(this._shortWeekdaysParse, llc);
             return ii !== -1 ? ii : null;
         } else {
-            ii = indexOf.call(this._minWeekdaysParse, llc);
+            ii = indexOf$1.call(this._minWeekdaysParse, llc);
             return ii !== -1 ? ii : null;
         }
     } else {
         if (format === 'dddd') {
-            ii = indexOf.call(this._weekdaysParse, llc);
+            ii = indexOf$1.call(this._weekdaysParse, llc);
             if (ii !== -1) {
                 return ii;
             }
-            ii = indexOf.call(this._shortWeekdaysParse, llc);
+            ii = indexOf$1.call(this._shortWeekdaysParse, llc);
             if (ii !== -1) {
                 return ii;
             }
-            ii = indexOf.call(this._minWeekdaysParse, llc);
+            ii = indexOf$1.call(this._minWeekdaysParse, llc);
             return ii !== -1 ? ii : null;
         } else if (format === 'ddd') {
-            ii = indexOf.call(this._shortWeekdaysParse, llc);
+            ii = indexOf$1.call(this._shortWeekdaysParse, llc);
             if (ii !== -1) {
                 return ii;
             }
-            ii = indexOf.call(this._weekdaysParse, llc);
+            ii = indexOf$1.call(this._weekdaysParse, llc);
             if (ii !== -1) {
                 return ii;
             }
-            ii = indexOf.call(this._minWeekdaysParse, llc);
+            ii = indexOf$1.call(this._minWeekdaysParse, llc);
             return ii !== -1 ? ii : null;
         } else {
-            ii = indexOf.call(this._minWeekdaysParse, llc);
+            ii = indexOf$1.call(this._minWeekdaysParse, llc);
             if (ii !== -1) {
                 return ii;
             }
-            ii = indexOf.call(this._weekdaysParse, llc);
+            ii = indexOf$1.call(this._weekdaysParse, llc);
             if (ii !== -1) {
                 return ii;
             }
-            ii = indexOf.call(this._shortWeekdaysParse, llc);
+            ii = indexOf$1.call(this._shortWeekdaysParse, llc);
             return ii !== -1 ? ii : null;
         }
     }
@@ -1992,10 +1978,11 @@ function loadLocale(name) {
             module && module.exports) {
         try {
             oldLocale = globalLocale._abbr;
-            var aliasedRequire = require;
-            __webpack_require__(290)("./" + name);
+            __webpack_require__(284)("./" + name);
+            // because defineLocale currently also sets the global locale, we
+            // want to undo that for lazy loaded locales
             getSetGlobalLocale(oldLocale);
-        } catch (e) {}
+        } catch (e) { }
     }
     return locales[name];
 }
@@ -2071,11 +2058,10 @@ function defineLocale (name, config) {
 
 function updateLocale(name, config) {
     if (config != null) {
-        var locale, tmpLocale, parentConfig = baseConfig;
+        var locale, parentConfig = baseConfig;
         // MERGE
-        tmpLocale = loadLocale(name);
-        if (tmpLocale != null) {
-            parentConfig = tmpLocale._config;
+        if (locales[name] != null) {
+            parentConfig = locales[name]._config;
         }
         config = mergeConfigs(parentConfig, config);
         locale = new Locale(config);
@@ -2122,7 +2108,7 @@ function getLocale (key) {
 }
 
 function listLocales() {
-    return keys(locales);
+    return keys$1(locales);
 }
 
 function checkOverflow (m) {
@@ -2153,156 +2139,6 @@ function checkOverflow (m) {
     }
 
     return m;
-}
-
-// Pick the first defined of two or three arguments.
-function defaults(a, b, c) {
-    if (a != null) {
-        return a;
-    }
-    if (b != null) {
-        return b;
-    }
-    return c;
-}
-
-function currentDateArray(config) {
-    // hooks is actually the exported moment object
-    var nowValue = new Date(hooks.now());
-    if (config._useUTC) {
-        return [nowValue.getUTCFullYear(), nowValue.getUTCMonth(), nowValue.getUTCDate()];
-    }
-    return [nowValue.getFullYear(), nowValue.getMonth(), nowValue.getDate()];
-}
-
-// convert an array to a date.
-// the array should mirror the parameters below
-// note: all values past the year are optional and will default to the lowest possible value.
-// [year, month, day , hour, minute, second, millisecond]
-function configFromArray (config) {
-    var i, date, input = [], currentDate, expectedWeekday, yearToUse;
-
-    if (config._d) {
-        return;
-    }
-
-    currentDate = currentDateArray(config);
-
-    //compute day of the year from weeks and weekdays
-    if (config._w && config._a[DATE] == null && config._a[MONTH] == null) {
-        dayOfYearFromWeekInfo(config);
-    }
-
-    //if the day of the year is set, figure out what it is
-    if (config._dayOfYear != null) {
-        yearToUse = defaults(config._a[YEAR], currentDate[YEAR]);
-
-        if (config._dayOfYear > daysInYear(yearToUse) || config._dayOfYear === 0) {
-            getParsingFlags(config)._overflowDayOfYear = true;
-        }
-
-        date = createUTCDate(yearToUse, 0, config._dayOfYear);
-        config._a[MONTH] = date.getUTCMonth();
-        config._a[DATE] = date.getUTCDate();
-    }
-
-    // Default to current date.
-    // * if no year, month, day of month are given, default to today
-    // * if day of month is given, default month and year
-    // * if month is given, default only year
-    // * if year is given, don't default anything
-    for (i = 0; i < 3 && config._a[i] == null; ++i) {
-        config._a[i] = input[i] = currentDate[i];
-    }
-
-    // Zero out whatever was not defaulted, including time
-    for (; i < 7; i++) {
-        config._a[i] = input[i] = (config._a[i] == null) ? (i === 2 ? 1 : 0) : config._a[i];
-    }
-
-    // Check for 24:00:00.000
-    if (config._a[HOUR] === 24 &&
-            config._a[MINUTE] === 0 &&
-            config._a[SECOND] === 0 &&
-            config._a[MILLISECOND] === 0) {
-        config._nextDay = true;
-        config._a[HOUR] = 0;
-    }
-
-    config._d = (config._useUTC ? createUTCDate : createDate).apply(null, input);
-    expectedWeekday = config._useUTC ? config._d.getUTCDay() : config._d.getDay();
-
-    // Apply timezone offset from input. The actual utcOffset can be changed
-    // with parseZone.
-    if (config._tzm != null) {
-        config._d.setUTCMinutes(config._d.getUTCMinutes() - config._tzm);
-    }
-
-    if (config._nextDay) {
-        config._a[HOUR] = 24;
-    }
-
-    // check for mismatching day of week
-    if (config._w && typeof config._w.d !== 'undefined' && config._w.d !== expectedWeekday) {
-        getParsingFlags(config).weekdayMismatch = true;
-    }
-}
-
-function dayOfYearFromWeekInfo(config) {
-    var w, weekYear, week, weekday, dow, doy, temp, weekdayOverflow;
-
-    w = config._w;
-    if (w.GG != null || w.W != null || w.E != null) {
-        dow = 1;
-        doy = 4;
-
-        // TODO: We need to take the current isoWeekYear, but that depends on
-        // how we interpret now (local, utc, fixed offset). So create
-        // a now version of current config (take local/utc/offset flags, and
-        // create now).
-        weekYear = defaults(w.GG, config._a[YEAR], weekOfYear(createLocal(), 1, 4).year);
-        week = defaults(w.W, 1);
-        weekday = defaults(w.E, 1);
-        if (weekday < 1 || weekday > 7) {
-            weekdayOverflow = true;
-        }
-    } else {
-        dow = config._locale._week.dow;
-        doy = config._locale._week.doy;
-
-        var curWeek = weekOfYear(createLocal(), dow, doy);
-
-        weekYear = defaults(w.gg, config._a[YEAR], curWeek.year);
-
-        // Default to current week.
-        week = defaults(w.w, curWeek.week);
-
-        if (w.d != null) {
-            // weekday -- low day numbers are considered next week
-            weekday = w.d;
-            if (weekday < 0 || weekday > 6) {
-                weekdayOverflow = true;
-            }
-        } else if (w.e != null) {
-            // local weekday -- counting starts from begining of week
-            weekday = w.e + dow;
-            if (w.e < 0 || w.e > 6) {
-                weekdayOverflow = true;
-            }
-        } else {
-            // default to begining of week
-            weekday = dow;
-        }
-    }
-    if (week < 1 || week > weeksInYear(weekYear, dow, doy)) {
-        getParsingFlags(config)._overflowWeeks = true;
-    } else if (weekdayOverflow != null) {
-        getParsingFlags(config)._overflowWeekday = true;
-    } else {
-        temp = dayOfYearFromWeeks(weekYear, week, weekday, dow, doy);
-        config._a[YEAR] = temp.year;
-        config._dayOfYear = temp.dayOfYear;
-    }
 }
 
 // iso 8601 regex
@@ -2396,94 +2232,70 @@ function configFromISO(config) {
 }
 
 // RFC 2822 regex: For details see https://tools.ietf.org/html/rfc2822#section-3.3
-var rfc2822 = /^(?:(Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d{1,2})\s(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(\d{2,4})\s(\d\d):(\d\d)(?::(\d\d))?\s(?:(UT|GMT|[ECMP][SD]T)|([Zz])|([+-]\d{4}))$/;
-
-function extractFromRFC2822Strings(yearStr, monthStr, dayStr, hourStr, minuteStr, secondStr) {
-    var result = [
-        untruncateYear(yearStr),
-        defaultLocaleMonthsShort.indexOf(monthStr),
-        parseInt(dayStr, 10),
-        parseInt(hourStr, 10),
-        parseInt(minuteStr, 10)
-    ];
-
-    if (secondStr) {
-        result.push(parseInt(secondStr, 10));
-    }
-
-    return result;
-}
-
-function untruncateYear(yearStr) {
-    var year = parseInt(yearStr, 10);
-    if (year <= 49) {
-        return 2000 + year;
-    } else if (year <= 999) {
-        return 1900 + year;
-    }
-    return year;
-}
-
-function preprocessRFC2822(s) {
-    // Remove comments and folding whitespace and replace multiple-spaces with a single space
-    return s.replace(/\([^)]*\)|[\n\t]/g, ' ').replace(/(\s\s+)/g, ' ').trim();
-}
-
-function checkWeekday(weekdayStr, parsedInput, config) {
-    if (weekdayStr) {
-        // TODO: Replace the vanilla JS Date object with an indepentent day-of-week check.
-        var weekdayProvided = defaultLocaleWeekdaysShort.indexOf(weekdayStr),
-            weekdayActual = new Date(parsedInput[0], parsedInput[1], parsedInput[2]).getDay();
-        if (weekdayProvided !== weekdayActual) {
-            getParsingFlags(config).weekdayMismatch = true;
-            config._isValid = false;
-            return false;
-        }
-    }
-    return true;
-}
-
-var obsOffsets = {
-    UT: 0,
-    GMT: 0,
-    EDT: -4 * 60,
-    EST: -5 * 60,
-    CDT: -5 * 60,
-    CST: -6 * 60,
-    MDT: -6 * 60,
-    MST: -7 * 60,
-    PDT: -7 * 60,
-    PST: -8 * 60
-};
-
-function calculateOffset(obsOffset, militaryOffset, numOffset) {
-    if (obsOffset) {
-        return obsOffsets[obsOffset];
-    } else if (militaryOffset) {
-        // the only allowed military tz is Z
-        return 0;
-    } else {
-        var hm = parseInt(numOffset, 10);
-        var m = hm % 100, h = (hm - m) / 100;
-        return h * 60 + m;
-    }
-}
+var basicRfcRegex = /^((?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s)?(\d?\d\s(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s(?:\d\d)?\d\d\s)(\d\d:\d\d)(\:\d\d)?(\s(?:UT|GMT|[ECMP][SD]T|[A-IK-Za-ik-z]|[+-]\d{4}))$/;
 
 // date and time from ref 2822 format
 function configFromRFC2822(config) {
-    var match = rfc2822.exec(preprocessRFC2822(config._i));
+    var string, match, dayFormat,
+        dateFormat, timeFormat, tzFormat;
+    var timezones = {
+        ' GMT': ' +0000',
+        ' EDT': ' -0400',
+        ' EST': ' -0500',
+        ' CDT': ' -0500',
+        ' CST': ' -0600',
+        ' MDT': ' -0600',
+        ' MST': ' -0700',
+        ' PDT': ' -0700',
+        ' PST': ' -0800'
+    };
+    var military = 'YXWVUTSRQPONZABCDEFGHIKLM';
+    var timezone, timezoneIndex;
+
+    string = config._i
+        .replace(/\([^\)]*\)|[\n\t]/g, ' ') // Remove comments and folding whitespace
+        .replace(/(\s\s+)/g, ' ') // Replace multiple-spaces with a single space
+        .replace(/^\s|\s$/g, ''); // Remove leading and trailing spaces
+    match = basicRfcRegex.exec(string);
+
     if (match) {
-        var parsedArray = extractFromRFC2822Strings(match[4], match[3], match[2], match[5], match[6], match[7]);
-        if (!checkWeekday(match[1], parsedArray, config)) {
-            return;
+        dayFormat = match[1] ? 'ddd' + ((match[1].length === 5) ? ', ' : ' ') : '';
+        dateFormat = 'D MMM ' + ((match[2].length > 10) ? 'YYYY ' : 'YY ');
+        timeFormat = 'HH:mm' + (match[4] ? ':ss' : '');
+
+        // TODO: Replace the vanilla JS Date object with an indepentent day-of-week check.
+        if (match[1]) { // day of week given
+            var momentDate = new Date(match[2]);
+            var momentDay = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][momentDate.getDay()];
+
+            if (match[1].substr(0,3) !== momentDay) {
+                getParsingFlags(config).weekdayMismatch = true;
+                config._isValid = false;
+                return;
+            }
         }
 
-        config._a = parsedArray;
-        config._tzm = calculateOffset(match[8], match[9], match[10]);
-
-        config._d = createUTCDate.apply(null, config._a);
-        config._d.setUTCMinutes(config._d.getUTCMinutes() - config._tzm);
-
+        switch (match[5].length) {
+            case 2: // military
+                if (timezoneIndex === 0) {
+                    timezone = ' +0000';
+                } else {
+                    timezoneIndex = military.indexOf(match[5][1].toUpperCase()) - 12;
+                    timezone = ((timezoneIndex < 0) ? ' -' : ' +') +
+                        (('' + timezoneIndex).replace(/^-?/, '0')).match(/..$/)[0] + '00';
+                }
+                break;
+            case 4: // Zone
+                timezone = timezones[match[5]];
+                break;
+            default: // UT or +/-9999
+                timezone = timezones[' GMT'];
+        }
+        match[5] = timezone;
+        config._i = match.splice(1).join('');
+        tzFormat = ' ZZ';
+        config._f = dayFormat + dateFormat + timeFormat + tzFormat;
+        configFromStringAndFormat(config);
         getParsingFlags(config).rfc2822 = true;
     } else {
         config._isValid = false;
@@ -2526,6 +2338,149 @@ hooks.createFromInputFallback = deprecate(
         config._d = new Date(config._i + (config._useUTC ? ' UTC' : ''));
     }
 );
+
+// Pick the first defined of two or three arguments.
+function defaults(a, b, c) {
+    if (a != null) {
+        return a;
+    }
+    if (b != null) {
+        return b;
+    }
+    return c;
+}
+
+function currentDateArray(config) {
+    // hooks is actually the exported moment object
+    var nowValue = new Date(hooks.now());
+    if (config._useUTC) {
+        return [nowValue.getUTCFullYear(), nowValue.getUTCMonth(), nowValue.getUTCDate()];
+    }
+    return [nowValue.getFullYear(), nowValue.getMonth(), nowValue.getDate()];
+}
+
+// convert an array to a date.
+// the array should mirror the parameters below
+// note: all values past the year are optional and will default to the lowest possible value.
+// [year, month, day , hour, minute, second, millisecond]
+function configFromArray (config) {
+    var i, date, input = [], currentDate, yearToUse;
+
+    if (config._d) {
+        return;
+    }
+
+    currentDate = currentDateArray(config);
+
+    //compute day of the year from weeks and weekdays
+    if (config._w && config._a[DATE] == null && config._a[MONTH] == null) {
+        dayOfYearFromWeekInfo(config);
+    }
+
+    //if the day of the year is set, figure out what it is
+    if (config._dayOfYear != null) {
+        yearToUse = defaults(config._a[YEAR], currentDate[YEAR]);
+
+        if (config._dayOfYear > daysInYear(yearToUse) || config._dayOfYear === 0) {
+            getParsingFlags(config)._overflowDayOfYear = true;
+        }
+
+        date = createUTCDate(yearToUse, 0, config._dayOfYear);
+        config._a[MONTH] = date.getUTCMonth();
+        config._a[DATE] = date.getUTCDate();
+    }
+
+    // Default to current date.
+    // * if no year, month, day of month are given, default to today
+    // * if day of month is given, default month and year
+    // * if month is given, default only year
+    // * if year is given, don't default anything
+    for (i = 0; i < 3 && config._a[i] == null; ++i) {
+        config._a[i] = input[i] = currentDate[i];
+    }
+
+    // Zero out whatever was not defaulted, including time
+    for (; i < 7; i++) {
+        config._a[i] = input[i] = (config._a[i] == null) ? (i === 2 ? 1 : 0) : config._a[i];
+    }
+
+    // Check for 24:00:00.000
+    if (config._a[HOUR] === 24 &&
+            config._a[MINUTE] === 0 &&
+            config._a[SECOND] === 0 &&
+            config._a[MILLISECOND] === 0) {
+        config._nextDay = true;
+        config._a[HOUR] = 0;
+    }
+
+    config._d = (config._useUTC ? createUTCDate : createDate).apply(null, input);
+    // Apply timezone offset from input. The actual utcOffset can be changed
+    // with parseZone.
+    if (config._tzm != null) {
+        config._d.setUTCMinutes(config._d.getUTCMinutes() - config._tzm);
+    }
+
+    if (config._nextDay) {
+        config._a[HOUR] = 24;
+    }
+}
+
+function dayOfYearFromWeekInfo(config) {
+    var w, weekYear, week, weekday, dow, doy, temp, weekdayOverflow;
+
+    w = config._w;
+    if (w.GG != null || w.W != null || w.E != null) {
+        dow = 1;
+        doy = 4;
+
+        // TODO: We need to take the current isoWeekYear, but that depends on
+        // how we interpret now (local, utc, fixed offset). So create
+        // a now version of current config (take local/utc/offset flags, and
+        // create now).
+        weekYear = defaults(w.GG, config._a[YEAR], weekOfYear(createLocal(), 1, 4).year);
+        week = defaults(w.W, 1);
+        weekday = defaults(w.E, 1);
+        if (weekday < 1 || weekday > 7) {
+            weekdayOverflow = true;
+        }
+    } else {
+        dow = config._locale._week.dow;
+        doy = config._locale._week.doy;
+
+        var curWeek = weekOfYear(createLocal(), dow, doy);
+
+        weekYear = defaults(w.gg, config._a[YEAR], curWeek.year);
+
+        // Default to current week.
+        week = defaults(w.w, curWeek.week);
+
+        if (w.d != null) {
+            // weekday -- low day numbers are considered next week
+            weekday = w.d;
+            if (weekday < 0 || weekday > 6) {
+                weekdayOverflow = true;
+            }
+        } else if (w.e != null) {
+            // local weekday -- counting starts from begining of week
+            weekday = w.e + dow;
+            if (w.e < 0 || w.e > 6) {
+                weekdayOverflow = true;
+            }
+        } else {
+            // default to begining of week
+            weekday = dow;
+        }
+    }
+    if (week < 1 || week > weeksInYear(weekYear, dow, doy)) {
+        getParsingFlags(config)._overflowWeeks = true;
+    } else if (weekdayOverflow != null) {
+        getParsingFlags(config)._overflowWeekday = true;
+    } else {
+        temp = dayOfYearFromWeeks(weekYear, week, weekday, dow, doy);
+        config._a[YEAR] = temp.year;
+        config._dayOfYear = temp.dayOfYear;
+    }
+}
 
 // constant that refers to the ISO standard
 hooks.ISO_8601 = function () {};
@@ -2851,7 +2806,7 @@ var ordering = ['year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'se
 
 function isDurationValid(m) {
     for (var key in m) {
-        if (!(indexOf.call(ordering, key) !== -1 && (m[key] == null || !isNaN(m[key])))) {
+        if (!(ordering.indexOf(key) !== -1 && (m[key] == null || !isNaN(m[key])))) {
             return false;
         }
     }
@@ -2902,7 +2857,7 @@ function Duration (duration) {
     // day when working around DST, we need to store them separately
     this._days = +days +
         weeks * 7;
-    // It is impossible to translate months into days without knowing
+    // It is impossible translate months into days without knowing
     // which months you are are talking about, so we have to store
     // it separately.
     this._months = +months +
@@ -3149,12 +3104,12 @@ function isUtc () {
 }
 
 // ASP.NET json date format regex
-var aspNetRegex = /^(\-|\+)?(?:(\d*)[. ])?(\d+)\:(\d+)(?:\:(\d+)(\.\d*)?)?$/;
+var aspNetRegex = /^(\-)?(?:(\d*)[. ])?(\d+)\:(\d+)(?:\:(\d+)(\.\d*)?)?$/;
 
 // from http://docs.closure-library.googlecode.com/git/closure_goog_date_date.js.source.html
 // somewhat more in line with 4.4.3.2 2004 spec, but allows decimal anywhere
 // and further modified to allow for strings containing both week and day
-var isoRegex = /^(-|\+)?P(?:([-+]?[0-9,.]*)Y)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)W)?(?:([-+]?[0-9,.]*)D)?(?:T(?:([-+]?[0-9,.]*)H)?(?:([-+]?[0-9,.]*)M)?(?:([-+]?[0-9,.]*)S)?)?$/;
+var isoRegex = /^(-)?P(?:(-?[0-9,.]*)Y)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)W)?(?:(-?[0-9,.]*)D)?(?:T(?:(-?[0-9,.]*)H)?(?:(-?[0-9,.]*)M)?(?:(-?[0-9,.]*)S)?)?$/;
 
 function createDuration (input, key) {
     var duration = input,
@@ -3188,7 +3143,7 @@ function createDuration (input, key) {
             ms : toInt(absRound(match[MILLISECOND] * 1000)) * sign // the millisecond decimal point is included in the match
         };
     } else if (!!(match = isoRegex.exec(input))) {
-        sign = (match[1] === '-') ? -1 : (match[1] === '+') ? 1 : 1;
+        sign = (match[1] === '-') ? -1 : 1;
         duration = {
             y : parseIso(match[2], sign),
             M : parseIso(match[3], sign),
@@ -3291,14 +3246,14 @@ function addSubtract (mom, duration, isAdding, updateOffset) {
 
     updateOffset = updateOffset == null ? true : updateOffset;
 
-    if (months) {
-        setMonth(mom, get(mom, 'Month') + months * isAdding);
+    if (milliseconds) {
+        mom._d.setTime(mom._d.valueOf() + milliseconds * isAdding);
     }
     if (days) {
         set$1(mom, 'Date', get(mom, 'Date') + days * isAdding);
     }
-    if (milliseconds) {
-        mom._d.setTime(mom._d.valueOf() + milliseconds * isAdding);
+    if (months) {
+        setMonth(mom, get(mom, 'Month') + months * isAdding);
     }
     if (updateOffset) {
         hooks.updateOffset(mom, days || months);
@@ -3408,18 +3363,22 @@ function diff (input, units, asFloat) {
 
     units = normalizeUnits(units);
 
-    switch (units) {
-        case 'year': output = monthDiff(this, that) / 12; break;
-        case 'month': output = monthDiff(this, that); break;
-        case 'quarter': output = monthDiff(this, that) / 3; break;
-        case 'second': output = (this - that) / 1e3; break; // 1000
-        case 'minute': output = (this - that) / 6e4; break; // 1000 * 60
-        case 'hour': output = (this - that) / 36e5; break; // 1000 * 60 * 60
-        case 'day': output = (this - that - zoneDelta) / 864e5; break; // 1000 * 60 * 60 * 24, negate dst
-        case 'week': output = (this - that - zoneDelta) / 6048e5; break; // 1000 * 60 * 60 * 24 * 7, negate dst
-        default: output = this - that;
+    if (units === 'year' || units === 'month' || units === 'quarter') {
+        output = monthDiff(this, that);
+        if (units === 'quarter') {
+            output = output / 3;
+        } else if (units === 'year') {
+            output = output / 12;
+        }
+    } else {
+        delta = this - that;
+        output = units === 'second' ? delta / 1e3 : // 1000
+            units === 'minute' ? delta / 6e4 : // 1000 * 60
+            units === 'hour' ? delta / 36e5 : // 1000 * 60 * 60
+            units === 'day' ? (delta - zoneDelta) / 864e5 : // 1000 * 60 * 60 * 24, negate dst
+            units === 'week' ? (delta - zoneDelta) / 6048e5 : // 1000 * 60 * 60 * 24 * 7, negate dst
+            delta;
     }
-
     return asFloat ? output : absFloor(output);
 }
 
@@ -3451,24 +3410,19 @@ function toString () {
     return this.clone().locale('en').format('ddd MMM DD YYYY HH:mm:ss [GMT]ZZ');
 }
 
-function toISOString(keepOffset) {
+function toISOString() {
     if (!this.isValid()) {
         return null;
     }
-    var utc = keepOffset !== true;
-    var m = utc ? this.clone().utc() : this;
+    var m = this.clone().utc();
     if (m.year() < 0 || m.year() > 9999) {
-        return formatMoment(m, utc ? 'YYYYYY-MM-DD[T]HH:mm:ss.SSS[Z]' : 'YYYYYY-MM-DD[T]HH:mm:ss.SSSZ');
+        return formatMoment(m, 'YYYYYY-MM-DD[T]HH:mm:ss.SSS[Z]');
     }
     if (isFunction(Date.prototype.toISOString)) {
         // native implementation is ~50x faster, use it when we can
-        if (utc) {
-            return this.toDate().toISOString();
-        } else {
-            return new Date(this._d.valueOf()).toISOString().replace('Z', formatMoment(m, 'Z'));
-        }
+        return this.toDate().toISOString();
     }
-    return formatMoment(m, utc ? 'YYYY-MM-DD[T]HH:mm:ss.SSS[Z]' : 'YYYY-MM-DD[T]HH:mm:ss.SSSZ');
+    return formatMoment(m, 'YYYY-MM-DD[T]HH:mm:ss.SSS[Z]');
 }
 
 /**
@@ -3824,7 +3778,7 @@ addRegexToken('Do', function (isStrict, locale) {
 
 addParseToken(['D', 'DD'], DATE);
 addParseToken('Do', function (input, array) {
-    array[DATE] = toInt(input.match(match1to2)[0]);
+    array[DATE] = toInt(input.match(match1to2)[0], 10);
 });
 
 // MOMENTS
@@ -4402,10 +4356,6 @@ var asWeeks        = makeAs('w');
 var asMonths       = makeAs('M');
 var asYears        = makeAs('y');
 
-function clone$1 () {
-    return createDuration(this);
-}
-
 function get$2 (units) {
     units = normalizeUnits(units);
     return this.isValid() ? this[units + 's']() : NaN;
@@ -4515,10 +4465,6 @@ function humanize (withSuffix) {
 
 var abs$1 = Math.abs;
 
-function sign(x) {
-    return ((x > 0) - (x < 0)) || +x;
-}
-
 function toISOString$1() {
     // for ISO strings we do not use the normal bubbling rules:
     //  * milliseconds bubble up until they become hours
@@ -4553,7 +4499,7 @@ function toISOString$1() {
     var D = days;
     var h = hours;
     var m = minutes;
-    var s = seconds ? seconds.toFixed(3).replace(/\.?0+$/, '') : '';
+    var s = seconds;
     var total = this.asSeconds();
 
     if (!total) {
@@ -4562,19 +4508,15 @@ function toISOString$1() {
         return 'P0D';
     }
 
-    var totalSign = total < 0 ? '-' : '';
-    var ymSign = sign(this._months) !== sign(total) ? '-' : '';
-    var daysSign = sign(this._days) !== sign(total) ? '-' : '';
-    var hmsSign = sign(this._milliseconds) !== sign(total) ? '-' : '';
-
-    return totalSign + 'P' +
-        (Y ? ymSign + Y + 'Y' : '') +
-        (M ? ymSign + M + 'M' : '') +
-        (D ? daysSign + D + 'D' : '') +
+    return (total < 0 ? '-' : '') +
+        'P' +
+        (Y ? Y + 'Y' : '') +
+        (M ? M + 'M' : '') +
+        (D ? D + 'D' : '') +
         ((h || m || s) ? 'T' : '') +
-        (h ? hmsSign + h + 'H' : '') +
-        (m ? hmsSign + m + 'M' : '') +
-        (s ? hmsSign + s + 'S' : '');
+        (h ? h + 'H' : '') +
+        (m ? m + 'M' : '') +
+        (s ? s + 'S' : '');
 }
 
 var proto$2 = Duration.prototype;
@@ -4594,7 +4536,6 @@ proto$2.asMonths       = asMonths;
 proto$2.asYears        = asYears;
 proto$2.valueOf        = valueOf$1;
 proto$2._bubble        = bubble;
-proto$2.clone          = clone$1;
 proto$2.get            = get$2;
 proto$2.milliseconds   = milliseconds;
 proto$2.seconds        = seconds;
@@ -4636,7 +4577,7 @@ addParseToken('x', function (input, array, config) {
 // Side effect imports
 
 
-hooks.version = '2.20.1';
+hooks.version = '2.18.1';
 
 setHookCallback(createLocal);
 
@@ -4663,29 +4604,16 @@ hooks.updateLocale          = updateLocale;
 hooks.locales               = listLocales;
 hooks.weekdaysShort         = listWeekdaysShort;
 hooks.normalizeUnits        = normalizeUnits;
-hooks.relativeTimeRounding  = getSetRelativeTimeRounding;
+hooks.relativeTimeRounding = getSetRelativeTimeRounding;
 hooks.relativeTimeThreshold = getSetRelativeTimeThreshold;
 hooks.calendarFormat        = getCalendarFormat;
 hooks.prototype             = proto;
-
-// currently HTML5 input type only supports 24-hour formats
-hooks.HTML5_FMT = {
-    DATETIME_LOCAL: 'YYYY-MM-DDTHH:mm',             // <input type="datetime-local" />
-    DATETIME_LOCAL_SECONDS: 'YYYY-MM-DDTHH:mm:ss',  // <input type="datetime-local" step="1" />
-    DATETIME_LOCAL_MS: 'YYYY-MM-DDTHH:mm:ss.SSS',   // <input type="datetime-local" step="0.001" />
-    DATE: 'YYYY-MM-DD',                             // <input type="date" />
-    TIME: 'HH:mm',                                  // <input type="time" />
-    TIME_SECONDS: 'HH:mm:ss',                       // <input type="time" step="1" />
-    TIME_MS: 'HH:mm:ss.SSS',                        // <input type="time" step="0.001" />
-    WEEK: 'YYYY-[W]WW',                             // <input type="week" />
-    MONTH: 'YYYY-MM'                                // <input type="month" />
-};
 
 return hooks;
 
 })));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(289)(module)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(283)(module)))
 
 /***/ }),
 /* 1 */
@@ -4723,8 +4651,8 @@ $exports.store = store;
 "use strict";
 
 
-var bind = __webpack_require__(42);
-var isBuffer = __webpack_require__(222);
+var bind = __webpack_require__(41);
+var isBuffer = __webpack_require__(214);
 
 /*global toString:true*/
 
@@ -5030,7 +4958,7 @@ module.exports = {
 /* 4 */
 /***/ (function(module, exports) {
 
-var core = module.exports = { version: '2.5.3' };
+var core = module.exports = { version: '2.5.0' };
 if (typeof __e == 'number') __e = core; // eslint-disable-line no-undef
 
 
@@ -5120,20 +5048,9 @@ function toComment(sourceMap) {
 /* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var isObject = __webpack_require__(9);
-module.exports = function (it) {
-  if (!isObject(it)) throw TypeError(it + ' is not an object!');
-  return it;
-};
-
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var dP = __webpack_require__(8);
-var createDesc = __webpack_require__(22);
-module.exports = __webpack_require__(10) ? function (object, key, value) {
+var dP = __webpack_require__(7);
+var createDesc = __webpack_require__(23);
+module.exports = __webpack_require__(9) ? function (object, key, value) {
   return dP.f(object, key, createDesc(1, value));
 } : function (object, key, value) {
   object[key] = value;
@@ -5142,15 +5059,15 @@ module.exports = __webpack_require__(10) ? function (object, key, value) {
 
 
 /***/ }),
-/* 8 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var anObject = __webpack_require__(6);
-var IE8_DOM_DEFINE = __webpack_require__(50);
+var anObject = __webpack_require__(8);
+var IE8_DOM_DEFINE = __webpack_require__(49);
 var toPrimitive = __webpack_require__(33);
 var dP = Object.defineProperty;
 
-exports.f = __webpack_require__(10) ? Object.defineProperty : function defineProperty(O, P, Attributes) {
+exports.f = __webpack_require__(9) ? Object.defineProperty : function defineProperty(O, P, Attributes) {
   anObject(O);
   P = toPrimitive(P, true);
   anObject(Attributes);
@@ -5164,26 +5081,28 @@ exports.f = __webpack_require__(10) ? Object.defineProperty : function definePro
 
 
 /***/ }),
-/* 9 */
-/***/ (function(module, exports) {
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
 
+var isObject = __webpack_require__(14);
 module.exports = function (it) {
-  return typeof it === 'object' ? it !== null : typeof it === 'function';
+  if (!isObject(it)) throw TypeError(it + ' is not an object!');
+  return it;
 };
 
 
 /***/ }),
-/* 10 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // Thank's IE8 for his funny defineProperty
-module.exports = !__webpack_require__(16)(function () {
+module.exports = !__webpack_require__(15)(function () {
   return Object.defineProperty({}, 'a', { get: function () { return 7; } }).a != 7;
 });
 
 
 /***/ }),
-/* 11 */
+/* 10 */
 /***/ (function(module, exports) {
 
 var hasOwnProperty = {}.hasOwnProperty;
@@ -5193,13 +5112,25 @@ module.exports = function (it, key) {
 
 
 /***/ }),
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// to indexed object, toObject with fallback for non-array-like ES3 strings
+var IObject = __webpack_require__(236);
+var defined = __webpack_require__(31);
+module.exports = function (it) {
+  return IObject(defined(it));
+};
+
+
+/***/ }),
 /* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var global = __webpack_require__(1);
 var core = __webpack_require__(4);
-var ctx = __webpack_require__(20);
-var hide = __webpack_require__(7);
+var ctx = __webpack_require__(21);
+var hide = __webpack_require__(6);
 var PROTOTYPE = 'prototype';
 
 var $export = function (type, name, source) {
@@ -5263,208 +5194,6 @@ module.exports = $export;
 /* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
-// to indexed object, toObject with fallback for non-array-like ES3 strings
-var IObject = __webpack_require__(244);
-var defined = __webpack_require__(31);
-module.exports = function (it) {
-  return IObject(defined(it));
-};
-
-
-/***/ }),
-/* 14 */
-/***/ (function(module, exports) {
-
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
-    try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        } else {
-            cachedSetTimeout = defaultSetTimout;
-        }
-    } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
-    }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        } else {
-            cachedClearTimeout = defaultClearTimeout;
-        }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-process.prependListener = noop;
-process.prependOnceListener = noop;
-
-process.listeners = function (name) { return [] }
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
-
-/***/ }),
-/* 15 */
-/***/ (function(module, exports, __webpack_require__) {
-
 /*
 	MIT License http://www.opensource.org/licenses/mit-license.php
 	Author Tobias Koppers @sokra
@@ -5508,7 +5237,7 @@ var singleton = null;
 var	singletonCounter = 0;
 var	stylesInsertedAtTop = [];
 
-var	fixUrls = __webpack_require__(200);
+var	fixUrls = __webpack_require__(192);
 
 module.exports = function(list, options) {
 	if (typeof DEBUG !== "undefined" && DEBUG) {
@@ -5821,7 +5550,16 @@ function updateLink (link, options, obj) {
 
 
 /***/ }),
-/* 16 */
+/* 14 */
+/***/ (function(module, exports) {
+
+module.exports = function (it) {
+  return typeof it === 'object' ? it !== null : typeof it === 'function';
+};
+
+
+/***/ }),
+/* 15 */
 /***/ (function(module, exports) {
 
 module.exports = function (exec) {
@@ -5834,10 +5572,23 @@ module.exports = function (exec) {
 
 
 /***/ }),
-/* 17 */
+/* 16 */
 /***/ (function(module, exports) {
 
 module.exports = {};
+
+
+/***/ }),
+/* 17 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// 19.1.2.14 / 15.2.3.14 Object.keys(O)
+var $keys = __webpack_require__(52);
+var enumBugKeys = __webpack_require__(36);
+
+module.exports = Object.keys || function keys(O) {
+  return $keys(O, enumBugKeys);
+};
 
 
 /***/ }),
@@ -5855,15 +5606,205 @@ module.exports = function (it) {
 /* 19 */
 /***/ (function(module, exports) {
 
-module.exports = true;
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
 
 
 /***/ }),
 /* 20 */
+/***/ (function(module, exports) {
+
+module.exports = true;
+
+
+/***/ }),
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // optional / simple context binding
-var aFunction = __webpack_require__(21);
+var aFunction = __webpack_require__(22);
 module.exports = function (fn, that, length) {
   aFunction(fn);
   if (that === undefined) return fn;
@@ -5885,7 +5826,7 @@ module.exports = function (fn, that, length) {
 
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports) {
 
 module.exports = function (it) {
@@ -5895,7 +5836,7 @@ module.exports = function (it) {
 
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports) {
 
 module.exports = function (bitmap, value) {
@@ -5905,19 +5846,6 @@ module.exports = function (bitmap, value) {
     writable: !(bitmap & 4),
     value: value
   };
-};
-
-
-/***/ }),
-/* 23 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// 19.1.2.14 / 15.2.3.14 Object.keys(O)
-var $keys = __webpack_require__(53);
-var enumBugKeys = __webpack_require__(36);
-
-module.exports = Object.keys || function keys(O) {
-  return $keys(O, enumBugKeys);
 };
 
 
@@ -5936,8 +5864,8 @@ module.exports = function (key) {
 /* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var def = __webpack_require__(8).f;
-var has = __webpack_require__(11);
+var def = __webpack_require__(7).f;
+var has = __webpack_require__(10);
 var TAG = __webpack_require__(2)('toStringTag');
 
 module.exports = function (it, tag, stat) {
@@ -5947,6 +5875,103 @@ module.exports = function (it, tag, stat) {
 
 /***/ }),
 /* 26 */
+/***/ (function(module, exports) {
+
+/* globals __VUE_SSR_CONTEXT__ */
+
+// this module is a runtime utility for cleaner component module output and will
+// be included in the final webpack user bundle
+
+module.exports = function normalizeComponent (
+  rawScriptExports,
+  compiledTemplate,
+  injectStyles,
+  scopeId,
+  moduleIdentifier /* server only */
+) {
+  var esModule
+  var scriptExports = rawScriptExports = rawScriptExports || {}
+
+  // ES6 modules interop
+  var type = typeof rawScriptExports.default
+  if (type === 'object' || type === 'function') {
+    esModule = rawScriptExports
+    scriptExports = rawScriptExports.default
+  }
+
+  // Vue.extend constructor export interop
+  var options = typeof scriptExports === 'function'
+    ? scriptExports.options
+    : scriptExports
+
+  // render functions
+  if (compiledTemplate) {
+    options.render = compiledTemplate.render
+    options.staticRenderFns = compiledTemplate.staticRenderFns
+  }
+
+  // scopedId
+  if (scopeId) {
+    options._scopeId = scopeId
+  }
+
+  var hook
+  if (moduleIdentifier) { // server build
+    hook = function (context) {
+      // 2.3 injection
+      context =
+        context || // cached call
+        (this.$vnode && this.$vnode.ssrContext) || // stateful
+        (this.parent && this.parent.$vnode && this.parent.$vnode.ssrContext) // functional
+      // 2.2 with runInNewContext: true
+      if (!context && typeof __VUE_SSR_CONTEXT__ !== 'undefined') {
+        context = __VUE_SSR_CONTEXT__
+      }
+      // inject component styles
+      if (injectStyles) {
+        injectStyles.call(this, context)
+      }
+      // register component module identifier for async chunk inferrence
+      if (context && context._registeredComponents) {
+        context._registeredComponents.add(moduleIdentifier)
+      }
+    }
+    // used by ssr in case component is cached and beforeCreate
+    // never gets called
+    options._ssrRegister = hook
+  } else if (injectStyles) {
+    hook = injectStyles
+  }
+
+  if (hook) {
+    var functional = options.functional
+    var existing = functional
+      ? options.render
+      : options.beforeCreate
+    if (!functional) {
+      // inject component registration as beforeCreate hook
+      options.beforeCreate = existing
+        ? [].concat(existing, hook)
+        : [hook]
+    } else {
+      // register for functioal component in vue file
+      options.render = function renderWithStyleInjection (h, context) {
+        hook.call(context)
+        return existing(h, context)
+      }
+    }
+  }
+
+  return {
+    esModule: esModule,
+    exports: scriptExports,
+    options: options
+  }
+}
+
+
+/***/ }),
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -5965,7 +5990,7 @@ if (typeof DEBUG !== 'undefined' && DEBUG) {
   ) }
 }
 
-var listToStyles = __webpack_require__(282)
+var listToStyles = __webpack_require__(275)
 
 /*
 type StyleObject = {
@@ -6167,128 +6192,17 @@ function applyToTag (styleElement, obj) {
 
 
 /***/ }),
-/* 27 */
-/***/ (function(module, exports) {
-
-/* globals __VUE_SSR_CONTEXT__ */
-
-// IMPORTANT: Do NOT use ES2015 features in this file.
-// This module is a runtime utility for cleaner component module output and will
-// be included in the final webpack user bundle.
-
-module.exports = function normalizeComponent (
-  rawScriptExports,
-  compiledTemplate,
-  functionalTemplate,
-  injectStyles,
-  scopeId,
-  moduleIdentifier /* server only */
-) {
-  var esModule
-  var scriptExports = rawScriptExports = rawScriptExports || {}
-
-  // ES6 modules interop
-  var type = typeof rawScriptExports.default
-  if (type === 'object' || type === 'function') {
-    esModule = rawScriptExports
-    scriptExports = rawScriptExports.default
-  }
-
-  // Vue.extend constructor export interop
-  var options = typeof scriptExports === 'function'
-    ? scriptExports.options
-    : scriptExports
-
-  // render functions
-  if (compiledTemplate) {
-    options.render = compiledTemplate.render
-    options.staticRenderFns = compiledTemplate.staticRenderFns
-    options._compiled = true
-  }
-
-  // functional template
-  if (functionalTemplate) {
-    options.functional = true
-  }
-
-  // scopedId
-  if (scopeId) {
-    options._scopeId = scopeId
-  }
-
-  var hook
-  if (moduleIdentifier) { // server build
-    hook = function (context) {
-      // 2.3 injection
-      context =
-        context || // cached call
-        (this.$vnode && this.$vnode.ssrContext) || // stateful
-        (this.parent && this.parent.$vnode && this.parent.$vnode.ssrContext) // functional
-      // 2.2 with runInNewContext: true
-      if (!context && typeof __VUE_SSR_CONTEXT__ !== 'undefined') {
-        context = __VUE_SSR_CONTEXT__
-      }
-      // inject component styles
-      if (injectStyles) {
-        injectStyles.call(this, context)
-      }
-      // register component module identifier for async chunk inferrence
-      if (context && context._registeredComponents) {
-        context._registeredComponents.add(moduleIdentifier)
-      }
-    }
-    // used by ssr in case component is cached and beforeCreate
-    // never gets called
-    options._ssrRegister = hook
-  } else if (injectStyles) {
-    hook = injectStyles
-  }
-
-  if (hook) {
-    var functional = options.functional
-    var existing = functional
-      ? options.render
-      : options.beforeCreate
-
-    if (!functional) {
-      // inject component registration as beforeCreate hook
-      options.beforeCreate = existing
-        ? [].concat(existing, hook)
-        : [hook]
-    } else {
-      // for template-only hot-reload because in that case the render fn doesn't
-      // go through the normalizer
-      options._injectStyles = hook
-      // register for functioal component in vue file
-      options.render = function renderWithStyleInjection (h, context) {
-        hook.call(context)
-        return existing(h, context)
-      }
-    }
-  }
-
-  return {
-    esModule: esModule,
-    exports: scriptExports,
-    options: options
-  }
-}
-
-
-/***/ }),
 /* 28 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* WEBPACK VAR INJECTION */(function(process, global, setImmediate) {/*!
- * Vue.js v2.5.11
+/* WEBPACK VAR INJECTION */(function(process, global) {/*!
+ * Vue.js v2.4.2
  * (c) 2014-2017 Evan You
  * Released under the MIT License.
  */
 /*  */
-
-var emptyObject = Object.freeze({});
 
 // these helpers produces better vm code in JS engines due to their
 // explicitness and function inlining
@@ -6328,14 +6242,7 @@ function isObject (obj) {
   return obj !== null && typeof obj === 'object'
 }
 
-/**
- * Get the raw type string of a value e.g. [object Object]
- */
 var _toString = Object.prototype.toString;
-
-function toRawType (value) {
-  return _toString.call(value).slice(8, -1)
-}
 
 /**
  * Strict object type check. Only returns true
@@ -6353,7 +6260,7 @@ function isRegExp (v) {
  * Check if val is a valid array index.
  */
 function isValidArrayIndex (val) {
-  var n = parseFloat(String(val));
+  var n = parseFloat(val);
   return n >= 0 && Math.floor(n) === n && isFinite(val)
 }
 
@@ -6403,7 +6310,7 @@ var isBuiltInTag = makeMap('slot,component', true);
 /**
  * Check if a attribute is a reserved attribute.
  */
-var isReservedAttribute = makeMap('key,ref,slot,slot-scope,is');
+var isReservedAttribute = makeMap('key,ref,slot,is');
 
 /**
  * Remove an item from an array
@@ -6454,9 +6361,12 @@ var capitalize = cached(function (str) {
 /**
  * Hyphenate a camelCase string.
  */
-var hyphenateRE = /\B([A-Z])/g;
+var hyphenateRE = /([^-])([A-Z])/g;
 var hyphenate = cached(function (str) {
-  return str.replace(hyphenateRE, '-$1').toLowerCase()
+  return str
+    .replace(hyphenateRE, '$1-$2')
+    .replace(hyphenateRE, '$1-$2')
+    .toLowerCase()
 });
 
 /**
@@ -6609,8 +6519,7 @@ var LIFECYCLE_HOOKS = [
   'beforeDestroy',
   'destroyed',
   'activated',
-  'deactivated',
-  'errorCaptured'
+  'deactivated'
 ];
 
 /*  */
@@ -6619,7 +6528,6 @@ var config = ({
   /**
    * Option merge strategies (used in core/util/options)
    */
-  // $flow-disable-line
   optionMergeStrategies: Object.create(null),
 
   /**
@@ -6660,7 +6568,6 @@ var config = ({
   /**
    * Custom user key aliases for v-on
    */
-  // $flow-disable-line
   keyCodes: Object.create(null),
 
   /**
@@ -6705,6 +6612,8 @@ var config = ({
 
 /*  */
 
+var emptyObject = Object.freeze({});
+
 /**
  * Check if a string starts with $ or _
  */
@@ -6745,23 +6654,134 @@ function parsePath (path) {
 
 /*  */
 
+var warn = noop;
+var tip = noop;
+var formatComponentName = (null); // work around flow check
+
+if (process.env.NODE_ENV !== 'production') {
+  var hasConsole = typeof console !== 'undefined';
+  var classifyRE = /(?:^|[-_])(\w)/g;
+  var classify = function (str) { return str
+    .replace(classifyRE, function (c) { return c.toUpperCase(); })
+    .replace(/[-_]/g, ''); };
+
+  warn = function (msg, vm) {
+    var trace = vm ? generateComponentTrace(vm) : '';
+
+    if (config.warnHandler) {
+      config.warnHandler.call(null, msg, vm, trace);
+    } else if (hasConsole && (!config.silent)) {
+      console.error(("[Vue warn]: " + msg + trace));
+    }
+  };
+
+  tip = function (msg, vm) {
+    if (hasConsole && (!config.silent)) {
+      console.warn("[Vue tip]: " + msg + (
+        vm ? generateComponentTrace(vm) : ''
+      ));
+    }
+  };
+
+  formatComponentName = function (vm, includeFile) {
+    if (vm.$root === vm) {
+      return '<Root>'
+    }
+    var name = typeof vm === 'string'
+      ? vm
+      : typeof vm === 'function' && vm.options
+        ? vm.options.name
+        : vm._isVue
+          ? vm.$options.name || vm.$options._componentTag
+          : vm.name;
+
+    var file = vm._isVue && vm.$options.__file;
+    if (!name && file) {
+      var match = file.match(/([^/\\]+)\.vue$/);
+      name = match && match[1];
+    }
+
+    return (
+      (name ? ("<" + (classify(name)) + ">") : "<Anonymous>") +
+      (file && includeFile !== false ? (" at " + file) : '')
+    )
+  };
+
+  var repeat = function (str, n) {
+    var res = '';
+    while (n) {
+      if (n % 2 === 1) { res += str; }
+      if (n > 1) { str += str; }
+      n >>= 1;
+    }
+    return res
+  };
+
+  var generateComponentTrace = function (vm) {
+    if (vm._isVue && vm.$parent) {
+      var tree = [];
+      var currentRecursiveSequence = 0;
+      while (vm) {
+        if (tree.length > 0) {
+          var last = tree[tree.length - 1];
+          if (last.constructor === vm.constructor) {
+            currentRecursiveSequence++;
+            vm = vm.$parent;
+            continue
+          } else if (currentRecursiveSequence > 0) {
+            tree[tree.length - 1] = [last, currentRecursiveSequence];
+            currentRecursiveSequence = 0;
+          }
+        }
+        tree.push(vm);
+        vm = vm.$parent;
+      }
+      return '\n\nfound in\n\n' + tree
+        .map(function (vm, i) { return ("" + (i === 0 ? '---> ' : repeat(' ', 5 + i * 2)) + (Array.isArray(vm)
+            ? ((formatComponentName(vm[0])) + "... (" + (vm[1]) + " recursive calls)")
+            : formatComponentName(vm))); })
+        .join('\n')
+    } else {
+      return ("\n\n(found in " + (formatComponentName(vm)) + ")")
+    }
+  };
+}
+
+/*  */
+
+function handleError (err, vm, info) {
+  if (config.errorHandler) {
+    config.errorHandler.call(null, err, vm, info);
+  } else {
+    if (process.env.NODE_ENV !== 'production') {
+      warn(("Error in " + info + ": \"" + (err.toString()) + "\""), vm);
+    }
+    /* istanbul ignore else */
+    if (inBrowser && typeof console !== 'undefined') {
+      console.error(err);
+    } else {
+      throw err
+    }
+  }
+}
+
+/*  */
+/* globals MutationObserver */
 
 // can we use __proto__?
 var hasProto = '__proto__' in {};
 
 // Browser environment sniffing
 var inBrowser = typeof window !== 'undefined';
-var inWeex = typeof WXEnvironment !== 'undefined' && !!WXEnvironment.platform;
-var weexPlatform = inWeex && WXEnvironment.platform.toLowerCase();
 var UA = inBrowser && window.navigator.userAgent.toLowerCase();
 var isIE = UA && /msie|trident/.test(UA);
 var isIE9 = UA && UA.indexOf('msie 9.0') > 0;
 var isEdge = UA && UA.indexOf('edge/') > 0;
-var isAndroid = (UA && UA.indexOf('android') > 0) || (weexPlatform === 'android');
-var isIOS = (UA && /iphone|ipad|ipod|ios/.test(UA)) || (weexPlatform === 'ios');
+var isAndroid = UA && UA.indexOf('android') > 0;
+var isIOS = UA && /iphone|ipad|ipod|ios/.test(UA);
 var isChrome = UA && /chrome\/\d+/.test(UA) && !isEdge;
 
-// Firefox has a "watch" function on Object.prototype...
+// Firefix has a "watch" function on Object.prototype...
 var nativeWatch = ({}).watch;
 
 var supportsPassive = false;
@@ -6807,8 +6827,94 @@ var hasSymbol =
   typeof Symbol !== 'undefined' && isNative(Symbol) &&
   typeof Reflect !== 'undefined' && isNative(Reflect.ownKeys);
 
+/**
+ * Defer a task to execute it asynchronously.
+ */
+var nextTick = (function () {
+  var callbacks = [];
+  var pending = false;
+  var timerFunc;
+
+  function nextTickHandler () {
+    pending = false;
+    var copies = callbacks.slice(0);
+    callbacks.length = 0;
+    for (var i = 0; i < copies.length; i++) {
+      copies[i]();
+    }
+  }
+
+  // the nextTick behavior leverages the microtask queue, which can be accessed
+  // via either native Promise.then or MutationObserver.
+  // MutationObserver has wider support, however it is seriously bugged in
+  // UIWebView in iOS >= 9.3.3 when triggered in touch event handlers. It
+  // completely stops working after triggering a few times... so, if native
+  // Promise is available, we will use it:
+  /* istanbul ignore if */
+  if (typeof Promise !== 'undefined' && isNative(Promise)) {
+    var p = Promise.resolve();
+    var logError = function (err) { console.error(err); };
+    timerFunc = function () {
+      p.then(nextTickHandler).catch(logError);
+      // in problematic UIWebViews, Promise.then doesn't completely break, but
+      // it can get stuck in a weird state where callbacks are pushed into the
+      // microtask queue but the queue isn't being flushed, until the browser
+      // needs to do some other work, e.g. handle a timer. Therefore we can
+      // "force" the microtask queue to be flushed by adding an empty timer.
+      if (isIOS) { setTimeout(noop); }
+    };
+  } else if (typeof MutationObserver !== 'undefined' && (
+    isNative(MutationObserver) ||
+    // PhantomJS and iOS 7.x
+    MutationObserver.toString() === '[object MutationObserverConstructor]'
+  )) {
+    // use MutationObserver where native Promise is not available,
+    // e.g. PhantomJS IE11, iOS7, Android 4.4
+    var counter = 1;
+    var observer = new MutationObserver(nextTickHandler);
+    var textNode = document.createTextNode(String(counter));
+    observer.observe(textNode, {
+      characterData: true
+    });
+    timerFunc = function () {
+      counter = (counter + 1) % 2;
+      textNode.data = String(counter);
+    };
+  } else {
+    // fallback to setTimeout
+    /* istanbul ignore next */
+    timerFunc = function () {
+      setTimeout(nextTickHandler, 0);
+    };
+  }
+
+  return function queueNextTick (cb, ctx) {
+    var _resolve;
+    callbacks.push(function () {
+      if (cb) {
+        try {
+          cb.call(ctx);
+        } catch (e) {
+          handleError(e, ctx, 'nextTick');
+        }
+      } else if (_resolve) {
+        _resolve(ctx);
+      }
+    });
+    if (!pending) {
+      pending = true;
+      timerFunc();
+    }
+    if (!cb && typeof Promise !== 'undefined') {
+      return new Promise(function (resolve, reject) {
+        _resolve = resolve;
+      })
+    }
+  }
+})();
+
 var _Set;
-/* istanbul ignore if */ // $flow-disable-line
+/* istanbul ignore if */
 if (typeof Set !== 'undefined' && isNative(Set)) {
   // use native Set when available.
   _Set = Set;
@@ -6830,100 +6936,6 @@ if (typeof Set !== 'undefined' && isNative(Set)) {
 
     return Set;
   }());
-}
-
-/*  */
-
-var warn = noop;
-var tip = noop;
-var generateComponentTrace = (noop); // work around flow check
-var formatComponentName = (noop);
-
-if (process.env.NODE_ENV !== 'production') {
-  var hasConsole = typeof console !== 'undefined';
-  var classifyRE = /(?:^|[-_])(\w)/g;
-  var classify = function (str) { return str
-    .replace(classifyRE, function (c) { return c.toUpperCase(); })
-    .replace(/[-_]/g, ''); };
-
-  warn = function (msg, vm) {
-    var trace = vm ? generateComponentTrace(vm) : '';
-
-    if (config.warnHandler) {
-      config.warnHandler.call(null, msg, vm, trace);
-    } else if (hasConsole && (!config.silent)) {
-      console.error(("[Vue warn]: " + msg + trace));
-    }
-  };
-
-  tip = function (msg, vm) {
-    if (hasConsole && (!config.silent)) {
-      console.warn("[Vue tip]: " + msg + (
-        vm ? generateComponentTrace(vm) : ''
-      ));
-    }
-  };
-
-  formatComponentName = function (vm, includeFile) {
-    if (vm.$root === vm) {
-      return '<Root>'
-    }
-    var options = typeof vm === 'function' && vm.cid != null
-      ? vm.options
-      : vm._isVue
-        ? vm.$options || vm.constructor.options
-        : vm || {};
-    var name = options.name || options._componentTag;
-    var file = options.__file;
-    if (!name && file) {
-      var match = file.match(/([^/\\]+)\.vue$/);
-      name = match && match[1];
-    }
-
-    return (
-      (name ? ("<" + (classify(name)) + ">") : "<Anonymous>") +
-      (file && includeFile !== false ? (" at " + file) : '')
-    )
-  };
-
-  var repeat = function (str, n) {
-    var res = '';
-    while (n) {
-      if (n % 2 === 1) { res += str; }
-      if (n > 1) { str += str; }
-      n >>= 1;
-    }
-    return res
-  };
-
-  generateComponentTrace = function (vm) {
-    if (vm._isVue && vm.$parent) {
-      var tree = [];
-      var currentRecursiveSequence = 0;
-      while (vm) {
-        if (tree.length > 0) {
-          var last = tree[tree.length - 1];
-          if (last.constructor === vm.constructor) {
-            currentRecursiveSequence++;
-            vm = vm.$parent;
-            continue
-          } else if (currentRecursiveSequence > 0) {
-            tree[tree.length - 1] = [last, currentRecursiveSequence];
-            currentRecursiveSequence = 0;
-          }
-        }
-        tree.push(vm);
-        vm = vm.$parent;
-      }
-      return '\n\nfound in\n\n' + tree
-        .map(function (vm, i) { return ("" + (i === 0 ? '---> ' : repeat(' ', 5 + i * 2)) + (Array.isArray(vm)
-            ? ((formatComponentName(vm[0])) + "... (" + (vm[1]) + " recursive calls)")
-            : formatComponentName(vm))); })
-        .join('\n')
-    } else {
-      return ("\n\n(found in " + (formatComponentName(vm)) + ")")
-    }
-  };
 }
 
 /*  */
@@ -6977,110 +6989,6 @@ function popTarget () {
   Dep.target = targetStack.pop();
 }
 
-/*  */
-
-var VNode = function VNode (
-  tag,
-  data,
-  children,
-  text,
-  elm,
-  context,
-  componentOptions,
-  asyncFactory
-) {
-  this.tag = tag;
-  this.data = data;
-  this.children = children;
-  this.text = text;
-  this.elm = elm;
-  this.ns = undefined;
-  this.context = context;
-  this.fnContext = undefined;
-  this.fnOptions = undefined;
-  this.fnScopeId = undefined;
-  this.key = data && data.key;
-  this.componentOptions = componentOptions;
-  this.componentInstance = undefined;
-  this.parent = undefined;
-  this.raw = false;
-  this.isStatic = false;
-  this.isRootInsert = true;
-  this.isComment = false;
-  this.isCloned = false;
-  this.isOnce = false;
-  this.asyncFactory = asyncFactory;
-  this.asyncMeta = undefined;
-  this.isAsyncPlaceholder = false;
-};
-
-var prototypeAccessors = { child: { configurable: true } };
-
-// DEPRECATED: alias for componentInstance for backwards compat.
-/* istanbul ignore next */
-prototypeAccessors.child.get = function () {
-  return this.componentInstance
-};
-
-Object.defineProperties( VNode.prototype, prototypeAccessors );
-
-var createEmptyVNode = function (text) {
-  if ( text === void 0 ) text = '';
-
-  var node = new VNode();
-  node.text = text;
-  node.isComment = true;
-  return node
-};
-
-function createTextVNode (val) {
-  return new VNode(undefined, undefined, undefined, String(val))
-}
-
-// optimized shallow clone
-// used for static nodes and slot nodes because they may be reused across
-// multiple renders, cloning them avoids errors when DOM manipulations rely
-// on their elm reference.
-function cloneVNode (vnode, deep) {
-  var componentOptions = vnode.componentOptions;
-  var cloned = new VNode(
-    vnode.tag,
-    vnode.data,
-    vnode.children,
-    vnode.text,
-    vnode.elm,
-    vnode.context,
-    componentOptions,
-    vnode.asyncFactory
-  );
-  cloned.ns = vnode.ns;
-  cloned.isStatic = vnode.isStatic;
-  cloned.key = vnode.key;
-  cloned.isComment = vnode.isComment;
-  cloned.fnContext = vnode.fnContext;
-  cloned.fnOptions = vnode.fnOptions;
-  cloned.fnScopeId = vnode.fnScopeId;
-  cloned.isCloned = true;
-  if (deep) {
-    if (vnode.children) {
-      cloned.children = cloneVNodes(vnode.children, true);
-    }
-    if (componentOptions && componentOptions.children) {
-      componentOptions.children = cloneVNodes(componentOptions.children, true);
-    }
-  }
-  return cloned
-}
-
-function cloneVNodes (vnodes, deep) {
-  var len = vnodes.length;
-  var res = new Array(len);
-  for (var i = 0; i < len; i++) {
-    res[i] = cloneVNode(vnodes[i], deep);
-  }
-  return res
-}
-
 /*
  * not type checking this file because flow doesn't play well with
  * dynamically accessing methods on Array prototype
@@ -7095,7 +7003,8 @@ var arrayMethods = Object.create(arrayProto);[
   'splice',
   'sort',
   'reverse'
-].forEach(function (method) {
+]
+.forEach(function (method) {
   // cache original method
   var original = arrayProto[method];
   def(arrayMethods, method, function mutator () {
@@ -7165,7 +7074,7 @@ var Observer = function Observer (value) {
 Observer.prototype.walk = function walk (obj) {
   var keys = Object.keys(obj);
   for (var i = 0; i < keys.length; i++) {
-    defineReactive(obj, keys[i], obj[keys[i]]);
+    defineReactive$$1(obj, keys[i], obj[keys[i]]);
   }
 };
 
@@ -7208,7 +7117,7 @@ function copyAugment (target, src, keys) {
  * or the existing observer if the value already has one.
  */
 function observe (value, asRootData) {
-  if (!isObject(value) || value instanceof VNode) {
+  if (!isObject(value)) {
     return
   }
   var ob;
@@ -7232,7 +7141,7 @@ function observe (value, asRootData) {
 /**
  * Define a reactive property on an Object.
  */
-function defineReactive (
+function defineReactive$$1 (
   obj,
   key,
   val,
@@ -7260,9 +7169,9 @@ function defineReactive (
         dep.depend();
         if (childOb) {
           childOb.dep.depend();
-          if (Array.isArray(value)) {
-            dependArray(value);
-          }
+        }
+        if (Array.isArray(value)) {
+          dependArray(value);
         }
       }
       return value
@@ -7299,7 +7208,7 @@ function set (target, key, val) {
     target.splice(key, 1, val);
     return val
   }
-  if (key in target && !(key in Object.prototype)) {
+  if (hasOwn(target, key)) {
     target[key] = val;
     return val
   }
@@ -7315,7 +7224,7 @@ function set (target, key, val) {
     target[key] = val;
     return val
   }
-  defineReactive(ob.value, key, val);
+  defineReactive$$1(ob.value, key, val);
   ob.dep.notify();
   return val
 }
@@ -7427,19 +7336,19 @@ function mergeDataOrFn (
     // it has to be a function to pass previous merges.
     return function mergedDataFn () {
       return mergeData(
-        typeof childVal === 'function' ? childVal.call(this, this) : childVal,
-        typeof parentVal === 'function' ? parentVal.call(this, this) : parentVal
+        typeof childVal === 'function' ? childVal.call(this) : childVal,
+        typeof parentVal === 'function' ? parentVal.call(this) : parentVal
       )
     }
-  } else {
+  } else if (parentVal || childVal) {
     return function mergedInstanceDataFn () {
       // instance merge
       var instanceData = typeof childVal === 'function'
-        ? childVal.call(vm, vm)
+        ? childVal.call(vm)
         : childVal;
       var defaultData = typeof parentVal === 'function'
-        ? parentVal.call(vm, vm)
-        : parentVal;
+        ? parentVal.call(vm)
+        : undefined;
       if (instanceData) {
         return mergeData(instanceData, defaultData)
       } else {
@@ -7465,7 +7374,7 @@ strats.data = function (
 
       return parentVal
     }
-    return mergeDataOrFn(parentVal, childVal)
+    return mergeDataOrFn.call(this, parentVal, childVal)
   }
 
   return mergeDataOrFn(parentVal, childVal, vm)
@@ -7498,19 +7407,11 @@ LIFECYCLE_HOOKS.forEach(function (hook) {
  * a three-way merge between constructor options, instance
  * options and parent options.
  */
-function mergeAssets (
-  parentVal,
-  childVal,
-  vm,
-  key
-) {
+function mergeAssets (parentVal, childVal) {
   var res = Object.create(parentVal || null);
-  if (childVal) {
-    process.env.NODE_ENV !== 'production' && assertObjectType(key, childVal, vm);
-    return extend(res, childVal)
-  } else {
-    return res
-  }
+  return childVal
+    ? extend(res, childVal)
+    : res
 }
 
 ASSET_TYPES.forEach(function (type) {
@@ -7523,30 +7424,22 @@ ASSET_TYPES.forEach(function (type) {
  * Watchers hashes should not overwrite one
  * another, so we merge them as arrays.
  */
-strats.watch = function (
-  parentVal,
-  childVal,
-  vm,
-  key
-) {
+strats.watch = function (parentVal, childVal) {
   // work around Firefox's Object.prototype.watch...
   if (parentVal === nativeWatch) { parentVal = undefined; }
   if (childVal === nativeWatch) { childVal = undefined; }
   /* istanbul ignore if */
   if (!childVal) { return Object.create(parentVal || null) }
-  if (process.env.NODE_ENV !== 'production') {
-    assertObjectType(key, childVal, vm);
-  }
   if (!parentVal) { return childVal }
   var ret = {};
   extend(ret, parentVal);
-  for (var key$1 in childVal) {
-    var parent = ret[key$1];
-    var child = childVal[key$1];
+  for (var key in childVal) {
+    var parent = ret[key];
+    var child = childVal[key];
     if (parent && !Array.isArray(parent)) {
       parent = [parent];
     }
-    ret[key$1] = parent
+    ret[key] = parent
       ? parent.concat(child)
       : Array.isArray(child) ? child : [child];
   }
@@ -7559,15 +7452,7 @@ strats.watch = function (
 strats.props =
 strats.methods =
 strats.inject =
-strats.computed = function (
-  parentVal,
-  childVal,
-  vm,
-  key
-) {
-  if (childVal && process.env.NODE_ENV !== 'production') {
-    assertObjectType(key, childVal, vm);
-  }
+strats.computed = function (parentVal, childVal) {
   if (!parentVal) { return childVal }
   var ret = Object.create(null);
   extend(ret, parentVal);
@@ -7590,23 +7475,13 @@ var defaultStrat = function (parentVal, childVal) {
  */
 function checkComponents (options) {
   for (var key in options.components) {
-    validateComponentName(key);
-  }
-}
-
-function validateComponentName (name) {
-  if (!/^[a-zA-Z][\w-]*$/.test(name)) {
-    warn(
-      'Invalid component name: "' + name + '". Component names ' +
-      'can only contain alphanumeric characters and the hyphen, ' +
-      'and must start with a letter.'
-    );
-  }
-  if (isBuiltInTag(name) || config.isReservedTag(name)) {
-    warn(
-      'Do not use built-in or reserved HTML elements as component ' +
-      'id: ' + name
-    );
+    var lower = key.toLowerCase();
+    if (isBuiltInTag(lower) || config.isReservedTag(lower)) {
+      warn(
+        'Do not use built-in or reserved HTML elements as component ' +
+        'id: ' + key
+      );
+    }
   }
 }
 
@@ -7614,7 +7489,7 @@ function validateComponentName (name) {
  * Ensure all props option syntax are normalized into the
  * Object-based format.
  */
-function normalizeProps (options, vm) {
+function normalizeProps (options) {
   var props = options.props;
   if (!props) { return }
   var res = {};
@@ -7634,66 +7509,24 @@ function normalizeProps (options, vm) {
     for (var key in props) {
       val = props[key];
       name = camelize(key);
-      if (process.env.NODE_ENV !== 'production' && isPlainObject(val)) {
-        validatePropObject(name, val, vm);
-      }
       res[name] = isPlainObject(val)
         ? val
         : { type: val };
     }
-  } else if (process.env.NODE_ENV !== 'production') {
-    warn(
-      "Invalid value for option \"props\": expected an Array or an Object, " +
-      "but got " + (toRawType(props)) + ".",
-      vm
-    );
   }
   options.props = res;
 }
 
 /**
- * Validate whether a prop object keys are valid.
- */
-var propOptionsRE = /^(type|default|required|validator)$/;
-
-function validatePropObject (
-  propName,
-  prop,
-  vm
-) {
-  for (var key in prop) {
-    if (!propOptionsRE.test(key)) {
-      warn(
-        ("Invalid key \"" + key + "\" in validation rules object for prop \"" + propName + "\"."),
-        vm
-      );
-    }
-  }
-}
-
-/**
  * Normalize all injections into Object-based format
  */
-function normalizeInject (options, vm) {
+function normalizeInject (options) {
   var inject = options.inject;
-  var normalized = options.inject = {};
   if (Array.isArray(inject)) {
+    var normalized = options.inject = {};
     for (var i = 0; i < inject.length; i++) {
-      normalized[inject[i]] = { from: inject[i] };
+      normalized[inject[i]] = inject[i];
     }
-  } else if (isPlainObject(inject)) {
-    for (var key in inject) {
-      var val = inject[key];
-      normalized[key] = isPlainObject(val)
-        ? extend({ from: key }, val)
-        : { from: val };
-    }
-  } else if (process.env.NODE_ENV !== 'production' && inject) {
-    warn(
-      "Invalid value for option \"inject\": expected an Array or an Object, " +
-      "but got " + (toRawType(inject)) + ".",
-      vm
-    );
   }
 }
 
@@ -7709,16 +7542,6 @@ function normalizeDirectives (options) {
         dirs[key] = { bind: def, update: def };
       }
     }
-  }
-}
-
-function assertObjectType (name, value, vm) {
-  if (!isPlainObject(value)) {
-    warn(
-      "Invalid value for option \"" + name + "\": expected an Object, " +
-      "but got " + (toRawType(value)) + ".",
-      vm
-    );
   }
 }
 
@@ -7739,8 +7562,8 @@ function mergeOptions (
     child = child.options;
   }
 
-  normalizeProps(child, vm);
-  normalizeInject(child, vm);
+  normalizeProps(child);
+  normalizeInject(child);
   normalizeDirectives(child);
   var extendsFrom = child.extends;
   if (extendsFrom) {
@@ -7904,9 +7727,9 @@ function assertProp (
   }
   if (!valid) {
     warn(
-      "Invalid prop: type check failed for prop \"" + name + "\"." +
-      " Expected " + (expectedTypes.map(capitalize).join(', ')) +
-      ", got " + (toRawType(value)) + ".",
+      'Invalid prop: type check failed for prop "' + name + '".' +
+      ' Expected ' + expectedTypes.map(capitalize).join(', ') +
+      ', got ' + Object.prototype.toString.call(value).slice(8, -1) + '.',
       vm
     );
     return
@@ -7928,12 +7751,7 @@ function assertType (value, type) {
   var valid;
   var expectedType = getType(type);
   if (simpleCheckRE.test(expectedType)) {
-    var t = typeof value;
-    valid = t === expectedType.toLowerCase();
-    // for primitive wrapper objects
-    if (!valid && t === 'object') {
-      valid = value instanceof type;
-    }
+    valid = typeof value === expectedType.toLowerCase();
   } else if (expectedType === 'Object') {
     valid = isPlainObject(value);
   } else if (expectedType === 'Array') {
@@ -7972,165 +7790,6 @@ function isType (type, fn) {
 
 /*  */
 
-function handleError (err, vm, info) {
-  if (vm) {
-    var cur = vm;
-    while ((cur = cur.$parent)) {
-      var hooks = cur.$options.errorCaptured;
-      if (hooks) {
-        for (var i = 0; i < hooks.length; i++) {
-          try {
-            var capture = hooks[i].call(cur, err, vm, info) === false;
-            if (capture) { return }
-          } catch (e) {
-            globalHandleError(e, cur, 'errorCaptured hook');
-          }
-        }
-      }
-    }
-  }
-  globalHandleError(err, vm, info);
-}
-
-function globalHandleError (err, vm, info) {
-  if (config.errorHandler) {
-    try {
-      return config.errorHandler.call(null, err, vm, info)
-    } catch (e) {
-      logError(e, null, 'config.errorHandler');
-    }
-  }
-  logError(err, vm, info);
-}
-
-function logError (err, vm, info) {
-  if (process.env.NODE_ENV !== 'production') {
-    warn(("Error in " + info + ": \"" + (err.toString()) + "\""), vm);
-  }
-  /* istanbul ignore else */
-  if ((inBrowser || inWeex) && typeof console !== 'undefined') {
-    console.error(err);
-  } else {
-    throw err
-  }
-}
-
-/*  */
-/* globals MessageChannel */
-
-var callbacks = [];
-var pending = false;
-
-function flushCallbacks () {
-  pending = false;
-  var copies = callbacks.slice(0);
-  callbacks.length = 0;
-  for (var i = 0; i < copies.length; i++) {
-    copies[i]();
-  }
-}
-
-// Here we have async deferring wrappers using both micro and macro tasks.
-// In < 2.4 we used micro tasks everywhere, but there are some scenarios where
-// micro tasks have too high a priority and fires in between supposedly
-// sequential events (e.g. #4521, #6690) or even between bubbling of the same
-// event (#6566). However, using macro tasks everywhere also has subtle problems
-// when state is changed right before repaint (e.g. #6813, out-in transitions).
-// Here we use micro task by default, but expose a way to force macro task when
-// needed (e.g. in event handlers attached by v-on).
-var microTimerFunc;
-var macroTimerFunc;
-var useMacroTask = false;
-
-// Determine (macro) Task defer implementation.
-// Technically setImmediate should be the ideal choice, but it's only available
-// in IE. The only polyfill that consistently queues the callback after all DOM
-// events triggered in the same loop is by using MessageChannel.
-/* istanbul ignore if */
-if (typeof setImmediate !== 'undefined' && isNative(setImmediate)) {
-  macroTimerFunc = function () {
-    setImmediate(flushCallbacks);
-  };
-} else if (typeof MessageChannel !== 'undefined' && (
-  isNative(MessageChannel) ||
-  // PhantomJS
-  MessageChannel.toString() === '[object MessageChannelConstructor]'
-)) {
-  var channel = new MessageChannel();
-  var port = channel.port2;
-  channel.port1.onmessage = flushCallbacks;
-  macroTimerFunc = function () {
-    port.postMessage(1);
-  };
-} else {
-  /* istanbul ignore next */
-  macroTimerFunc = function () {
-    setTimeout(flushCallbacks, 0);
-  };
-}
-
-// Determine MicroTask defer implementation.
-/* istanbul ignore next, $flow-disable-line */
-if (typeof Promise !== 'undefined' && isNative(Promise)) {
-  var p = Promise.resolve();
-  microTimerFunc = function () {
-    p.then(flushCallbacks);
-    // in problematic UIWebViews, Promise.then doesn't completely break, but
-    // it can get stuck in a weird state where callbacks are pushed into the
-    // microtask queue but the queue isn't being flushed, until the browser
-    // needs to do some other work, e.g. handle a timer. Therefore we can
-    // "force" the microtask queue to be flushed by adding an empty timer.
-    if (isIOS) { setTimeout(noop); }
-  };
-} else {
-  // fallback to macro
-  microTimerFunc = macroTimerFunc;
-}
-
-/**
- * Wrap a function so that if any code inside triggers state change,
- * the changes are queued using a Task instead of a MicroTask.
- */
-function withMacroTask (fn) {
-  return fn._withTask || (fn._withTask = function () {
-    useMacroTask = true;
-    var res = fn.apply(null, arguments);
-    useMacroTask = false;
-    return res
-  })
-}
-
-function nextTick (cb, ctx) {
-  var _resolve;
-  callbacks.push(function () {
-    if (cb) {
-      try {
-        cb.call(ctx);
-      } catch (e) {
-        handleError(e, ctx, 'nextTick');
-      }
-    } else if (_resolve) {
-      _resolve(ctx);
-    }
-  });
-  if (!pending) {
-    pending = true;
-    if (useMacroTask) {
-      macroTimerFunc();
-    } else {
-      microTimerFunc();
-    }
-  }
-  // $flow-disable-line
-  if (!cb && typeof Promise !== 'undefined') {
-    return new Promise(function (resolve) {
-      _resolve = resolve;
-    })
-  }
-}
-
-/*  */
-
 /* not type checking this file because flow doesn't play well with Proxy */
 
 var initProxy;
@@ -8146,10 +7805,8 @@ if (process.env.NODE_ENV !== 'production') {
   var warnNonPresent = function (target, key) {
     warn(
       "Property or method \"" + key + "\" is not defined on the instance but " +
-      'referenced during render. Make sure that this property is reactive, ' +
-      'either in the data option, or for class-based components, by ' +
-      'initializing the property. ' +
-      'See: https://vuejs.org/v2/guide/reactivity.html#Declaring-Reactive-Properties.',
+      "referenced during render. Make sure to declare reactive data " +
+      "properties in the data option.",
       target
     );
   };
@@ -8159,7 +7816,7 @@ if (process.env.NODE_ENV !== 'production') {
     Proxy.toString().match(/native code/);
 
   if (hasProxy) {
-    var isBuiltInModifier = makeMap('stop,prevent,self,ctrl,shift,alt,meta,exact');
+    var isBuiltInModifier = makeMap('stop,prevent,self,ctrl,shift,alt,meta');
     config.keyCodes = new Proxy(config.keyCodes, {
       set: function set (target, key, value) {
         if (isBuiltInModifier(key)) {
@@ -8207,43 +7864,6 @@ if (process.env.NODE_ENV !== 'production') {
   };
 }
 
-/*  */
-
-var seenObjects = new _Set();
-
-/**
- * Recursively traverse an object to evoke all converted
- * getters, so that every nested property inside the object
- * is collected as a "deep" dependency.
- */
-function traverse (val) {
-  _traverse(val, seenObjects);
-  seenObjects.clear();
-}
-
-function _traverse (val, seen) {
-  var i, keys;
-  var isA = Array.isArray(val);
-  if ((!isA && !isObject(val)) || Object.isFrozen(val)) {
-    return
-  }
-  if (val.__ob__) {
-    var depId = val.__ob__.dep.id;
-    if (seen.has(depId)) {
-      return
-    }
-    seen.add(depId);
-  }
-  if (isA) {
-    i = val.length;
-    while (i--) { _traverse(val[i], seen); }
-  } else {
-    keys = Object.keys(val);
-    i = keys.length;
-    while (i--) { _traverse(val[keys[i]], seen); }
-  }
-}
-
 var mark;
 var measure;
 
@@ -8265,6 +7885,96 @@ if (process.env.NODE_ENV !== 'production') {
       perf.clearMeasures(name);
     };
   }
+}
+
+/*  */
+
+var VNode = function VNode (
+  tag,
+  data,
+  children,
+  text,
+  elm,
+  context,
+  componentOptions,
+  asyncFactory
+) {
+  this.tag = tag;
+  this.data = data;
+  this.children = children;
+  this.text = text;
+  this.elm = elm;
+  this.ns = undefined;
+  this.context = context;
+  this.functionalContext = undefined;
+  this.key = data && data.key;
+  this.componentOptions = componentOptions;
+  this.componentInstance = undefined;
+  this.parent = undefined;
+  this.raw = false;
+  this.isStatic = false;
+  this.isRootInsert = true;
+  this.isComment = false;
+  this.isCloned = false;
+  this.isOnce = false;
+  this.asyncFactory = asyncFactory;
+  this.asyncMeta = undefined;
+  this.isAsyncPlaceholder = false;
+};
+
+var prototypeAccessors = { child: {} };
+
+// DEPRECATED: alias for componentInstance for backwards compat.
+/* istanbul ignore next */
+prototypeAccessors.child.get = function () {
+  return this.componentInstance
+};
+
+Object.defineProperties( VNode.prototype, prototypeAccessors );
+
+var createEmptyVNode = function (text) {
+  if ( text === void 0 ) text = '';
+
+  var node = new VNode();
+  node.text = text;
+  node.isComment = true;
+  return node
+};
+
+function createTextVNode (val) {
+  return new VNode(undefined, undefined, undefined, String(val))
+}
+
+// optimized shallow clone
+// used for static nodes and slot nodes because they may be reused across
+// multiple renders, cloning them avoids errors when DOM manipulations rely
+// on their elm reference.
+function cloneVNode (vnode) {
+  var cloned = new VNode(
+    vnode.tag,
+    vnode.data,
+    vnode.children,
+    vnode.text,
+    vnode.elm,
+    vnode.context,
+    vnode.componentOptions,
+    vnode.asyncFactory
+  );
+  cloned.ns = vnode.ns;
+  cloned.isStatic = vnode.isStatic;
+  cloned.key = vnode.key;
+  cloned.isComment = vnode.isComment;
+  cloned.isCloned = true;
+  return cloned
+}
+
+function cloneVNodes (vnodes) {
+  var len = vnodes.length;
+  var res = new Array(len);
+  for (var i = 0; i < len; i++) {
+    res[i] = cloneVNode(vnodes[i]);
+  }
+  return res
 }
 
 /*  */
@@ -8341,9 +8051,6 @@ function updateListeners (
 /*  */
 
 function mergeVNodeHook (def, hookKey, hook) {
-  if (def instanceof VNode) {
-    def = def.data.hook || (def.data.hook = {});
-  }
   var invoker;
   var oldHook = def[hookKey];
 
@@ -8482,29 +8189,20 @@ function isTextNode (node) {
 
 function normalizeArrayChildren (children, nestedIndex) {
   var res = [];
-  var i, c, lastIndex, last;
+  var i, c, last;
   for (i = 0; i < children.length; i++) {
     c = children[i];
     if (isUndef(c) || typeof c === 'boolean') { continue }
-    lastIndex = res.length - 1;
-    last = res[lastIndex];
+    last = res[res.length - 1];
     //  nested
     if (Array.isArray(c)) {
-      if (c.length > 0) {
-        c = normalizeArrayChildren(c, ((nestedIndex || '') + "_" + i));
-        // merge adjacent text nodes
-        if (isTextNode(c[0]) && isTextNode(last)) {
-          res[lastIndex] = createTextVNode(last.text + (c[0]).text);
-          c.shift();
-        }
-        res.push.apply(res, c);
-      }
+      res.push.apply(res, normalizeArrayChildren(c, ((nestedIndex || '') + "_" + i)));
     } else if (isPrimitive(c)) {
       if (isTextNode(last)) {
         // merge adjacent text nodes
         // this is necessary for SSR hydration because text nodes are
         // essentially merged when rendered to HTML strings
-        res[lastIndex] = createTextVNode(last.text + c);
+        (last).text += String(c);
       } else if (c !== '') {
         // convert primitive to vnode
         res.push(createTextVNode(c));
@@ -8512,7 +8210,7 @@ function normalizeArrayChildren (children, nestedIndex) {
     } else {
       if (isTextNode(c) && isTextNode(last)) {
         // merge adjacent text nodes
-        res[lastIndex] = createTextVNode(last.text + c.text);
+        res[res.length - 1] = createTextVNode(last.text + c.text);
       } else {
         // default key for nested array children (likely generated by v-for)
         if (isTrue(children._isVList) &&
@@ -8531,10 +8229,7 @@ function normalizeArrayChildren (children, nestedIndex) {
 /*  */
 
 function ensureCtor (comp, base) {
-  if (
-    comp.__esModule ||
-    (hasSymbol && comp[Symbol.toStringTag] === 'Module')
-  ) {
+  if (comp.__esModule && comp.default) {
     comp = comp.default;
   }
   return isObject(comp)
@@ -8659,17 +8354,11 @@ function resolveAsyncComponent (
 
 /*  */
 
-function isAsyncPlaceholder (node) {
-  return node.isComment && node.asyncFactory
-}
-
-/*  */
-
 function getFirstComponentChild (children) {
   if (Array.isArray(children)) {
     for (var i = 0; i < children.length; i++) {
       var c = children[i];
-      if (isDef(c) && (isDef(c.componentOptions) || isAsyncPlaceholder(c))) {
+      if (isDef(c) && isDef(c.componentOptions)) {
         return c
       }
     }
@@ -8692,8 +8381,8 @@ function initEvents (vm) {
 
 var target;
 
-function add (event, fn, once) {
-  if (once) {
+function add (event, fn, once$$1) {
+  if (once$$1) {
     target.$once(event, fn);
   } else {
     target.$on(event, fn);
@@ -8711,7 +8400,6 @@ function updateComponentListeners (
 ) {
   target = vm;
   updateListeners(listeners, oldListeners || {}, add, remove$1, vm);
-  target = undefined;
 }
 
 function eventsMixin (Vue) {
@@ -8757,8 +8445,8 @@ function eventsMixin (Vue) {
     }
     // array of events
     if (Array.isArray(event)) {
-      for (var i = 0, l = event.length; i < l; i++) {
-        this$1.$off(event[i], fn);
+      for (var i$1 = 0, l = event.length; i$1 < l; i$1++) {
+        this$1.$off(event[i$1], fn);
       }
       return vm
     }
@@ -8767,20 +8455,18 @@ function eventsMixin (Vue) {
     if (!cbs) {
       return vm
     }
-    if (!fn) {
+    if (arguments.length === 1) {
       vm._events[event] = null;
       return vm
     }
-    if (fn) {
-      // specific handler
-      var cb;
-      var i$1 = cbs.length;
-      while (i$1--) {
-        cb = cbs[i$1];
-        if (cb === fn || cb.fn === fn) {
-          cbs.splice(i$1, 1);
-          break
-        }
+    // specific handler
+    var cb;
+    var i = cbs.length;
+    while (i--) {
+      cb = cbs[i];
+      if (cb === fn || cb.fn === fn) {
+        cbs.splice(i, 1);
+        break
       }
     }
     return vm
@@ -8818,8 +8504,6 @@ function eventsMixin (Vue) {
 
 /*  */
 
-
-
 /**
  * Runtime helper for resolving raw children VNodes into a slot object.
  */
@@ -8831,40 +8515,34 @@ function resolveSlots (
   if (!children) {
     return slots
   }
+  var defaultSlot = [];
   for (var i = 0, l = children.length; i < l; i++) {
     var child = children[i];
-    var data = child.data;
-    // remove slot attribute if the node is resolved as a Vue slot node
-    if (data && data.attrs && data.attrs.slot) {
-      delete data.attrs.slot;
-    }
     // named slots should only be respected if the vnode was rendered in the
     // same context.
-    if ((child.context === context || child.fnContext === context) &&
-      data && data.slot != null
+    if ((child.context === context || child.functionalContext === context) &&
+      child.data && child.data.slot != null
     ) {
-      var name = data.slot;
+      var name = child.data.slot;
       var slot = (slots[name] || (slots[name] = []));
       if (child.tag === 'template') {
-        slot.push.apply(slot, child.children || []);
+        slot.push.apply(slot, child.children);
       } else {
         slot.push(child);
       }
     } else {
-      (slots.default || (slots.default = [])).push(child);
+      defaultSlot.push(child);
     }
   }
-  // ignore slots that contains only whitespace
-  for (var name$1 in slots) {
-    if (slots[name$1].every(isWhitespace)) {
-      delete slots[name$1];
-    }
+  // ignore whitespace
+  if (!defaultSlot.every(isWhitespace)) {
+    slots.default = defaultSlot;
   }
   return slots
 }
 
 function isWhitespace (node) {
-  return (node.isComment && !node.asyncFactory) || node.text === ' '
+  return node.isComment || node.text === ' '
 }
 
 function resolveScopedSlots (
@@ -9000,10 +8678,6 @@ function lifecycleMixin (Vue) {
     if (vm.$el) {
       vm.$el.__vue__ = null;
     }
-    // release circular reference (#6759)
-    if (vm.$vnode) {
-      vm.$vnode.parent = null;
-    }
   };
 }
 
@@ -9047,12 +8721,12 @@ function mountComponent (
       mark(startTag);
       var vnode = vm._render();
       mark(endTag);
-      measure(("vue " + name + " render"), startTag, endTag);
+      measure((name + " render"), startTag, endTag);
 
       mark(startTag);
       vm._update(vnode, hydrating);
       mark(endTag);
-      measure(("vue " + name + " patch"), startTag, endTag);
+      measure((name + " patch"), startTag, endTag);
     };
   } else {
     updateComponent = function () {
@@ -9060,10 +8734,7 @@ function mountComponent (
     };
   }
 
-  // we set this to vm._watcher inside the watcher's constructor
-  // since the watcher's initial patch may call $forceUpdate (e.g. inside child
-  // component's mounted hook), which relies on vm._watcher being already defined
-  new Watcher(vm, updateComponent, noop, null, true /* isRenderWatcher */);
+  vm._watcher = new Watcher(vm, updateComponent, noop);
   hydrating = false;
 
   // manually mounted instance, call mounted on self
@@ -9103,11 +8774,11 @@ function updateChildComponent (
   }
   vm.$options._renderChildren = renderChildren;
 
-  // update $attrs and $listeners hash
+  // update $attrs and $listensers hash
   // these are also reactive so they may trigger child update if the child
   // used them during render
-  vm.$attrs = (parentVnode.data && parentVnode.data.attrs) || emptyObject;
-  vm.$listeners = listeners || emptyObject;
+  vm.$attrs = parentVnode.data && parentVnode.data.attrs;
+  vm.$listeners = listeners;
 
   // update props
   if (propsData && vm.$options.props) {
@@ -9350,13 +9021,9 @@ var Watcher = function Watcher (
   vm,
   expOrFn,
   cb,
-  options,
-  isRenderWatcher
+  options
 ) {
   this.vm = vm;
-  if (isRenderWatcher) {
-    vm._watcher = this;
-  }
   vm._watchers.push(this);
   // options
   if (options) {
@@ -9550,6 +9217,40 @@ Watcher.prototype.teardown = function teardown () {
   }
 };
 
+/**
+ * Recursively traverse an object to evoke all converted
+ * getters, so that every nested property inside the object
+ * is collected as a "deep" dependency.
+ */
+var seenObjects = new _Set();
+function traverse (val) {
+  seenObjects.clear();
+  _traverse(val, seenObjects);
+}
+
+function _traverse (val, seen) {
+  var i, keys;
+  var isA = Array.isArray(val);
+  if ((!isA && !isObject(val)) || !Object.isExtensible(val)) {
+    return
+  }
+  if (val.__ob__) {
+    var depId = val.__ob__.dep.id;
+    if (seen.has(depId)) {
+      return
+    }
+    seen.add(depId);
+  }
+  if (isA) {
+    i = val.length;
+    while (i--) { _traverse(val[i], seen); }
+  } else {
+    keys = Object.keys(val);
+    i = keys.length;
+    while (i--) { _traverse(val[keys[i]], seen); }
+  }
+}
+
 /*  */
 
 var sharedPropertyDefinition = {
@@ -9585,6 +9286,16 @@ function initState (vm) {
   }
 }
 
+function checkOptionType (vm, name) {
+  var option = vm.$options[name];
+  if (!isPlainObject(option)) {
+    warn(
+      ("component option \"" + name + "\" should be an object."),
+      vm
+    );
+  }
+}
+
 function initProps (vm, propsOptions) {
   var propsData = vm.$options.propsData || {};
   var props = vm._props = {};
@@ -9599,15 +9310,13 @@ function initProps (vm, propsOptions) {
     var value = validateProp(key, propsOptions, propsData, vm);
     /* istanbul ignore else */
     if (process.env.NODE_ENV !== 'production') {
-      var hyphenatedKey = hyphenate(key);
-      if (isReservedAttribute(hyphenatedKey) ||
-          config.isReservedAttr(hyphenatedKey)) {
+      if (isReservedAttribute(key) || config.isReservedAttr(key)) {
         warn(
-          ("\"" + hyphenatedKey + "\" is a reserved attribute and cannot be used as component prop."),
+          ("\"" + key + "\" is a reserved attribute and cannot be used as component prop."),
           vm
         );
       }
-      defineReactive(props, key, value, function () {
+      defineReactive$$1(props, key, value, function () {
         if (vm.$parent && !isUpdatingChildComponent) {
           warn(
             "Avoid mutating a prop directly since the value will be " +
@@ -9619,7 +9328,7 @@ function initProps (vm, propsOptions) {
         }
       });
     } else {
-      defineReactive(props, key, value);
+      defineReactive$$1(props, key, value);
     }
     // static props are already proxied on the component's prototype
     // during Vue.extend(). We only need to proxy props defined at
@@ -9656,7 +9365,7 @@ function initData (vm) {
     if (process.env.NODE_ENV !== 'production') {
       if (methods && hasOwn(methods, key)) {
         warn(
-          ("Method \"" + key + "\" has already been defined as a data property."),
+          ("method \"" + key + "\" has already been defined as a data property."),
           vm
         );
       }
@@ -9677,7 +9386,7 @@ function initData (vm) {
 
 function getData (data, vm) {
   try {
-    return data.call(vm, vm)
+    return data.call(vm)
   } catch (e) {
     handleError(e, vm, "data()");
     return {}
@@ -9687,10 +9396,8 @@ function getData (data, vm) {
 var computedWatcherOptions = { lazy: true };
 
 function initComputed (vm, computed) {
-  // $flow-disable-line
+  process.env.NODE_ENV !== 'production' && checkOptionType(vm, 'computed');
   var watchers = vm._computedWatchers = Object.create(null);
-  // computed properties are just getters during SSR
-  var isSSR = isServerRendering();
 
   for (var key in computed) {
     var userDef = computed[key];
@@ -9701,16 +9408,8 @@ function initComputed (vm, computed) {
         vm
       );
     }
-
-    if (!isSSR) {
-      // create internal watcher for the computed property.
-      watchers[key] = new Watcher(
-        vm,
-        getter || noop,
-        noop,
-        computedWatcherOptions
-      );
-    }
+    // create internal watcher for the computed property.
+    watchers[key] = new Watcher(vm, getter || noop, noop, computedWatcherOptions);
 
     // component-defined computed properties are already defined on the
     // component prototype. We only need to define computed properties defined
@@ -9727,20 +9426,13 @@ function initComputed (vm, computed) {
   }
 }
 
-function defineComputed (
-  target,
-  key,
-  userDef
-) {
-  var shouldCache = !isServerRendering();
+function defineComputed (target, key, userDef) {
   if (typeof userDef === 'function') {
-    sharedPropertyDefinition.get = shouldCache
-      ? createComputedGetter(key)
-      : userDef;
+    sharedPropertyDefinition.get = createComputedGetter(key);
     sharedPropertyDefinition.set = noop;
   } else {
     sharedPropertyDefinition.get = userDef.get
-      ? shouldCache && userDef.cache !== false
+      ? userDef.cache !== false
         ? createComputedGetter(key)
         : userDef.get
       : noop;
@@ -9776,34 +9468,30 @@ function createComputedGetter (key) {
 }
 
 function initMethods (vm, methods) {
+  process.env.NODE_ENV !== 'production' && checkOptionType(vm, 'methods');
   var props = vm.$options.props;
   for (var key in methods) {
+    vm[key] = methods[key] == null ? noop : bind(methods[key], vm);
     if (process.env.NODE_ENV !== 'production') {
       if (methods[key] == null) {
         warn(
-          "Method \"" + key + "\" has an undefined value in the component definition. " +
+          "method \"" + key + "\" has an undefined value in the component definition. " +
           "Did you reference the function correctly?",
           vm
         );
       }
       if (props && hasOwn(props, key)) {
         warn(
-          ("Method \"" + key + "\" has already been defined as a prop."),
+          ("method \"" + key + "\" has already been defined as a prop."),
           vm
         );
       }
-      if ((key in vm) && isReserved(key)) {
-        warn(
-          "Method \"" + key + "\" conflicts with an existing Vue instance method. " +
-          "Avoid defining component methods that start with _ or $."
-        );
-      }
     }
-    vm[key] = methods[key] == null ? noop : bind(methods[key], vm);
   }
 }
 
 function initWatch (vm, watch) {
+  process.env.NODE_ENV !== 'production' && checkOptionType(vm, 'watch');
   for (var key in watch) {
     var handler = watch[key];
     if (Array.isArray(handler)) {
@@ -9897,7 +9585,7 @@ function initInjections (vm) {
     Object.keys(result).forEach(function (key) {
       /* istanbul ignore else */
       if (process.env.NODE_ENV !== 'production') {
-        defineReactive(vm, key, result[key], function () {
+        defineReactive$$1(vm, key, result[key], function () {
           warn(
             "Avoid mutating an injected value directly since the changes will be " +
             "overwritten whenever the provided component re-renders. " +
@@ -9906,7 +9594,7 @@ function initInjections (vm) {
           );
         });
       } else {
-        defineReactive(vm, key, result[key]);
+        defineReactive$$1(vm, key, result[key]);
       }
     });
     observerState.shouldConvert = true;
@@ -9918,15 +9606,12 @@ function resolveInject (inject, vm) {
     // inject is :any because flow is not smart enough to figure out cached
     var result = Object.create(null);
     var keys = hasSymbol
-      ? Reflect.ownKeys(inject).filter(function (key) {
-        /* istanbul ignore next */
-        return Object.getOwnPropertyDescriptor(inject, key).enumerable
-      })
-      : Object.keys(inject);
+        ? Reflect.ownKeys(inject)
+        : Object.keys(inject);
 
     for (var i = 0; i < keys.length; i++) {
       var key = keys[i];
-      var provideKey = inject[key].from;
+      var provideKey = inject[key];
       var source = vm;
       while (source) {
         if (source._provided && provideKey in source._provided) {
@@ -9935,15 +9620,8 @@ function resolveInject (inject, vm) {
         }
         source = source.$parent;
       }
-      if (!source) {
-        if ('default' in inject[key]) {
-          var provideDefault = inject[key].default;
-          result[key] = typeof provideDefault === 'function'
-            ? provideDefault.call(vm)
-            : provideDefault;
-        } else if (process.env.NODE_ENV !== 'production') {
-          warn(("Injection \"" + key + "\" not found"), vm);
-        }
+      if (process.env.NODE_ENV !== 'production' && !source) {
+        warn(("Injection \"" + key + "\" not found"), vm);
       }
     }
     return result
@@ -9952,365 +9630,43 @@ function resolveInject (inject, vm) {
 
 /*  */
 
-/**
- * Runtime helper for rendering v-for lists.
- */
-function renderList (
-  val,
-  render
-) {
-  var ret, i, l, keys, key;
-  if (Array.isArray(val) || typeof val === 'string') {
-    ret = new Array(val.length);
-    for (i = 0, l = val.length; i < l; i++) {
-      ret[i] = render(val[i], i);
-    }
-  } else if (typeof val === 'number') {
-    ret = new Array(val);
-    for (i = 0; i < val; i++) {
-      ret[i] = render(i + 1, i);
-    }
-  } else if (isObject(val)) {
-    keys = Object.keys(val);
-    ret = new Array(keys.length);
-    for (i = 0, l = keys.length; i < l; i++) {
-      key = keys[i];
-      ret[i] = render(val[key], key, i);
-    }
-  }
-  if (isDef(ret)) {
-    (ret)._isVList = true;
-  }
-  return ret
-}
-
-/*  */
-
-/**
- * Runtime helper for rendering <slot>
- */
-function renderSlot (
-  name,
-  fallback,
-  props,
-  bindObject
-) {
-  var scopedSlotFn = this.$scopedSlots[name];
-  var nodes;
-  if (scopedSlotFn) { // scoped slot
-    props = props || {};
-    if (bindObject) {
-      if (process.env.NODE_ENV !== 'production' && !isObject(bindObject)) {
-        warn(
-          'slot v-bind without argument expects an Object',
-          this
-        );
-      }
-      props = extend(extend({}, bindObject), props);
-    }
-    nodes = scopedSlotFn(props) || fallback;
-  } else {
-    var slotNodes = this.$slots[name];
-    // warn duplicate slot usage
-    if (slotNodes) {
-      if (process.env.NODE_ENV !== 'production' && slotNodes._rendered) {
-        warn(
-          "Duplicate presence of slot \"" + name + "\" found in the same render tree " +
-          "- this will likely cause render errors.",
-          this
-        );
-      }
-      slotNodes._rendered = true;
-    }
-    nodes = slotNodes || fallback;
-  }
-
-  var target = props && props.slot;
-  if (target) {
-    return this.$createElement('template', { slot: target }, nodes)
-  } else {
-    return nodes
-  }
-}
-
-/*  */
-
-/**
- * Runtime helper for resolving filters
- */
-function resolveFilter (id) {
-  return resolveAsset(this.$options, 'filters', id, true) || identity
-}
-
-/*  */
-
-/**
- * Runtime helper for checking keyCodes from config.
- * exposed as Vue.prototype._k
- * passing in eventKeyName as last argument separately for backwards compat
- */
-function checkKeyCodes (
-  eventKeyCode,
-  key,
-  builtInAlias,
-  eventKeyName
-) {
-  var keyCodes = config.keyCodes[key] || builtInAlias;
-  if (keyCodes) {
-    if (Array.isArray(keyCodes)) {
-      return keyCodes.indexOf(eventKeyCode) === -1
-    } else {
-      return keyCodes !== eventKeyCode
-    }
-  } else if (eventKeyName) {
-    return hyphenate(eventKeyName) !== key
-  }
-}
-
-/*  */
-
-/**
- * Runtime helper for merging v-bind="object" into a VNode's data.
- */
-function bindObjectProps (
-  data,
-  tag,
-  value,
-  asProp,
-  isSync
-) {
-  if (value) {
-    if (!isObject(value)) {
-      process.env.NODE_ENV !== 'production' && warn(
-        'v-bind without argument expects an Object or Array value',
-        this
-      );
-    } else {
-      if (Array.isArray(value)) {
-        value = toObject(value);
-      }
-      var hash;
-      var loop = function ( key ) {
-        if (
-          key === 'class' ||
-          key === 'style' ||
-          isReservedAttribute(key)
-        ) {
-          hash = data;
-        } else {
-          var type = data.attrs && data.attrs.type;
-          hash = asProp || config.mustUseProp(tag, type, key)
-            ? data.domProps || (data.domProps = {})
-            : data.attrs || (data.attrs = {});
-        }
-        if (!(key in hash)) {
-          hash[key] = value[key];
-
-          if (isSync) {
-            var on = data.on || (data.on = {});
-            on[("update:" + key)] = function ($event) {
-              value[key] = $event;
-            };
-          }
-        }
-      };
-
-      for (var key in value) loop( key );
-    }
-  }
-  return data
-}
-
-/*  */
-
-/**
- * Runtime helper for rendering static trees.
- */
-function renderStatic (
-  index,
-  isInFor
-) {
-  var cached = this._staticTrees || (this._staticTrees = []);
-  var tree = cached[index];
-  // if has already-rendered static tree and not inside v-for,
-  // we can reuse the same tree by doing a shallow clone.
-  if (tree && !isInFor) {
-    return Array.isArray(tree)
-      ? cloneVNodes(tree)
-      : cloneVNode(tree)
-  }
-  // otherwise, render a fresh tree.
-  tree = cached[index] = this.$options.staticRenderFns[index].call(
-    this._renderProxy,
-    null,
-    this // for render fns generated for functional component templates
-  );
-  markStatic(tree, ("__static__" + index), false);
-  return tree
-}
-
-/**
- * Runtime helper for v-once.
- * Effectively it means marking the node as static with a unique key.
- */
-function markOnce (
-  tree,
-  index,
-  key
-) {
-  markStatic(tree, ("__once__" + index + (key ? ("_" + key) : "")), true);
-  return tree
-}
-
-function markStatic (
-  tree,
-  key,
-  isOnce
-) {
-  if (Array.isArray(tree)) {
-    for (var i = 0; i < tree.length; i++) {
-      if (tree[i] && typeof tree[i] !== 'string') {
-        markStaticNode(tree[i], (key + "_" + i), isOnce);
-      }
-    }
-  } else {
-    markStaticNode(tree, key, isOnce);
-  }
-}
-
-function markStaticNode (node, key, isOnce) {
-  node.isStatic = true;
-  node.key = key;
-  node.isOnce = isOnce;
-}
-
-/*  */
-
-function bindObjectListeners (data, value) {
-  if (value) {
-    if (!isPlainObject(value)) {
-      process.env.NODE_ENV !== 'production' && warn(
-        'v-on without argument expects an Object value',
-        this
-      );
-    } else {
-      var on = data.on = data.on ? extend({}, data.on) : {};
-      for (var key in value) {
-        var existing = on[key];
-        var ours = value[key];
-        on[key] = existing ? [].concat(existing, ours) : ours;
-      }
-    }
-  }
-  return data
-}
-
-/*  */
-
-function installRenderHelpers (target) {
-  target._o = markOnce;
-  target._n = toNumber;
-  target._s = toString;
-  target._l = renderList;
-  target._t = renderSlot;
-  target._q = looseEqual;
-  target._i = looseIndexOf;
-  target._m = renderStatic;
-  target._f = resolveFilter;
-  target._k = checkKeyCodes;
-  target._b = bindObjectProps;
-  target._v = createTextVNode;
-  target._e = createEmptyVNode;
-  target._u = resolveScopedSlots;
-  target._g = bindObjectListeners;
-}
-
-/*  */
-
-function FunctionalRenderContext (
-  data,
-  props,
-  children,
-  parent,
-  Ctor
-) {
-  var options = Ctor.options;
-  this.data = data;
-  this.props = props;
-  this.children = children;
-  this.parent = parent;
-  this.listeners = data.on || emptyObject;
-  this.injections = resolveInject(options.inject, parent);
-  this.slots = function () { return resolveSlots(children, parent); };
-
-  // ensure the createElement function in functional components
-  // gets a unique context - this is necessary for correct named slot check
-  var contextVm = Object.create(parent);
-  var isCompiled = isTrue(options._compiled);
-  var needNormalization = !isCompiled;
-
-  // support for compiled functional template
-  if (isCompiled) {
-    // exposing $options for renderStatic()
-    this.$options = options;
-    // pre-resolve slots for renderSlot()
-    this.$slots = this.slots();
-    this.$scopedSlots = data.scopedSlots || emptyObject;
-  }
-
-  if (options._scopeId) {
-    this._c = function (a, b, c, d) {
-      var vnode = createElement(contextVm, a, b, c, d, needNormalization);
-      if (vnode) {
-        vnode.fnScopeId = options._scopeId;
-        vnode.fnContext = parent;
-      }
-      return vnode
-    };
-  } else {
-    this._c = function (a, b, c, d) { return createElement(contextVm, a, b, c, d, needNormalization); };
-  }
-}
-
-installRenderHelpers(FunctionalRenderContext.prototype);
-
 function createFunctionalComponent (
   Ctor,
   propsData,
   data,
-  contextVm,
+  context,
   children
 ) {
-  var options = Ctor.options;
   var props = {};
-  var propOptions = options.props;
+  var propOptions = Ctor.options.props;
   if (isDef(propOptions)) {
     for (var key in propOptions) {
-      props[key] = validateProp(key, propOptions, propsData || emptyObject);
+      props[key] = validateProp(key, propOptions, propsData || {});
     }
   } else {
     if (isDef(data.attrs)) { mergeProps(props, data.attrs); }
     if (isDef(data.props)) { mergeProps(props, data.props); }
   }
-
-  var renderContext = new FunctionalRenderContext(
-    data,
-    props,
-    children,
-    contextVm,
-    Ctor
-  );
-
-  var vnode = options.render.call(null, renderContext._c, renderContext);
-
+  // ensure the createElement function in functional components
+  // gets a unique context - this is necessary for correct named slot check
+  var _context = Object.create(context);
+  var h = function (a, b, c, d) { return createElement(_context, a, b, c, d, true); };
+  var vnode = Ctor.options.render.call(null, h, {
+    data: data,
+    props: props,
+    children: children,
+    parent: context,
+    listeners: data.on || {},
+    injections: resolveInject(Ctor.options.inject, context),
+    slots: function () { return resolveSlots(children, context); }
+  });
   if (vnode instanceof VNode) {
-    vnode.fnContext = contextVm;
-    vnode.fnOptions = options;
+    vnode.functionalContext = context;
+    vnode.functionalOptions = Ctor.options;
     if (data.slot) {
       (vnode.data || (vnode.data = {})).slot = data.slot;
     }
   }
-
   return vnode
 }
 
@@ -10496,10 +9852,15 @@ function createComponentInstanceForVnode (
   parentElm,
   refElm
 ) {
+  var vnodeComponentOptions = vnode.componentOptions;
   var options = {
     _isComponent: true,
     parent: parent,
+    propsData: vnodeComponentOptions.propsData,
+    _componentTag: vnodeComponentOptions.tag,
     _parentVnode: vnode,
+    _parentListeners: vnodeComponentOptions.listeners,
+    _renderChildren: vnodeComponentOptions.children,
     _parentElm: parentElm || null,
     _refElm: refElm || null
   };
@@ -10509,7 +9870,7 @@ function createComponentInstanceForVnode (
     options.render = inlineTemplate.render;
     options.staticRenderFns = inlineTemplate.staticRenderFns;
   }
-  return new vnode.componentOptions.Ctor(options)
+  return new vnodeComponentOptions.Ctor(options)
 }
 
 function mergeHooks (data) {
@@ -10619,7 +9980,7 @@ function _createElement (
   var vnode, ns;
   if (typeof tag === 'string') {
     var Ctor;
-    ns = (context.$vnode && context.$vnode.ns) || config.getTagNamespace(tag);
+    ns = config.getTagNamespace(tag);
     if (config.isReservedTag(tag)) {
       // platform built-in elements
       vnode = new VNode(
@@ -10650,18 +10011,17 @@ function _createElement (
   }
 }
 
-function applyNS (vnode, ns, force) {
+function applyNS (vnode, ns) {
   vnode.ns = ns;
   if (vnode.tag === 'foreignObject') {
     // use default namespace inside foreignObject
-    ns = undefined;
-    force = true;
+    return
   }
   if (isDef(vnode.children)) {
     for (var i = 0, l = vnode.children.length; i < l; i++) {
       var child = vnode.children[i];
-      if (isDef(child.tag) && (isUndef(child.ns) || isTrue(force))) {
-        applyNS(child, ns, force);
+      if (isDef(child.tag) && isUndef(child.ns)) {
+        applyNS(child, ns);
       }
     }
   }
@@ -10669,13 +10029,240 @@ function applyNS (vnode, ns, force) {
 
 /*  */
 
+/**
+ * Runtime helper for rendering v-for lists.
+ */
+function renderList (
+  val,
+  render
+) {
+  var ret, i, l, keys, key;
+  if (Array.isArray(val) || typeof val === 'string') {
+    ret = new Array(val.length);
+    for (i = 0, l = val.length; i < l; i++) {
+      ret[i] = render(val[i], i);
+    }
+  } else if (typeof val === 'number') {
+    ret = new Array(val);
+    for (i = 0; i < val; i++) {
+      ret[i] = render(i + 1, i);
+    }
+  } else if (isObject(val)) {
+    keys = Object.keys(val);
+    ret = new Array(keys.length);
+    for (i = 0, l = keys.length; i < l; i++) {
+      key = keys[i];
+      ret[i] = render(val[key], key, i);
+    }
+  }
+  if (isDef(ret)) {
+    (ret)._isVList = true;
+  }
+  return ret
+}
+
+/*  */
+
+/**
+ * Runtime helper for rendering <slot>
+ */
+function renderSlot (
+  name,
+  fallback,
+  props,
+  bindObject
+) {
+  var scopedSlotFn = this.$scopedSlots[name];
+  if (scopedSlotFn) { // scoped slot
+    props = props || {};
+    if (bindObject) {
+      props = extend(extend({}, bindObject), props);
+    }
+    return scopedSlotFn(props) || fallback
+  } else {
+    var slotNodes = this.$slots[name];
+    // warn duplicate slot usage
+    if (slotNodes && process.env.NODE_ENV !== 'production') {
+      slotNodes._rendered && warn(
+        "Duplicate presence of slot \"" + name + "\" found in the same render tree " +
+        "- this will likely cause render errors.",
+        this
+      );
+      slotNodes._rendered = true;
+    }
+    return slotNodes || fallback
+  }
+}
+
+/*  */
+
+/**
+ * Runtime helper for resolving filters
+ */
+function resolveFilter (id) {
+  return resolveAsset(this.$options, 'filters', id, true) || identity
+}
+
+/*  */
+
+/**
+ * Runtime helper for checking keyCodes from config.
+ */
+function checkKeyCodes (
+  eventKeyCode,
+  key,
+  builtInAlias
+) {
+  var keyCodes = config.keyCodes[key] || builtInAlias;
+  if (Array.isArray(keyCodes)) {
+    return keyCodes.indexOf(eventKeyCode) === -1
+  } else {
+    return keyCodes !== eventKeyCode
+  }
+}
+
+/*  */
+
+/**
+ * Runtime helper for merging v-bind="object" into a VNode's data.
+ */
+function bindObjectProps (
+  data,
+  tag,
+  value,
+  asProp,
+  isSync
+) {
+  if (value) {
+    if (!isObject(value)) {
+      process.env.NODE_ENV !== 'production' && warn(
+        'v-bind without argument expects an Object or Array value',
+        this
+      );
+    } else {
+      if (Array.isArray(value)) {
+        value = toObject(value);
+      }
+      var hash;
+      var loop = function ( key ) {
+        if (
+          key === 'class' ||
+          key === 'style' ||
+          isReservedAttribute(key)
+        ) {
+          hash = data;
+        } else {
+          var type = data.attrs && data.attrs.type;
+          hash = asProp || config.mustUseProp(tag, type, key)
+            ? data.domProps || (data.domProps = {})
+            : data.attrs || (data.attrs = {});
+        }
+        if (!(key in hash)) {
+          hash[key] = value[key];
+
+          if (isSync) {
+            var on = data.on || (data.on = {});
+            on[("update:" + key)] = function ($event) {
+              value[key] = $event;
+            };
+          }
+        }
+      };
+
+      for (var key in value) loop( key );
+    }
+  }
+  return data
+}
+
+/*  */
+
+/**
+ * Runtime helper for rendering static trees.
+ */
+function renderStatic (
+  index,
+  isInFor
+) {
+  var tree = this._staticTrees[index];
+  // if has already-rendered static tree and not inside v-for,
+  // we can reuse the same tree by doing a shallow clone.
+  if (tree && !isInFor) {
+    return Array.isArray(tree)
+      ? cloneVNodes(tree)
+      : cloneVNode(tree)
+  }
+  // otherwise, render a fresh tree.
+  tree = this._staticTrees[index] =
+    this.$options.staticRenderFns[index].call(this._renderProxy);
+  markStatic(tree, ("__static__" + index), false);
+  return tree
+}
+
+/**
+ * Runtime helper for v-once.
+ * Effectively it means marking the node as static with a unique key.
+ */
+function markOnce (
+  tree,
+  index,
+  key
+) {
+  markStatic(tree, ("__once__" + index + (key ? ("_" + key) : "")), true);
+  return tree
+}
+
+function markStatic (
+  tree,
+  key,
+  isOnce
+) {
+  if (Array.isArray(tree)) {
+    for (var i = 0; i < tree.length; i++) {
+      if (tree[i] && typeof tree[i] !== 'string') {
+        markStaticNode(tree[i], (key + "_" + i), isOnce);
+      }
+    }
+  } else {
+    markStaticNode(tree, key, isOnce);
+  }
+}
+
+function markStaticNode (node, key, isOnce) {
+  node.isStatic = true;
+  node.key = key;
+  node.isOnce = isOnce;
+}
+
+/*  */
+
+function bindObjectListeners (data, value) {
+  if (value) {
+    if (!isPlainObject(value)) {
+      process.env.NODE_ENV !== 'production' && warn(
+        'v-on without argument expects an Object value',
+        this
+      );
+    } else {
+      var on = data.on = data.on ? extend({}, data.on) : {};
+      for (var key in value) {
+        var existing = on[key];
+        var ours = value[key];
+        on[key] = existing ? [].concat(ours, existing) : ours;
+      }
+    }
+  }
+  return data
+}
+
+/*  */
+
 function initRender (vm) {
   vm._vnode = null; // the root of the child tree
-  vm._staticTrees = null; // v-once cached trees
-  var options = vm.$options;
-  var parentVnode = vm.$vnode = options._parentVnode; // the placeholder node in parent tree
+  vm._staticTrees = null;
+  var parentVnode = vm.$vnode = vm.$options._parentVnode; // the placeholder node in parent tree
   var renderContext = parentVnode && parentVnode.context;
-  vm.$slots = resolveSlots(options._renderChildren, renderContext);
+  vm.$slots = resolveSlots(vm.$options._renderChildren, renderContext);
   vm.$scopedSlots = emptyObject;
   // bind the createElement fn to this instance
   // so that we get proper render context inside it.
@@ -10689,25 +10276,21 @@ function initRender (vm) {
   // $attrs & $listeners are exposed for easier HOC creation.
   // they need to be reactive so that HOCs using them are always updated
   var parentData = parentVnode && parentVnode.data;
-
   /* istanbul ignore else */
   if (process.env.NODE_ENV !== 'production') {
-    defineReactive(vm, '$attrs', parentData && parentData.attrs || emptyObject, function () {
+    defineReactive$$1(vm, '$attrs', parentData && parentData.attrs, function () {
       !isUpdatingChildComponent && warn("$attrs is readonly.", vm);
     }, true);
-    defineReactive(vm, '$listeners', options._parentListeners || emptyObject, function () {
+    defineReactive$$1(vm, '$listeners', vm.$options._parentListeners, function () {
       !isUpdatingChildComponent && warn("$listeners is readonly.", vm);
     }, true);
   } else {
-    defineReactive(vm, '$attrs', parentData && parentData.attrs || emptyObject, null, true);
-    defineReactive(vm, '$listeners', options._parentListeners || emptyObject, null, true);
+    defineReactive$$1(vm, '$attrs', parentData && parentData.attrs, null, true);
+    defineReactive$$1(vm, '$listeners', vm.$options._parentListeners, null, true);
   }
 }
 
 function renderMixin (Vue) {
-  // install runtime convenience helpers
-  installRenderHelpers(Vue.prototype);
-
   Vue.prototype.$nextTick = function (fn) {
     return nextTick(fn, this)
   };
@@ -10716,23 +10299,21 @@ function renderMixin (Vue) {
     var vm = this;
     var ref = vm.$options;
     var render = ref.render;
+    var staticRenderFns = ref.staticRenderFns;
     var _parentVnode = ref._parentVnode;
 
     if (vm._isMounted) {
-      // if the parent didn't update, the slot nodes will be the ones from
-      // last render. They need to be cloned to ensure "freshness" for this render.
+      // clone slot nodes on re-renders
       for (var key in vm.$slots) {
-        var slot = vm.$slots[key];
-        // _rendered is a flag added by renderSlot, but may not be present
-        // if the slot is passed from manually written render functions
-        if (slot._rendered || (slot[0] && slot[0].elm)) {
-          vm.$slots[key] = cloneVNodes(slot, true /* deep */);
-        }
+        vm.$slots[key] = cloneVNodes(vm.$slots[key]);
       }
     }
 
     vm.$scopedSlots = (_parentVnode && _parentVnode.data.scopedSlots) || emptyObject;
 
+    if (staticRenderFns && !vm._staticTrees) {
+      vm._staticTrees = [];
+    }
     // set parent vnode. this allows render functions to have access
     // to the data on the placeholder node.
     vm.$vnode = _parentVnode;
@@ -10741,21 +10322,14 @@ function renderMixin (Vue) {
     try {
       vnode = render.call(vm._renderProxy, vm.$createElement);
     } catch (e) {
-      handleError(e, vm, "render");
+      handleError(e, vm, "render function");
       // return error render result,
       // or previous vnode to prevent render error causing blank component
       /* istanbul ignore else */
       if (process.env.NODE_ENV !== 'production') {
-        if (vm.$options.renderError) {
-          try {
-            vnode = vm.$options.renderError.call(vm._renderProxy, vm.$createElement, e);
-          } catch (e) {
-            handleError(e, vm, "renderError");
-            vnode = vm._vnode;
-          }
-        } else {
-          vnode = vm._vnode;
-        }
+        vnode = vm.$options.renderError
+          ? vm.$options.renderError.call(vm._renderProxy, vm.$createElement, e)
+          : vm._vnode;
       } else {
         vnode = vm._vnode;
       }
@@ -10775,6 +10349,25 @@ function renderMixin (Vue) {
     vnode.parent = _parentVnode;
     return vnode
   };
+
+  // internal render helpers.
+  // these are exposed on the instance prototype to reduce generated render
+  // code size.
+  Vue.prototype._o = markOnce;
+  Vue.prototype._n = toNumber;
+  Vue.prototype._s = toString;
+  Vue.prototype._l = renderList;
+  Vue.prototype._t = renderSlot;
+  Vue.prototype._q = looseEqual;
+  Vue.prototype._i = looseIndexOf;
+  Vue.prototype._m = renderStatic;
+  Vue.prototype._f = resolveFilter;
+  Vue.prototype._k = checkKeyCodes;
+  Vue.prototype._b = bindObjectProps;
+  Vue.prototype._v = createTextVNode;
+  Vue.prototype._e = createEmptyVNode;
+  Vue.prototype._u = resolveScopedSlots;
+  Vue.prototype._g = bindObjectListeners;
 }
 
 /*  */
@@ -10790,7 +10383,7 @@ function initMixin (Vue) {
     var startTag, endTag;
     /* istanbul ignore if */
     if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
-      startTag = "vue-perf-start:" + (vm._uid);
+      startTag = "vue-perf-init:" + (vm._uid);
       endTag = "vue-perf-end:" + (vm._uid);
       mark(startTag);
     }
@@ -10831,7 +10424,7 @@ function initMixin (Vue) {
     if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
       vm._name = formatComponentName(vm, false);
       mark(endTag);
-      measure(("vue " + (vm._name) + " init"), startTag, endTag);
+      measure(((vm._name) + " init"), startTag, endTag);
     }
 
     if (vm.$options.el) {
@@ -10843,18 +10436,14 @@ function initMixin (Vue) {
 function initInternalComponent (vm, options) {
   var opts = vm.$options = Object.create(vm.constructor.options);
   // doing this because it's faster than dynamic enumeration.
-  var parentVnode = options._parentVnode;
   opts.parent = options.parent;
-  opts._parentVnode = parentVnode;
+  opts.propsData = options.propsData;
+  opts._parentVnode = options._parentVnode;
+  opts._parentListeners = options._parentListeners;
+  opts._renderChildren = options._renderChildren;
+  opts._componentTag = options._componentTag;
   opts._parentElm = options._parentElm;
   opts._refElm = options._refElm;
-
-  var vnodeComponentOptions = parentVnode.componentOptions;
-  opts.propsData = vnodeComponentOptions.propsData;
-  opts._parentListeners = vnodeComponentOptions.listeners;
-  opts._renderChildren = vnodeComponentOptions.children;
-  opts._componentTag = vnodeComponentOptions.tag;
-
   if (options.render) {
     opts.render = options.render;
     opts.staticRenderFns = options.staticRenderFns;
@@ -10988,8 +10577,14 @@ function initExtend (Vue) {
     }
 
     var name = extendOptions.name || Super.options.name;
-    if (process.env.NODE_ENV !== 'production' && name) {
-      validateComponentName(name);
+    if (process.env.NODE_ENV !== 'production') {
+      if (!/^[a-zA-Z][\w-]*$/.test(name)) {
+        warn(
+          'Invalid component name: "' + name + '". Component names ' +
+          'can only contain alphanumeric characters and the hyphen, ' +
+          'and must start with a letter.'
+        );
+      }
     }
 
     var Sub = function VueComponent (options) {
@@ -11071,8 +10666,13 @@ function initAssetRegisters (Vue) {
         return this.options[type + 's'][id]
       } else {
         /* istanbul ignore if */
-        if (process.env.NODE_ENV !== 'production' && type === 'component') {
-          validateComponentName(id);
+        if (process.env.NODE_ENV !== 'production') {
+          if (type === 'component' && config.isReservedTag(id)) {
+            warn(
+              'Do not use built-in or reserved HTML elements as component ' +
+              'id: ' + id
+            );
+          }
         }
         if (type === 'component' && isPlainObject(definition)) {
           definition.name = definition.name || id;
@@ -11090,6 +10690,8 @@ function initAssetRegisters (Vue) {
 
 /*  */
 
+var patternTypes = [String, RegExp, Array];
+
 function getComponentName (opts) {
   return opts && (opts.Ctor.options.name || opts.tag)
 }
@@ -11106,36 +10708,26 @@ function matches (pattern, name) {
   return false
 }
 
-function pruneCache (keepAliveInstance, filter) {
-  var cache = keepAliveInstance.cache;
-  var keys = keepAliveInstance.keys;
-  var _vnode = keepAliveInstance._vnode;
+function pruneCache (cache, current, filter) {
   for (var key in cache) {
     var cachedNode = cache[key];
     if (cachedNode) {
       var name = getComponentName(cachedNode.componentOptions);
       if (name && !filter(name)) {
-        pruneCacheEntry(cache, key, keys, _vnode);
+        if (cachedNode !== current) {
+          pruneCacheEntry(cachedNode);
+        }
+        cache[key] = null;
       }
     }
   }
 }
 
-function pruneCacheEntry (
-  cache,
-  key,
-  keys,
-  current
-) {
-  var cached$$1 = cache[key];
-  if (cached$$1 && (!current || cached$$1.tag !== current.tag)) {
-    cached$$1.componentInstance.$destroy();
+function pruneCacheEntry (vnode) {
+  if (vnode) {
+    vnode.componentInstance.$destroy();
   }
-  cache[key] = null;
-  remove(keys, key);
 }
-
-var patternTypes = [String, RegExp, Array];
 
 var KeepAlive = {
   name: 'keep-alive',
@@ -11143,76 +10735,55 @@ var KeepAlive = {
 
   props: {
     include: patternTypes,
-    exclude: patternTypes,
-    max: [String, Number]
+    exclude: patternTypes
   },
 
   created: function created () {
     this.cache = Object.create(null);
-    this.keys = [];
   },
 
   destroyed: function destroyed () {
     var this$1 = this;
 
     for (var key in this$1.cache) {
-      pruneCacheEntry(this$1.cache, key, this$1.keys);
+      pruneCacheEntry(this$1.cache[key]);
     }
   },
 
   watch: {
     include: function include (val) {
-      pruneCache(this, function (name) { return matches(val, name); });
+      pruneCache(this.cache, this._vnode, function (name) { return matches(val, name); });
     },
     exclude: function exclude (val) {
-      pruneCache(this, function (name) { return !matches(val, name); });
+      pruneCache(this.cache, this._vnode, function (name) { return !matches(val, name); });
     }
   },
 
   render: function render () {
-    var slot = this.$slots.default;
-    var vnode = getFirstComponentChild(slot);
+    var vnode = getFirstComponentChild(this.$slots.default);
     var componentOptions = vnode && vnode.componentOptions;
     if (componentOptions) {
       // check pattern
       var name = getComponentName(componentOptions);
-      var ref = this;
-      var include = ref.include;
-      var exclude = ref.exclude;
-      if (
-        // not included
-        (include && (!name || !matches(include, name))) ||
-        // excluded
-        (exclude && name && matches(exclude, name))
-      ) {
+      if (name && (
+        (this.include && !matches(this.include, name)) ||
+        (this.exclude && matches(this.exclude, name))
+      )) {
         return vnode
       }
-
-      var ref$1 = this;
-      var cache = ref$1.cache;
-      var keys = ref$1.keys;
       var key = vnode.key == null
         // same constructor may get registered as different local components
         // so cid alone is not enough (#3269)
         ? componentOptions.Ctor.cid + (componentOptions.tag ? ("::" + (componentOptions.tag)) : '')
         : vnode.key;
-      if (cache[key]) {
-        vnode.componentInstance = cache[key].componentInstance;
-        // make current key freshest
-        remove(keys, key);
-        keys.push(key);
+      if (this.cache[key]) {
+        vnode.componentInstance = this.cache[key].componentInstance;
       } else {
-        cache[key] = vnode;
-        keys.push(key);
-        // prune oldest entry
-        if (this.max && keys.length > parseInt(this.max)) {
-          pruneCacheEntry(cache, keys[0], keys, this._vnode);
-        }
+        this.cache[key] = vnode;
       }
-
       vnode.data.keepAlive = true;
     }
-    return vnode || (slot && slot[0])
+    return vnode
   }
 };
 
@@ -11242,7 +10813,7 @@ function initGlobalAPI (Vue) {
     warn: warn,
     extend: extend,
     mergeOptions: mergeOptions,
-    defineReactive: defineReactive
+    defineReactive: defineReactive$$1
   };
 
   Vue.set = set;
@@ -11279,7 +10850,7 @@ Object.defineProperty(Vue$3.prototype, '$ssrContext', {
   }
 });
 
-Vue$3.version = '2.5.11';
+Vue$3.version = '2.4.2';
 
 /*  */
 
@@ -11288,7 +10859,7 @@ Vue$3.version = '2.5.11';
 var isReservedAttr = makeMap('style,class');
 
 // attributes that should be using props for binding
-var acceptValue = makeMap('input,textarea,option,select,progress');
+var acceptValue = makeMap('input,textarea,option,select');
 var mustUseProp = function (tag, type, attr) {
   return (
     (attr === 'value' && acceptValue(tag)) && type !== 'button' ||
@@ -11331,12 +10902,12 @@ function genClassForVnode (vnode) {
   var childNode = vnode;
   while (isDef(childNode.componentInstance)) {
     childNode = childNode.componentInstance._vnode;
-    if (childNode && childNode.data) {
+    if (childNode.data) {
       data = mergeClassData(childNode.data, data);
     }
   }
   while (isDef(parentNode = parentNode.parent)) {
-    if (parentNode && parentNode.data) {
+    if (parentNode.data) {
       data = mergeClassData(data, parentNode.data);
     }
   }
@@ -11476,8 +11047,6 @@ function isUnknownElement (tag) {
     return (unknownElementCache[tag] = /HTMLUnknownElement/.test(el.toString()))
   }
 }
-
-var isTextInputType = makeMap('text,number,password,search,email,tel,url');
 
 /*  */
 
@@ -11625,6 +11194,8 @@ function registerRef (vnode, isRemoval) {
  *
  * modified by Evan You (@yyx990803)
  *
+
+/*
  * Not type-checking this because this file is perf-critical and the cost
  * of making flow understand it is not worth it.
  */
@@ -11650,12 +11221,14 @@ function sameVnode (a, b) {
   )
 }
 
+// Some browsers do not support dynamically changing type for <input>
+// so they need to be treated as different nodes
 function sameInputType (a, b) {
   if (a.tag !== 'input') { return true }
   var i;
   var typeA = isDef(i = a.data) && isDef(i = i.attrs) && i.type;
   var typeB = isDef(i = b.data) && isDef(i = i.attrs) && i.type;
-  return typeA === typeB || isTextInputType(typeA) && isTextInputType(typeB)
+  return typeA === typeB
 }
 
 function createKeyToOldIdx (children, beginIdx, endIdx) {
@@ -11689,13 +11262,13 @@ function createPatchFunction (backend) {
   }
 
   function createRmCb (childElm, listeners) {
-    function remove () {
-      if (--remove.listeners === 0) {
+    function remove$$1 () {
+      if (--remove$$1.listeners === 0) {
         removeNode(childElm);
       }
     }
-    remove.listeners = listeners;
-    return remove
+    remove$$1.listeners = listeners;
+    return remove$$1
   }
 
   function removeNode (el) {
@@ -11706,23 +11279,7 @@ function createPatchFunction (backend) {
     }
   }
 
-  function isUnknownElement$$1 (vnode, inVPre) {
-    return (
-      !inVPre &&
-      !vnode.ns &&
-      !(
-        config.ignoredElements.length &&
-        config.ignoredElements.some(function (ignore) {
-          return isRegExp(ignore)
-            ? ignore.test(vnode.tag)
-            : ignore === vnode.tag
-        })
-      ) &&
-      config.isUnknownElement(vnode.tag)
-    )
-  }
-
-  var creatingElmInVPre = 0;
+  var inPre = 0;
   function createElm (vnode, insertedVnodeQueue, parentElm, refElm, nested) {
     vnode.isRootInsert = !nested; // for transition enter check
     if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
@@ -11735,9 +11292,14 @@ function createPatchFunction (backend) {
     if (isDef(tag)) {
       if (process.env.NODE_ENV !== 'production') {
         if (data && data.pre) {
-          creatingElmInVPre++;
+          inPre++;
         }
-        if (isUnknownElement$$1(vnode, creatingElmInVPre)) {
+        if (
+          !inPre &&
+          !vnode.ns &&
+          !(config.ignoredElements.length && config.ignoredElements.indexOf(tag) > -1) &&
+          config.isUnknownElement(tag)
+        ) {
           warn(
             'Unknown custom element: <' + tag + '> - did you ' +
             'register the component correctly? For recursive components, ' +
@@ -11761,7 +11323,7 @@ function createPatchFunction (backend) {
       }
 
       if (process.env.NODE_ENV !== 'production' && data && data.pre) {
-        creatingElmInVPre--;
+        inPre--;
       }
     } else if (isTrue(vnode.isComment)) {
       vnode.elm = nodeOps.createComment(vnode.text);
@@ -11847,9 +11409,6 @@ function createPatchFunction (backend) {
 
   function createChildren (vnode, children, insertedVnodeQueue) {
     if (Array.isArray(children)) {
-      if (process.env.NODE_ENV !== 'production') {
-        checkDuplicateKeys(children);
-      }
       for (var i = 0; i < children.length; ++i) {
         createElm(children[i], insertedVnodeQueue, vnode.elm, null, true);
       }
@@ -11881,21 +11440,16 @@ function createPatchFunction (backend) {
   // of going through the normal attribute patching process.
   function setScope (vnode) {
     var i;
-    if (isDef(i = vnode.fnScopeId)) {
-      nodeOps.setAttribute(vnode.elm, i, '');
-    } else {
-      var ancestor = vnode;
-      while (ancestor) {
-        if (isDef(i = ancestor.context) && isDef(i = i.$options._scopeId)) {
-          nodeOps.setAttribute(vnode.elm, i, '');
-        }
-        ancestor = ancestor.parent;
+    var ancestor = vnode;
+    while (ancestor) {
+      if (isDef(i = ancestor.context) && isDef(i = i.$options._scopeId)) {
+        nodeOps.setAttribute(vnode.elm, i, '');
       }
+      ancestor = ancestor.parent;
     }
     // for slot content they should also get the scopeId from the host instance.
     if (isDef(i = activeInstance) &&
       i !== vnode.context &&
-      i !== vnode.fnContext &&
       isDef(i = i.$options._scopeId)
     ) {
       nodeOps.setAttribute(vnode.elm, i, '');
@@ -11974,16 +11528,12 @@ function createPatchFunction (backend) {
     var newEndIdx = newCh.length - 1;
     var newStartVnode = newCh[0];
     var newEndVnode = newCh[newEndIdx];
-    var oldKeyToIdx, idxInOld, vnodeToMove, refElm;
+    var oldKeyToIdx, idxInOld, elmToMove, refElm;
 
     // removeOnly is a special flag used only by <transition-group>
     // to ensure removed elements stay in correct relative positions
     // during leaving transitions
     var canMove = !removeOnly;
-
-    if (process.env.NODE_ENV !== 'production') {
-      checkDuplicateKeys(newCh);
-    }
 
     while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
       if (isUndef(oldStartVnode)) {
@@ -12010,23 +11560,30 @@ function createPatchFunction (backend) {
         newStartVnode = newCh[++newStartIdx];
       } else {
         if (isUndef(oldKeyToIdx)) { oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx); }
-        idxInOld = isDef(newStartVnode.key)
-          ? oldKeyToIdx[newStartVnode.key]
-          : findIdxInOld(newStartVnode, oldCh, oldStartIdx, oldEndIdx);
+        idxInOld = isDef(newStartVnode.key) ? oldKeyToIdx[newStartVnode.key] : null;
         if (isUndef(idxInOld)) { // New element
           createElm(newStartVnode, insertedVnodeQueue, parentElm, oldStartVnode.elm);
+          newStartVnode = newCh[++newStartIdx];
         } else {
-          vnodeToMove = oldCh[idxInOld];
-          if (sameVnode(vnodeToMove, newStartVnode)) {
-            patchVnode(vnodeToMove, newStartVnode, insertedVnodeQueue);
+          elmToMove = oldCh[idxInOld];
+          /* istanbul ignore if */
+          if (process.env.NODE_ENV !== 'production' && !elmToMove) {
+            warn(
+              'It seems there are duplicate keys that is causing an update error. ' +
+              'Make sure each v-for item has a unique key.'
+            );
+          }
+          if (sameVnode(elmToMove, newStartVnode)) {
+            patchVnode(elmToMove, newStartVnode, insertedVnodeQueue);
             oldCh[idxInOld] = undefined;
-            canMove && nodeOps.insertBefore(parentElm, vnodeToMove.elm, oldStartVnode.elm);
+            canMove && nodeOps.insertBefore(parentElm, elmToMove.elm, oldStartVnode.elm);
+            newStartVnode = newCh[++newStartIdx];
           } else {
             // same key but different element. treat as new element
             createElm(newStartVnode, insertedVnodeQueue, parentElm, oldStartVnode.elm);
+            newStartVnode = newCh[++newStartIdx];
           }
         }
-        newStartVnode = newCh[++newStartIdx];
       }
     }
     if (oldStartIdx > oldEndIdx) {
@@ -12034,31 +11591,6 @@ function createPatchFunction (backend) {
       addVnodes(parentElm, refElm, newCh, newStartIdx, newEndIdx, insertedVnodeQueue);
     } else if (newStartIdx > newEndIdx) {
       removeVnodes(parentElm, oldCh, oldStartIdx, oldEndIdx);
-    }
-  }
-
-  function checkDuplicateKeys (children) {
-    var seenKeys = {};
-    for (var i = 0; i < children.length; i++) {
-      var vnode = children[i];
-      var key = vnode.key;
-      if (isDef(key)) {
-        if (seenKeys[key]) {
-          warn(
-            ("Duplicate keys detected: '" + key + "'. This may cause an update error."),
-            vnode.context
-          );
-        } else {
-          seenKeys[key] = true;
-        }
-      }
-    }
-  }
-
-  function findIdxInOld (node, oldCh, start, end) {
-    for (var i = start; i < end; i++) {
-      var c = oldCh[i];
-      if (isDef(c) && sameVnode(node, c)) { return i }
     }
   }
 
@@ -12134,32 +11666,27 @@ function createPatchFunction (backend) {
     }
   }
 
-  var hydrationBailed = false;
+  var bailed = false;
   // list of modules that can skip create hook during hydration because they
   // are already rendered on the client or has no need for initialization
-  // Note: style is excluded because it relies on initial clone for future
-  // deep updates (#7063).
-  var isRenderedModule = makeMap('attrs,class,staticClass,staticStyle,key');
+  var isRenderedModule = makeMap('attrs,style,class,staticClass,staticStyle,key');
 
   // Note: this is a browser-only function so we can assume elms are DOM nodes.
-  function hydrate (elm, vnode, insertedVnodeQueue, inVPre) {
-    var i;
-    var tag = vnode.tag;
-    var data = vnode.data;
-    var children = vnode.children;
-    inVPre = inVPre || (data && data.pre);
-    vnode.elm = elm;
-
+  function hydrate (elm, vnode, insertedVnodeQueue) {
     if (isTrue(vnode.isComment) && isDef(vnode.asyncFactory)) {
+      vnode.elm = elm;
       vnode.isAsyncPlaceholder = true;
       return true
     }
-    // assert node match
     if (process.env.NODE_ENV !== 'production') {
-      if (!assertNodeMatch(elm, vnode, inVPre)) {
+      if (!assertNodeMatch(elm, vnode)) {
         return false
       }
     }
+    vnode.elm = elm;
+    var tag = vnode.tag;
+    var data = vnode.data;
+    var children = vnode.children;
     if (isDef(data)) {
       if (isDef(i = data.hook) && isDef(i = i.init)) { i(vnode, true /* hydrating */); }
       if (isDef(i = vnode.componentInstance)) {
@@ -12174,61 +11701,36 @@ function createPatchFunction (backend) {
         if (!elm.hasChildNodes()) {
           createChildren(vnode, children, insertedVnodeQueue);
         } else {
-          // v-html and domProps: innerHTML
-          if (isDef(i = data) && isDef(i = i.domProps) && isDef(i = i.innerHTML)) {
-            if (i !== elm.innerHTML) {
-              /* istanbul ignore if */
-              if (process.env.NODE_ENV !== 'production' &&
-                typeof console !== 'undefined' &&
-                !hydrationBailed
-              ) {
-                hydrationBailed = true;
-                console.warn('Parent: ', elm);
-                console.warn('server innerHTML: ', i);
-                console.warn('client innerHTML: ', elm.innerHTML);
-              }
-              return false
+          var childrenMatch = true;
+          var childNode = elm.firstChild;
+          for (var i$1 = 0; i$1 < children.length; i$1++) {
+            if (!childNode || !hydrate(childNode, children[i$1], insertedVnodeQueue)) {
+              childrenMatch = false;
+              break
             }
-          } else {
-            // iterate and compare children lists
-            var childrenMatch = true;
-            var childNode = elm.firstChild;
-            for (var i$1 = 0; i$1 < children.length; i$1++) {
-              if (!childNode || !hydrate(childNode, children[i$1], insertedVnodeQueue, inVPre)) {
-                childrenMatch = false;
-                break
-              }
-              childNode = childNode.nextSibling;
+            childNode = childNode.nextSibling;
+          }
+          // if childNode is not null, it means the actual childNodes list is
+          // longer than the virtual children list.
+          if (!childrenMatch || childNode) {
+            if (process.env.NODE_ENV !== 'production' &&
+              typeof console !== 'undefined' &&
+              !bailed
+            ) {
+              bailed = true;
+              console.warn('Parent: ', elm);
+              console.warn('Mismatching childNodes vs. VNodes: ', elm.childNodes, children);
             }
-            // if childNode is not null, it means the actual childNodes list is
-            // longer than the virtual children list.
-            if (!childrenMatch || childNode) {
-              /* istanbul ignore if */
-              if (process.env.NODE_ENV !== 'production' &&
-                typeof console !== 'undefined' &&
-                !hydrationBailed
-              ) {
-                hydrationBailed = true;
-                console.warn('Parent: ', elm);
-                console.warn('Mismatching childNodes vs. VNodes: ', elm.childNodes, children);
-              }
-              return false
-            }
+            return false
           }
         }
       }
       if (isDef(data)) {
-        var fullInvoke = false;
         for (var key in data) {
           if (!isRenderedModule(key)) {
-            fullInvoke = true;
             invokeCreateHooks(vnode, insertedVnodeQueue);
             break
           }
-        }
-        if (!fullInvoke && data['class']) {
-          // ensure collecting deps for deep class bindings for future updates
-          traverse(data['class']);
         }
       }
     } else if (elm.data !== vnode.text) {
@@ -12237,10 +11739,10 @@ function createPatchFunction (backend) {
     return true
   }
 
-  function assertNodeMatch (node, vnode, inVPre) {
+  function assertNodeMatch (node, vnode) {
     if (isDef(vnode.tag)) {
-      return vnode.tag.indexOf('vue-component') === 0 || (
-        !isUnknownElement$$1(vnode, inVPre) &&
+      return (
+        vnode.tag.indexOf('vue-component') === 0 ||
         vnode.tag.toLowerCase() === (node.tagName && node.tagName.toLowerCase())
       )
     } else {
@@ -12293,12 +11795,9 @@ function createPatchFunction (backend) {
           // create an empty node and replace it
           oldVnode = emptyNodeAt(oldVnode);
         }
-
         // replacing existing element
         var oldElm = oldVnode.elm;
         var parentElm$1 = nodeOps.parentNode(oldElm);
-
-        // create new node
         createElm(
           vnode,
           insertedVnodeQueue,
@@ -12309,37 +11808,21 @@ function createPatchFunction (backend) {
           nodeOps.nextSibling(oldElm)
         );
 
-        // update parent placeholder node element, recursively
         if (isDef(vnode.parent)) {
+          // component root element replaced.
+          // update parent placeholder node element, recursively
           var ancestor = vnode.parent;
-          var patchable = isPatchable(vnode);
           while (ancestor) {
-            for (var i = 0; i < cbs.destroy.length; ++i) {
-              cbs.destroy[i](ancestor);
-            }
             ancestor.elm = vnode.elm;
-            if (patchable) {
-              for (var i$1 = 0; i$1 < cbs.create.length; ++i$1) {
-                cbs.create[i$1](emptyNode, ancestor);
-              }
-              // #6513
-              // invoke insert hooks that may have been merged by create hooks.
-              // e.g. for directives that uses the "inserted" hook.
-              var insert = ancestor.data.hook.insert;
-              if (insert.merged) {
-                // start at index 1 to avoid re-invoking component mounted hook
-                for (var i$2 = 1; i$2 < insert.fns.length; i$2++) {
-                  insert.fns[i$2]();
-                }
-              }
-            } else {
-              registerRef(ancestor);
-            }
             ancestor = ancestor.parent;
+          }
+          if (isPatchable(vnode)) {
+            for (var i = 0; i < cbs.create.length; ++i) {
+              cbs.create[i](emptyNode, vnode.parent);
+            }
           }
         }
 
-        // destroy old node
         if (isDef(parentElm$1)) {
           removeVnodes(parentElm$1, [oldVnode], 0, 0);
         } else if (isDef(oldVnode.tag)) {
@@ -12405,14 +11888,14 @@ function _update (oldVnode, vnode) {
       }
     };
     if (isCreate) {
-      mergeVNodeHook(vnode, 'insert', callInsert);
+      mergeVNodeHook(vnode.data.hook || (vnode.data.hook = {}), 'insert', callInsert);
     } else {
       callInsert();
     }
   }
 
   if (dirsWithPostpatch.length) {
-    mergeVNodeHook(vnode, 'postpatch', function () {
+    mergeVNodeHook(vnode.data.hook || (vnode.data.hook = {}), 'postpatch', function () {
       for (var i = 0; i < dirsWithPostpatch.length; i++) {
         callHook$1(dirsWithPostpatch[i], 'componentUpdated', vnode, oldVnode);
       }
@@ -12437,20 +11920,17 @@ function normalizeDirectives$1 (
 ) {
   var res = Object.create(null);
   if (!dirs) {
-    // $flow-disable-line
     return res
   }
   var i, dir;
   for (i = 0; i < dirs.length; i++) {
     dir = dirs[i];
     if (!dir.modifiers) {
-      // $flow-disable-line
       dir.modifiers = emptyModifiers;
     }
     res[getRawDirName(dir)] = dir;
     dir.def = resolveAsset(vm.$options, 'directives', dir.name, true);
   }
-  // $flow-disable-line
   return res
 }
 
@@ -12501,9 +11981,8 @@ function updateAttrs (oldVnode, vnode) {
     }
   }
   // #4391: in IE9, setting type can reset value for input[type=radio]
-  // #6666: IE/Edge forces progress value down to 1 before setting a max
   /* istanbul ignore if */
-  if ((isIE || isEdge) && attrs.value !== oldAttrs.value) {
+  if (isIE9 && attrs.value !== oldAttrs.value) {
     setAttr(elm, 'value', attrs.value);
   }
   for (key in oldAttrs) {
@@ -12524,12 +12003,7 @@ function setAttr (el, key, value) {
     if (isFalsyAttrValue(value)) {
       el.removeAttribute(key);
     } else {
-      // technically allowfullscreen is a boolean attribute for <iframe>,
-      // but Flash expects a value of "true" when used on <embed> tag
-      value = key === 'allowfullscreen' && el.tagName === 'EMBED'
-        ? 'true'
-        : key;
-      el.setAttribute(key, value);
+      el.setAttribute(key, key);
     }
   } else if (isEnumeratedAttr(key)) {
     el.setAttribute(key, isFalsyAttrValue(value) || value === 'false' ? 'false' : 'true');
@@ -12543,23 +12017,6 @@ function setAttr (el, key, value) {
     if (isFalsyAttrValue(value)) {
       el.removeAttribute(key);
     } else {
-      // #7138: IE10 & 11 fires input event when setting placeholder on
-      // <textarea>... block the first input event and remove the blocker
-      // immediately.
-      /* istanbul ignore if */
-      if (
-        isIE && !isIE9 &&
-        el.tagName === 'TEXTAREA' &&
-        key === 'placeholder' && !el.__ieph
-      ) {
-        var blocker = function (e) {
-          e.stopImmediatePropagation();
-          el.removeEventListener('input', blocker);
-        };
-        el.addEventListener('input', blocker);
-        // $flow-disable-line
-        el.__ieph = true; /* IE placeholder patched */
-      }
       el.setAttribute(key, value);
     }
   }
@@ -12610,26 +12067,23 @@ var klass = {
 
 /*  */
 
+var validDivisionCharRE = /[\w).+\-_$\]]/;
+
+
+
+function wrapFilter (exp, filter) {
+  var i = filter.indexOf('(');
+  if (i < 0) {
+    // _f: resolveFilter
+    return ("_f(\"" + filter + "\")(" + exp + ")")
+  } else {
+    var name = filter.slice(0, i);
+    var args = filter.slice(i + 1);
+    return ("_f(\"" + name + "\")(" + exp + "," + args)
+  }
+}
+
 /*  */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// note: this only removes the attr from the Array (attrsList) so that it
-// doesn't get processed by processAttrs.
-// By default it does NOT remove it from the map (attrsMap) because the map is
-// needed during codegen.
 
 /*  */
 
@@ -12641,6 +12095,24 @@ var klass = {
 /**
  * Cross-platform codegen helper for generating v-model value assignment code.
  */
+
+
+/**
+ * parse directive model to do the array update transform. a[idx] = val => $$a.splice($$idx, 1, val)
+ *
+ * for loop possible cases:
+ *
+ * - test
+ * - test[idx]
+ * - test[test1[idx]]
+ * - test["a"][idx]
+ * - xxx.test[a[a].test1[idx]]
+ * - test.xxx.a["asa"][test1[idx]]
+ *
+ */
+
+var str;
+var index$1;
 
 /*  */
 
@@ -12656,33 +12128,23 @@ var CHECKBOX_RADIO_TOKEN = '__c';
 // the whole point is ensuring the v-model callback gets called before
 // user-attached handlers.
 function normalizeEvents (on) {
+  var event;
   /* istanbul ignore if */
   if (isDef(on[RANGE_TOKEN])) {
     // IE input[type=range] only supports `change` event
-    var event = isIE ? 'change' : 'input';
+    event = isIE ? 'change' : 'input';
     on[event] = [].concat(on[RANGE_TOKEN], on[event] || []);
     delete on[RANGE_TOKEN];
   }
-  // This was originally intended to fix #4521 but no longer necessary
-  // after 2.5. Keeping it for backwards compat with generated code from < 2.4
-  /* istanbul ignore if */
   if (isDef(on[CHECKBOX_RADIO_TOKEN])) {
-    on.change = [].concat(on[CHECKBOX_RADIO_TOKEN], on.change || []);
+    // Chrome fires microtasks in between click/change, leads to #4521
+    event = isChrome ? 'click' : 'change';
+    on[event] = [].concat(on[CHECKBOX_RADIO_TOKEN], on[event] || []);
     delete on[CHECKBOX_RADIO_TOKEN];
   }
 }
 
 var target$1;
-
-function createOnceHandler (handler, event, capture) {
-  var _target = target$1; // save current target element in closure
-  return function onceHandler () {
-    var res = handler.apply(null, arguments);
-    if (res !== null) {
-      remove$2(event, onceHandler, capture, _target);
-    }
-  }
-}
 
 function add$1 (
   event,
@@ -12691,8 +12153,18 @@ function add$1 (
   capture,
   passive
 ) {
-  handler = withMacroTask(handler);
-  if (once$$1) { handler = createOnceHandler(handler, event, capture); }
+  if (once$$1) {
+    var oldHandler = handler;
+    var _target = target$1; // save current target element in closure
+    handler = function (ev) {
+      var res = arguments.length === 1
+        ? oldHandler(ev)
+        : oldHandler.apply(null, arguments);
+      if (res !== null) {
+        remove$2(event, handler, capture, _target);
+      }
+    };
+  }
   target$1.addEventListener(
     event,
     handler,
@@ -12708,11 +12180,7 @@ function remove$2 (
   capture,
   _target
 ) {
-  (_target || target$1).removeEventListener(
-    event,
-    handler._withTask || handler,
-    capture
-  );
+  (_target || target$1).removeEventListener(event, handler, capture);
 }
 
 function updateDOMListeners (oldVnode, vnode) {
@@ -12724,7 +12192,6 @@ function updateDOMListeners (oldVnode, vnode) {
   target$1 = vnode.elm;
   normalizeEvents(on);
   updateListeners(on, oldOn, add$1, remove$2, vnode.context);
-  target$1 = undefined;
 }
 
 var events = {
@@ -12760,11 +12227,6 @@ function updateDOMProps (oldVnode, vnode) {
     if (key === 'textContent' || key === 'innerHTML') {
       if (vnode.children) { vnode.children.length = 0; }
       if (cur === oldProps[key]) { continue }
-      // #6601 work around Chrome version <= 55 bug where single textNode
-      // replaced by innerHTML/textContent retains its parentNode property
-      if (elm.childNodes.length === 1) {
-        elm.removeChild(elm.childNodes[0]);
-      }
     }
 
     if (key === 'value') {
@@ -12773,7 +12235,7 @@ function updateDOMProps (oldVnode, vnode) {
       elm._value = cur;
       // avoid resetting cursor position when value is the same
       var strCur = isUndef(cur) ? '' : String(cur);
-      if (shouldUpdateValue(elm, strCur)) {
+      if (shouldUpdateValue(elm, vnode, strCur)) {
         elm.value = strCur;
       }
     } else {
@@ -12785,15 +12247,19 @@ function updateDOMProps (oldVnode, vnode) {
 // check platforms/web/util/attrs.js acceptValue
 
 
-function shouldUpdateValue (elm, checkVal) {
+function shouldUpdateValue (
+  elm,
+  vnode,
+  checkVal
+) {
   return (!elm.composing && (
-    elm.tagName === 'OPTION' ||
-    isNotInFocusAndDirty(elm, checkVal) ||
-    isDirtyWithModifiers(elm, checkVal)
+    vnode.tag === 'option' ||
+    isDirty(elm, checkVal) ||
+    isInputChanged(elm, checkVal)
   ))
 }
 
-function isNotInFocusAndDirty (elm, checkVal) {
+function isDirty (elm, checkVal) {
   // return true when textbox (.number and .trim) loses focus and its value is
   // not equal to the updated value
   var notInFocus = true;
@@ -12803,20 +12269,14 @@ function isNotInFocusAndDirty (elm, checkVal) {
   return notInFocus && elm.value !== checkVal
 }
 
-function isDirtyWithModifiers (elm, newVal) {
+function isInputChanged (elm, newVal) {
   var value = elm.value;
   var modifiers = elm._vModifiers; // injected by v-model runtime
-  if (isDef(modifiers)) {
-    if (modifiers.lazy) {
-      // inputs with lazy should only be updated when not in focus
-      return false
-    }
-    if (modifiers.number) {
-      return toNumber(value) !== toNumber(newVal)
-    }
-    if (modifiers.trim) {
-      return value.trim() !== newVal.trim()
-    }
+  if (isDef(modifiers) && modifiers.number) {
+    return toNumber(value) !== toNumber(newVal)
+  }
+  if (isDef(modifiers) && modifiers.trim) {
+    return value.trim() !== newVal.trim()
   }
   return value !== newVal
 }
@@ -12874,10 +12334,7 @@ function getStyle (vnode, checkChild) {
     var childNode = vnode;
     while (childNode.componentInstance) {
       childNode = childNode.componentInstance._vnode;
-      if (
-        childNode && childNode.data &&
-        (styleData = normalizeStyleData(childNode.data))
-      ) {
+      if (childNode.data && (styleData = normalizeStyleData(childNode.data))) {
         extend(res, styleData);
       }
     }
@@ -12960,7 +12417,7 @@ function updateStyle (oldVnode, vnode) {
   var style = normalizeStyleBinding(vnode.data.style) || {};
 
   // store normalized style under a different key for next diff
-  // make sure to clone it if it's reactive, since the user likely wants
+  // make sure to clone it if it's reactive, since the user likley wants
   // to mutate it.
   vnode.data.normalizedStyle = isDef(style.__ob__)
     ? extend({}, style)
@@ -13051,20 +12508,20 @@ function removeClass (el, cls) {
 
 /*  */
 
-function resolveTransition (def) {
-  if (!def) {
+function resolveTransition (def$$1) {
+  if (!def$$1) {
     return
   }
   /* istanbul ignore else */
-  if (typeof def === 'object') {
+  if (typeof def$$1 === 'object') {
     var res = {};
-    if (def.css !== false) {
-      extend(res, autoCssTransition(def.name || 'v'));
+    if (def$$1.css !== false) {
+      extend(res, autoCssTransition(def$$1.name || 'v'));
     }
-    extend(res, def);
+    extend(res, def$$1);
     return res
-  } else if (typeof def === 'string') {
-    return autoCssTransition(def)
+  } else if (typeof def$$1 === 'string') {
+    return autoCssTransition(def$$1)
   }
 }
 
@@ -13105,11 +12562,9 @@ if (hasTransition) {
 }
 
 // binding to window is necessary to make hot reload work in IE in strict mode
-var raf = inBrowser
-  ? window.requestAnimationFrame
-    ? window.requestAnimationFrame.bind(window)
-    : setTimeout
-  : /* istanbul ignore next */ function (fn) { return fn(); };
+var raf = inBrowser && window.requestAnimationFrame
+  ? window.requestAnimationFrame.bind(window)
+  : setTimeout;
 
 function nextFrame (fn) {
   raf(function () {
@@ -13339,7 +12794,7 @@ function enter (vnode, toggleDisplay) {
 
   if (!vnode.data.show) {
     // remove pending leave element on enter by injecting an insert hook
-    mergeVNodeHook(vnode, 'insert', function () {
+    mergeVNodeHook(vnode.data.hook || (vnode.data.hook = {}), 'insert', function () {
       var parent = el.parentNode;
       var pendingNode = parent && parent._pending && parent._pending[vnode.key];
       if (pendingNode &&
@@ -13390,12 +12845,12 @@ function leave (vnode, rm) {
   }
 
   var data = resolveTransition(vnode.data.transition);
-  if (isUndef(data) || el.nodeType !== 1) {
+  if (isUndef(data)) {
     return rm()
   }
 
   /* istanbul ignore if */
-  if (isDef(el._leaveCb)) {
+  if (isDef(el._leaveCb) || el.nodeType !== 1) {
     return
   }
 
@@ -13567,6 +13022,8 @@ var patch = createPatchFunction({ nodeOps: nodeOps, modules: modules });
  * properties to Elements.
  */
 
+var isTextInputType = makeMap('text,number,password,search,email,tel,url');
+
 /* istanbul ignore if */
 if (isIE9) {
   // http://www.matts411.com/post/internet-explorer-9-oninput/
@@ -13578,16 +13035,16 @@ if (isIE9) {
   });
 }
 
-var directive = {
-  inserted: function inserted (el, binding, vnode, oldVnode) {
+var model$1 = {
+  inserted: function inserted (el, binding, vnode) {
     if (vnode.tag === 'select') {
-      // #6903
-      if (oldVnode.elm && !oldVnode.elm._vOptions) {
-        mergeVNodeHook(vnode, 'postpatch', function () {
-          directive.componentUpdated(el, binding, vnode);
-        });
-      } else {
+      var cb = function () {
         setSelected(el, binding, vnode.context);
+      };
+      cb();
+      /* istanbul ignore if */
+      if (isIE || isEdge) {
+        setTimeout(cb, 0);
       }
       el._vOptions = [].map.call(el.options, getValue);
     } else if (vnode.tag === 'textarea' || isTextInputType(el.type)) {
@@ -13609,7 +13066,6 @@ var directive = {
       }
     }
   },
-
   componentUpdated: function componentUpdated (el, binding, vnode) {
     if (vnode.tag === 'select') {
       setSelected(el, binding, vnode.context);
@@ -13620,30 +13076,13 @@ var directive = {
       var prevOptions = el._vOptions;
       var curOptions = el._vOptions = [].map.call(el.options, getValue);
       if (curOptions.some(function (o, i) { return !looseEqual(o, prevOptions[i]); })) {
-        // trigger change event if
-        // no matching option found for at least one value
-        var needReset = el.multiple
-          ? binding.value.some(function (v) { return hasNoMatchingOption(v, curOptions); })
-          : binding.value !== binding.oldValue && hasNoMatchingOption(binding.value, curOptions);
-        if (needReset) {
-          trigger(el, 'change');
-        }
+        trigger(el, 'change');
       }
     }
   }
 };
 
 function setSelected (el, binding, vm) {
-  actuallySetSelected(el, binding, vm);
-  /* istanbul ignore if */
-  if (isIE || isEdge) {
-    setTimeout(function () {
-      actuallySetSelected(el, binding, vm);
-    }, 0);
-  }
-}
-
-function actuallySetSelected (el, binding, vm) {
   var value = binding.value;
   var isMultiple = el.multiple;
   if (isMultiple && !Array.isArray(value)) {
@@ -13674,10 +13113,6 @@ function actuallySetSelected (el, binding, vm) {
   if (!isMultiple) {
     el.selectedIndex = -1;
   }
-}
-
-function hasNoMatchingOption (value, options) {
-  return options.every(function (o) { return !looseEqual(o, value); })
 }
 
 function getValue (option) {
@@ -13768,7 +13203,7 @@ var show = {
 };
 
 var platformDirectives = {
-  model: directive,
+  model: model$1,
   show: show
 };
 
@@ -13842,6 +13277,10 @@ function isSameChild (child, oldChild) {
   return oldChild.key === child.key && oldChild.tag === child.tag
 }
 
+function isAsyncPlaceholder (node) {
+  return node.isComment && node.asyncFactory
+}
+
 var Transition = {
   name: 'transition',
   props: transitionProps,
@@ -13850,7 +13289,7 @@ var Transition = {
   render: function render (h) {
     var this$1 = this;
 
-    var children = this.$slots.default;
+    var children = this.$options._renderChildren;
     if (!children) {
       return
     }
@@ -13929,13 +13368,11 @@ var Transition = {
       oldChild &&
       oldChild.data &&
       !isSameChild(child, oldChild) &&
-      !isAsyncPlaceholder(oldChild) &&
-      // #6687 component root is a comment node
-      !(oldChild.componentInstance && oldChild.componentInstance._vnode.isComment)
+      !isAsyncPlaceholder(oldChild)
     ) {
       // replace old child transition data with fresh one
       // important for dynamic transitions!
-      var oldData = oldChild.data.transition = extend({}, data);
+      var oldData = oldChild && (oldChild.data.transition = extend({}, data));
       // handle transition mode
       if (mode === 'out-in') {
         // return placeholder node and queue update when leave finishes
@@ -14033,7 +13470,7 @@ var TransitionGroup = {
       this._vnode,
       this.kept,
       false, // hydrating
-      true // removeOnly (!important avoids unnecessary moves)
+      true // removeOnly (!important, avoids unnecessary moves)
     );
     this._vnode = this.kept;
   },
@@ -14052,9 +13489,8 @@ var TransitionGroup = {
     children.forEach(applyTranslation);
 
     // force reflow to put everything in position
-    // assign to this to avoid being removed in tree-shaking
-    // $flow-disable-line
-    this._reflow = document.body.offsetHeight;
+    var body = document.body;
+    var f = body.offsetHeight; // eslint-disable-line
 
     children.forEach(function (c) {
       if (c.data.moved) {
@@ -14162,7 +13598,7 @@ Vue$3.prototype.$mount = function (
 
 // devtools global hook
 /* istanbul ignore next */
-Vue$3.nextTick(function () {
+setTimeout(function () {
   if (config.devtools) {
     if (devtools) {
       devtools.emit('init', Vue$3);
@@ -14189,7 +13625,7 @@ Vue$3.nextTick(function () {
 
 /* harmony default export */ __webpack_exports__["default"] = (Vue$3);
 
-/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(14), __webpack_require__(41), __webpack_require__(195).setImmediate))
+/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(19), __webpack_require__(188)))
 
 /***/ }),
 /* 29 */
@@ -14199,7 +13635,7 @@ Vue$3.nextTick(function () {
 /* WEBPACK VAR INJECTION */(function(process) {
 
 var utils = __webpack_require__(3);
-var normalizeHeaderName = __webpack_require__(224);
+var normalizeHeaderName = __webpack_require__(216);
 
 var DEFAULT_CONTENT_TYPE = {
   'Content-Type': 'application/x-www-form-urlencoded'
@@ -14215,10 +13651,10 @@ function getDefaultAdapter() {
   var adapter;
   if (typeof XMLHttpRequest !== 'undefined') {
     // For browsers use XHR adapter
-    adapter = __webpack_require__(43);
+    adapter = __webpack_require__(42);
   } else if (typeof process !== 'undefined') {
     // For node use HTTP adapter
-    adapter = __webpack_require__(43);
+    adapter = __webpack_require__(42);
   }
   return adapter;
 }
@@ -14289,7 +13725,7 @@ utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
 
 module.exports = defaults;
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(14)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19)))
 
 /***/ }),
 /* 30 */
@@ -14318,7 +13754,7 @@ module.exports = function (it) {
 /* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var isObject = __webpack_require__(9);
+var isObject = __webpack_require__(14);
 var document = __webpack_require__(1).document;
 // typeof document.createElement is 'object' in old IE
 var is = isObject(document) && isObject(document.createElement);
@@ -14332,7 +13768,7 @@ module.exports = function (it) {
 /***/ (function(module, exports, __webpack_require__) {
 
 // 7.1.1 ToPrimitive(input [, PreferredType])
-var isObject = __webpack_require__(9);
+var isObject = __webpack_require__(14);
 // instead of the ES6 spec version, we didn't implement @@toPrimitive case
 // and the second argument - flag - preferred type is a string
 module.exports = function (it, S) {
@@ -14391,9 +13827,9 @@ exports.f = __webpack_require__(2);
 
 var global = __webpack_require__(1);
 var core = __webpack_require__(4);
-var LIBRARY = __webpack_require__(19);
+var LIBRARY = __webpack_require__(20);
 var wksExt = __webpack_require__(37);
-var defineProperty = __webpack_require__(8).f;
+var defineProperty = __webpack_require__(7).f;
 module.exports = function (name) {
   var $Symbol = core.Symbol || (core.Symbol = LIBRARY ? {} : global.Symbol || {});
   if (name.charAt(0) != '_' && !(name in $Symbol)) defineProperty($Symbol, name, { value: wksExt.f(name) });
@@ -14414,7 +13850,7 @@ exports.f = {}.propertyIsEnumerable;
 "use strict";
 
 // 25.4.1.5 NewPromiseCapability(C)
-var aFunction = __webpack_require__(21);
+var aFunction = __webpack_require__(22);
 
 function PromiseCapability(C) {
   var resolve, reject;
@@ -14434,33 +13870,6 @@ module.exports.f = function (C) {
 
 /***/ }),
 /* 41 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1,eval)("this");
-} catch(e) {
-	// This works if the window reference is available
-	if(typeof window === "object")
-		g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14478,19 +13887,19 @@ module.exports = function bind(fn, thisArg) {
 
 
 /***/ }),
-/* 43 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(process) {
 
 var utils = __webpack_require__(3);
-var settle = __webpack_require__(225);
-var buildURL = __webpack_require__(227);
-var parseHeaders = __webpack_require__(228);
-var isURLSameOrigin = __webpack_require__(229);
-var createError = __webpack_require__(44);
-var btoa = (typeof window !== 'undefined' && window.btoa && window.btoa.bind(window)) || __webpack_require__(230);
+var settle = __webpack_require__(217);
+var buildURL = __webpack_require__(219);
+var parseHeaders = __webpack_require__(220);
+var isURLSameOrigin = __webpack_require__(221);
+var createError = __webpack_require__(43);
+var btoa = (typeof window !== 'undefined' && window.btoa && window.btoa.bind(window)) || __webpack_require__(222);
 
 module.exports = function xhrAdapter(config) {
   return new Promise(function dispatchXhrRequest(resolve, reject) {
@@ -14587,7 +13996,7 @@ module.exports = function xhrAdapter(config) {
     // This is only done if running in a standard browser environment.
     // Specifically not if we're in a web worker, or react-native.
     if (utils.isStandardBrowserEnv()) {
-      var cookies = __webpack_require__(231);
+      var cookies = __webpack_require__(223);
 
       // Add xsrf header
       var xsrfValue = (config.withCredentials || isURLSameOrigin(config.url)) && config.xsrfCookieName ?
@@ -14663,16 +14072,16 @@ module.exports = function xhrAdapter(config) {
   });
 };
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(14)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19)))
 
 /***/ }),
-/* 44 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var enhanceError = __webpack_require__(226);
+var enhanceError = __webpack_require__(218);
 
 /**
  * Create an Error with the specified message, config, error code, request and response.
@@ -14691,7 +14100,7 @@ module.exports = function createError(message, config, code, request, response) 
 
 
 /***/ }),
-/* 45 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14703,7 +14112,7 @@ module.exports = function isCancel(value) {
 
 
 /***/ }),
-/* 46 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14729,7 +14138,7 @@ module.exports = Cancel;
 
 
 /***/ }),
-/* 47 */
+/* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14737,11 +14146,11 @@ module.exports = Cancel;
 
 exports.__esModule = true;
 
-var _iterator = __webpack_require__(239);
+var _iterator = __webpack_require__(231);
 
 var _iterator2 = _interopRequireDefault(_iterator);
 
-var _symbol = __webpack_require__(251);
+var _symbol = __webpack_require__(243);
 
 var _symbol2 = _interopRequireDefault(_symbol);
 
@@ -14756,15 +14165,15 @@ exports.default = typeof _symbol2.default === "function" && _typeof(_iterator2.d
 };
 
 /***/ }),
-/* 48 */
+/* 47 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
-var $at = __webpack_require__(241)(true);
+var $at = __webpack_require__(233)(true);
 
 // 21.1.3.27 String.prototype[@@iterator]()
-__webpack_require__(49)(String, 'String', function (iterated) {
+__webpack_require__(48)(String, 'String', function (iterated) {
   this._t = String(iterated); // target
   this._i = 0;                // next index
 // 21.1.5.2.1 %StringIteratorPrototype%.next()
@@ -14780,20 +14189,20 @@ __webpack_require__(49)(String, 'String', function (iterated) {
 
 
 /***/ }),
-/* 49 */
+/* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
-var LIBRARY = __webpack_require__(19);
+var LIBRARY = __webpack_require__(20);
 var $export = __webpack_require__(12);
-var redefine = __webpack_require__(51);
-var hide = __webpack_require__(7);
-var has = __webpack_require__(11);
-var Iterators = __webpack_require__(17);
-var $iterCreate = __webpack_require__(242);
+var redefine = __webpack_require__(50);
+var hide = __webpack_require__(6);
+var has = __webpack_require__(10);
+var Iterators = __webpack_require__(16);
+var $iterCreate = __webpack_require__(234);
 var setToStringTag = __webpack_require__(25);
-var getPrototypeOf = __webpack_require__(247);
+var getPrototypeOf = __webpack_require__(239);
 var ITERATOR = __webpack_require__(2)('iterator');
 var BUGGY = !([].keys && 'next' in [].keys()); // Safari has buggy iterators w/o `next`
 var FF_ITERATOR = '@@iterator';
@@ -14816,7 +14225,7 @@ module.exports = function (Base, NAME, Constructor, next, DEFAULT, IS_SET, FORCE
   var VALUES_BUG = false;
   var proto = Base.prototype;
   var $native = proto[ITERATOR] || proto[FF_ITERATOR] || DEFAULT && proto[DEFAULT];
-  var $default = (!BUGGY && $native) || getMethod(DEFAULT);
+  var $default = $native || getMethod(DEFAULT);
   var $entries = DEFAULT ? !DEF_VALUES ? $default : getMethod('entries') : undefined;
   var $anyNative = NAME == 'Array' ? proto.entries || $native : $native;
   var methods, key, IteratorPrototype;
@@ -14857,28 +14266,28 @@ module.exports = function (Base, NAME, Constructor, next, DEFAULT, IS_SET, FORCE
 
 
 /***/ }),
+/* 49 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = !__webpack_require__(9) && !__webpack_require__(15)(function () {
+  return Object.defineProperty(__webpack_require__(32)('div'), 'a', { get: function () { return 7; } }).a != 7;
+});
+
+
+/***/ }),
 /* 50 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = !__webpack_require__(10) && !__webpack_require__(16)(function () {
-  return Object.defineProperty(__webpack_require__(32)('div'), 'a', { get: function () { return 7; } }).a != 7;
-});
+module.exports = __webpack_require__(6);
 
 
 /***/ }),
 /* 51 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(7);
-
-
-/***/ }),
-/* 52 */
-/***/ (function(module, exports, __webpack_require__) {
-
 // 19.1.2.2 / 15.2.3.5 Object.create(O [, Properties])
-var anObject = __webpack_require__(6);
-var dPs = __webpack_require__(243);
+var anObject = __webpack_require__(8);
+var dPs = __webpack_require__(235);
 var enumBugKeys = __webpack_require__(36);
 var IE_PROTO = __webpack_require__(34)('IE_PROTO');
 var Empty = function () { /* empty */ };
@@ -14893,7 +14302,7 @@ var createDict = function () {
   var gt = '>';
   var iframeDocument;
   iframe.style.display = 'none';
-  __webpack_require__(55).appendChild(iframe);
+  __webpack_require__(54).appendChild(iframe);
   iframe.src = 'javascript:'; // eslint-disable-line no-script-url
   // createDict = iframe.contentWindow.Object;
   // html.removeChild(iframe);
@@ -14920,12 +14329,12 @@ module.exports = Object.create || function create(O, Properties) {
 
 
 /***/ }),
-/* 53 */
+/* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var has = __webpack_require__(11);
-var toIObject = __webpack_require__(13);
-var arrayIndexOf = __webpack_require__(245)(false);
+var has = __webpack_require__(10);
+var toIObject = __webpack_require__(11);
+var arrayIndexOf = __webpack_require__(237)(false);
 var IE_PROTO = __webpack_require__(34)('IE_PROTO');
 
 module.exports = function (object, names) {
@@ -14943,7 +14352,7 @@ module.exports = function (object, names) {
 
 
 /***/ }),
-/* 54 */
+/* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // 7.1.15 ToLength
@@ -14955,7 +14364,7 @@ module.exports = function (it) {
 
 
 /***/ }),
-/* 55 */
+/* 54 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var document = __webpack_require__(1).document;
@@ -14963,7 +14372,7 @@ module.exports = document && document.documentElement;
 
 
 /***/ }),
-/* 56 */
+/* 55 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // 7.1.13 ToObject(argument)
@@ -14974,13 +14383,13 @@ module.exports = function (it) {
 
 
 /***/ }),
-/* 57 */
+/* 56 */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(248);
+__webpack_require__(240);
 var global = __webpack_require__(1);
-var hide = __webpack_require__(7);
-var Iterators = __webpack_require__(17);
+var hide = __webpack_require__(6);
+var Iterators = __webpack_require__(16);
 var TO_STRING_TAG = __webpack_require__(2)('toStringTag');
 
 var DOMIterables = ('CSSRuleList,CSSStyleDeclaration,CSSValueList,ClientRectList,DOMRectList,DOMStringList,' +
@@ -14999,18 +14408,18 @@ for (var i = 0; i < DOMIterables.length; i++) {
 
 
 /***/ }),
-/* 58 */
+/* 57 */
 /***/ (function(module, exports) {
 
 exports.f = Object.getOwnPropertySymbols;
 
 
 /***/ }),
-/* 59 */
+/* 58 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // 19.1.2.7 / 15.2.3.4 Object.getOwnPropertyNames(O)
-var $keys = __webpack_require__(53);
+var $keys = __webpack_require__(52);
 var hiddenKeys = __webpack_require__(36).concat('length', 'prototype');
 
 exports.f = Object.getOwnPropertyNames || function getOwnPropertyNames(O) {
@@ -15019,31 +14428,31 @@ exports.f = Object.getOwnPropertyNames || function getOwnPropertyNames(O) {
 
 
 /***/ }),
-/* 60 */
+/* 59 */
 /***/ (function(module, exports) {
 
 
 
 /***/ }),
+/* 60 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = { "default": __webpack_require__(254), __esModule: true };
+
+/***/ }),
 /* 61 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = { "default": __webpack_require__(261), __esModule: true };
+module.exports = { "default": __webpack_require__(255), __esModule: true };
 
 /***/ }),
 /* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = { "default": __webpack_require__(262), __esModule: true };
+module.exports = { "default": __webpack_require__(258), __esModule: true };
 
 /***/ }),
 /* 63 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = { "default": __webpack_require__(265), __esModule: true };
-
-/***/ }),
-/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // getting tag from 19.1.3.6 Object.prototype.toString()
@@ -15072,12 +14481,12 @@ module.exports = function (it) {
 
 
 /***/ }),
-/* 65 */
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // 7.3.20 SpeciesConstructor(O, defaultConstructor)
-var anObject = __webpack_require__(6);
-var aFunction = __webpack_require__(21);
+var anObject = __webpack_require__(8);
+var aFunction = __webpack_require__(22);
 var SPECIES = __webpack_require__(2)('species');
 module.exports = function (O, D) {
   var C = anObject(O).constructor;
@@ -15087,12 +14496,12 @@ module.exports = function (O, D) {
 
 
 /***/ }),
-/* 66 */
+/* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var ctx = __webpack_require__(20);
-var invoke = __webpack_require__(272);
-var html = __webpack_require__(55);
+var ctx = __webpack_require__(21);
+var invoke = __webpack_require__(265);
+var html = __webpack_require__(54);
 var cel = __webpack_require__(32);
 var global = __webpack_require__(1);
 var process = global.process;
@@ -15177,7 +14586,7 @@ module.exports = {
 
 
 /***/ }),
-/* 67 */
+/* 66 */
 /***/ (function(module, exports) {
 
 module.exports = function (exec) {
@@ -15190,16 +14599,12 @@ module.exports = function (exec) {
 
 
 /***/ }),
-/* 68 */
+/* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var anObject = __webpack_require__(6);
-var isObject = __webpack_require__(9);
 var newPromiseCapability = __webpack_require__(40);
 
 module.exports = function (C, x) {
-  anObject(C);
-  if (isObject(x) && x.constructor === C) return x;
   var promiseCapability = newPromiseCapability.f(C);
   var resolve = promiseCapability.resolve;
   resolve(x);
@@ -15208,175 +14613,7 @@ module.exports = function (C, x) {
 
 
 /***/ }),
-/* 69 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-//
-//
-//
-//
-//
-//
-//
-//
-
-/* harmony default export */ __webpack_exports__["a"] = ({
-    data() {
-        return {};
-    },
-    props: ['title'], //声明接收父组件参数
-    methods: {
-        goBack() {
-            this.$router.go(-1); //根据浏览器记录返回上一次
-        }
-    }
-
-});
-
-/***/ }),
-/* 70 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-
-
-/* harmony default export */ __webpack_exports__["a"] = ({
-  props: {
-    multiple: {
-      type: Boolean
-    },
-    id: {
-      type: String
-    },
-    bucketUrl: {
-      type: String
-    }, url: Array, text: Array
-  },
-  data() {
-    return {
-      region: 'oss-cn-shenzhen',
-      bucket: 'azz-test',
-      selectType: 0,
-      targetFlag: false,
-      input: "",
-      loading: false
-    };
-  },
-  created() {
-    // console.log("props",this.url)
-    // console.log("text",this.text)
-  },
-  methods: {
-    handleClose(item) {
-      this.$message({
-        showClose: true,
-        message: '此功能还没开放哦',
-        type: 'warning'
-      });
-    }, focusInput(e) {
-      e.path[0].value = "";
-    },
-    async doUpload(e) {
-      this.loading = true;
-
-      this.getid = e.target.id;
-      const _this = this;
-
-      //发起请求
-      this.$ajax.get('http://test.legle.cc:82/getStsQc').then(res => {
-        let result = res.data;
-        this.selectType = e.target.id;
-        this.$emit('select-type', e.target.id);
-        const client = new OSS.Wrapper({
-          region: _this.region,
-          accessKeyId: result.token.AccessKeyId,
-          accessKeySecret: result.token.AccessKeySecret,
-          stsToken: result.token.SecurityToken,
-          bucket: _this.bucket
-        });
-
-        const files = document.getElementById(_this.id);
-        const resultUpload = [];
-        if (files.files) {
-          const fileLen = document.getElementById(_this.id).files;
-          //随机
-          let len = 32;
-          var chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
-          var maxPos = chars.length;
-          var pwd = '';
-          for (let i = 0; i < len; i++) {
-            pwd += chars.charAt(Math.floor(Math.random() * maxPos));
-          }
-          for (let i = 0; i < fileLen.length; i++) {
-            const file = fileLen[i];
-
-            const storeAs = "admin/" + pwd + file.name;
-
-            if (this.selectType == "videoUrl") {
-              if (storeAs.indexOf(".mp4") != "-1") {
-                // console.log(storeAs.indexOf(".mp4"))
-              } else {
-                this.loading = false;
-                return this.$message({
-                  message: '只能上传mp4',
-                  type: 'warning'
-                });
-              }
-            }
-            client.multipartUpload(storeAs, file, {}).then(results => {
-
-              if (results.res) {
-
-                _this.url.push(results.res.requestUrls[0].split("?")[0]);
-                // console.log('1',results.res.requestUrls[0].split("?")[0])
-                // console.log('1',results.res.requestUrls[0])
-                // _this.url = resultUpload
-                // console.log("url",_this.url)
-                // console.log('13541351',this.url)
-                console.log("results.res.requestUrls", results.res.requestUrls[0].split("?")[0]);
-                console.log("这是ref", _this.$refs.doUp.style.backgroundImage);
-                _this.$refs.doUp.style.backgroundImage = results.res.requestUrls[0].split("?")[0];
-                // 
-              } else {
-                if (results.name === file.name) {
-                  _this.url.push(this.bucketUrl + file.name);
-                  // resultUpload.push(url);
-                }
-              }
-              // _this.url = resultUpload
-              // console.log("last url",_this.url)
-              this.$emit('select-url', _this.url);
-              this.loading = false;
-            }).catch(err => {
-              console.log(err);
-            });
-          }
-        }
-      }).catch(err => {
-        console.log(err);
-      });
-      // console.log(result)
-    }
-  }
-});
-
-/***/ }),
-/* 71 */
+/* 68 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -15427,7 +14664,6 @@ var af = moment.defineLocale('af', {
         future : 'oor %s',
         past : '%s gelede',
         s : '\'n paar sekondes',
-        ss : '%d sekondes',
         m : '\'n minuut',
         mm : '%d minute',
         h : '\'n uur',
@@ -15455,7 +14691,7 @@ return af;
 
 
 /***/ }),
-/* 72 */
+/* 69 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -15517,18 +14753,18 @@ var pluralize = function (u) {
     };
 };
 var months = [
-    'يناير',
-    'فبراير',
-    'مارس',
-    'أبريل',
-    'مايو',
-    'يونيو',
-    'يوليو',
-    'أغسطس',
-    'سبتمبر',
-    'أكتوبر',
-    'نوفمبر',
-    'ديسمبر'
+    'كانون الثاني يناير',
+    'شباط فبراير',
+    'آذار مارس',
+    'نيسان أبريل',
+    'أيار مايو',
+    'حزيران يونيو',
+    'تموز يوليو',
+    'آب أغسطس',
+    'أيلول سبتمبر',
+    'تشرين الأول أكتوبر',
+    'تشرين الثاني نوفمبر',
+    'كانون الأول ديسمبر'
 ];
 
 var ar = moment.defineLocale('ar', {
@@ -15569,7 +14805,6 @@ var ar = moment.defineLocale('ar', {
         future : 'بعد %s',
         past : 'منذ %s',
         s : pluralize('s'),
-        ss : pluralize('s'),
         m : pluralize('m'),
         mm : pluralize('m'),
         h : pluralize('h'),
@@ -15582,7 +14817,7 @@ var ar = moment.defineLocale('ar', {
         yy : pluralize('y')
     },
     preparse: function (string) {
-        return string.replace(/[١٢٣٤٥٦٧٨٩٠]/g, function (match) {
+        return string.replace(/\u200f/g, '').replace(/[١٢٣٤٥٦٧٨٩٠]/g, function (match) {
             return numberMap[match];
         }).replace(/،/g, ',');
     },
@@ -15603,7 +14838,7 @@ return ar;
 
 
 /***/ }),
-/* 73 */
+/* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -15644,7 +14879,6 @@ var arDz = moment.defineLocale('ar-dz', {
         future : 'في %s',
         past : 'منذ %s',
         s : 'ثوان',
-        ss : '%d ثانية',
         m : 'دقيقة',
         mm : '%d دقائق',
         h : 'ساعة',
@@ -15668,7 +14902,7 @@ return arDz;
 
 
 /***/ }),
-/* 74 */
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -15709,7 +14943,6 @@ var arKw = moment.defineLocale('ar-kw', {
         future : 'في %s',
         past : 'منذ %s',
         s : 'ثوان',
-        ss : '%d ثانية',
         m : 'دقيقة',
         mm : '%d دقائق',
         h : 'ساعة',
@@ -15733,7 +14966,7 @@ return arKw;
 
 
 /***/ }),
-/* 75 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -15833,7 +15066,6 @@ var arLy = moment.defineLocale('ar-ly', {
         future : 'بعد %s',
         past : 'منذ %s',
         s : pluralize('s'),
-        ss : pluralize('s'),
         m : pluralize('m'),
         mm : pluralize('m'),
         h : pluralize('h'),
@@ -15846,7 +15078,7 @@ var arLy = moment.defineLocale('ar-ly', {
         yy : pluralize('y')
     },
     preparse: function (string) {
-        return string.replace(/،/g, ',');
+        return string.replace(/\u200f/g, '').replace(/،/g, ',');
     },
     postformat: function (string) {
         return string.replace(/\d/g, function (match) {
@@ -15865,7 +15097,7 @@ return arLy;
 
 
 /***/ }),
-/* 76 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -15907,7 +15139,6 @@ var arMa = moment.defineLocale('ar-ma', {
         future : 'في %s',
         past : 'منذ %s',
         s : 'ثوان',
-        ss : '%d ثانية',
         m : 'دقيقة',
         mm : '%d دقائق',
         h : 'ساعة',
@@ -15931,7 +15162,7 @@ return arMa;
 
 
 /***/ }),
-/* 77 */
+/* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -16008,7 +15239,6 @@ var arSa = moment.defineLocale('ar-sa', {
         future : 'في %s',
         past : 'منذ %s',
         s : 'ثوان',
-        ss : '%d ثانية',
         m : 'دقيقة',
         mm : '%d دقائق',
         h : 'ساعة',
@@ -16042,7 +15272,7 @@ return arSa;
 
 
 /***/ }),
-/* 78 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -16083,7 +15313,6 @@ var arTn = moment.defineLocale('ar-tn', {
         future: 'في %s',
         past: 'منذ %s',
         s: 'ثوان',
-        ss : '%d ثانية',
         m: 'دقيقة',
         mm: '%d دقائق',
         h: 'ساعة',
@@ -16107,7 +15336,7 @@ return arTn;
 
 
 /***/ }),
-/* 79 */
+/* 76 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -16169,7 +15398,6 @@ var az = moment.defineLocale('az', {
         future : '%s sonra',
         past : '%s əvvəl',
         s : 'birneçə saniyyə',
-        ss : '%d saniyə',
         m : 'bir dəqiqə',
         mm : '%d dəqiqə',
         h : 'bir saat',
@@ -16218,7 +15446,7 @@ return az;
 
 
 /***/ }),
-/* 80 */
+/* 77 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -16240,7 +15468,6 @@ function plural(word, num) {
 }
 function relativeTimeWithPlural(number, withoutSuffix, key) {
     var format = {
-        'ss': withoutSuffix ? 'секунда_секунды_секунд' : 'секунду_секунды_секунд',
         'mm': withoutSuffix ? 'хвіліна_хвіліны_хвілін' : 'хвіліну_хвіліны_хвілін',
         'hh': withoutSuffix ? 'гадзіна_гадзіны_гадзін' : 'гадзіну_гадзіны_гадзін',
         'dd': 'дзень_дні_дзён',
@@ -16358,7 +15585,7 @@ return be;
 
 
 /***/ }),
-/* 81 */
+/* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -16410,7 +15637,6 @@ var bg = moment.defineLocale('bg', {
         future : 'след %s',
         past : 'преди %s',
         s : 'няколко секунди',
-        ss : '%d секунди',
         m : 'минута',
         mm : '%d минути',
         h : 'час',
@@ -16454,72 +15680,7 @@ return bg;
 
 
 /***/ }),
-/* 82 */
-/***/ (function(module, exports, __webpack_require__) {
-
-//! moment.js locale configuration
-//! locale : Bambara [bm]
-//! author : Estelle Comment : https://github.com/estellecomment
-
-;(function (global, factory) {
-    true ? factory(__webpack_require__(0)) :
-   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
-   factory(global.moment)
-}(this, (function (moment) { 'use strict';
-
-// Language contact person : Abdoufata Kane : https://github.com/abdoufata
-
-var bm = moment.defineLocale('bm', {
-    months : 'Zanwuyekalo_Fewuruyekalo_Marisikalo_Awirilikalo_Mɛkalo_Zuwɛnkalo_Zuluyekalo_Utikalo_Sɛtanburukalo_ɔkutɔburukalo_Nowanburukalo_Desanburukalo'.split('_'),
-    monthsShort : 'Zan_Few_Mar_Awi_Mɛ_Zuw_Zul_Uti_Sɛt_ɔku_Now_Des'.split('_'),
-    weekdays : 'Kari_Ntɛnɛn_Tarata_Araba_Alamisa_Juma_Sibiri'.split('_'),
-    weekdaysShort : 'Kar_Ntɛ_Tar_Ara_Ala_Jum_Sib'.split('_'),
-    weekdaysMin : 'Ka_Nt_Ta_Ar_Al_Ju_Si'.split('_'),
-    longDateFormat : {
-        LT : 'HH:mm',
-        LTS : 'HH:mm:ss',
-        L : 'DD/MM/YYYY',
-        LL : 'MMMM [tile] D [san] YYYY',
-        LLL : 'MMMM [tile] D [san] YYYY [lɛrɛ] HH:mm',
-        LLLL : 'dddd MMMM [tile] D [san] YYYY [lɛrɛ] HH:mm'
-    },
-    calendar : {
-        sameDay : '[Bi lɛrɛ] LT',
-        nextDay : '[Sini lɛrɛ] LT',
-        nextWeek : 'dddd [don lɛrɛ] LT',
-        lastDay : '[Kunu lɛrɛ] LT',
-        lastWeek : 'dddd [tɛmɛnen lɛrɛ] LT',
-        sameElse : 'L'
-    },
-    relativeTime : {
-        future : '%s kɔnɔ',
-        past : 'a bɛ %s bɔ',
-        s : 'sanga dama dama',
-        ss : 'sekondi %d',
-        m : 'miniti kelen',
-        mm : 'miniti %d',
-        h : 'lɛrɛ kelen',
-        hh : 'lɛrɛ %d',
-        d : 'tile kelen',
-        dd : 'tile %d',
-        M : 'kalo kelen',
-        MM : 'kalo %d',
-        y : 'san kelen',
-        yy : 'san %d'
-    },
-    week : {
-        dow : 1, // Monday is the first day of the week.
-        doy : 4  // The week that contains Jan 4th is the first week of the year.
-    }
-});
-
-return bm;
-
-})));
-
-
-/***/ }),
-/* 83 */
+/* 79 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -16584,7 +15745,6 @@ var bn = moment.defineLocale('bn', {
         future : '%s পরে',
         past : '%s আগে',
         s : 'কয়েক সেকেন্ড',
-        ss : '%d সেকেন্ড',
         m : 'এক মিনিট',
         mm : '%d মিনিট',
         h : 'এক ঘন্টা',
@@ -16644,7 +15804,7 @@ return bn;
 
 
 /***/ }),
-/* 84 */
+/* 80 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -16709,7 +15869,6 @@ var bo = moment.defineLocale('bo', {
         future : '%s ལ་',
         past : '%s སྔན་ལ',
         s : 'ལམ་སང',
-        ss : '%d སྐར་ཆ།',
         m : 'སྐར་མ་གཅིག',
         mm : '%d སྐར་མ',
         h : 'ཆུ་ཚོད་གཅིག',
@@ -16769,7 +15928,7 @@ return bo;
 
 
 /***/ }),
-/* 85 */
+/* 81 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -16854,7 +16013,6 @@ var br = moment.defineLocale('br', {
         future : 'a-benn %s',
         past : '%s \'zo',
         s : 'un nebeud segondennoù',
-        ss : '%d eilenn',
         m : 'ur vunutenn',
         mm : relativeTimeWithMutation,
         h : 'un eur',
@@ -16883,7 +16041,7 @@ return br;
 
 
 /***/ }),
-/* 86 */
+/* 82 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -16901,15 +16059,6 @@ return br;
 function translate(number, withoutSuffix, key) {
     var result = number + ' ';
     switch (key) {
-        case 'ss':
-            if (number === 1) {
-                result += 'sekunda';
-            } else if (number === 2 || number === 3 || number === 4) {
-                result += 'sekunde';
-            } else {
-                result += 'sekundi';
-            }
-            return result;
         case 'm':
             return withoutSuffix ? 'jedna minuta' : 'jedne minute';
         case 'mm':
@@ -17015,7 +16164,6 @@ var bs = moment.defineLocale('bs', {
         future : 'za %s',
         past   : 'prije %s',
         s      : 'par sekundi',
-        ss     : translate,
         m      : translate,
         mm     : translate,
         h      : translate,
@@ -17041,7 +16189,7 @@ return bs;
 
 
 /***/ }),
-/* 87 */
+/* 83 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -17065,17 +16213,17 @@ var ca = moment.defineLocale('ca', {
     monthsParseExact : true,
     weekdays : 'diumenge_dilluns_dimarts_dimecres_dijous_divendres_dissabte'.split('_'),
     weekdaysShort : 'dg._dl._dt._dc._dj._dv._ds.'.split('_'),
-    weekdaysMin : 'dg_dl_dt_dc_dj_dv_ds'.split('_'),
+    weekdaysMin : 'Dg_Dl_Dt_Dc_Dj_Dv_Ds'.split('_'),
     weekdaysParseExact : true,
     longDateFormat : {
         LT : 'H:mm',
         LTS : 'H:mm:ss',
         L : 'DD/MM/YYYY',
-        LL : 'D MMMM [de] YYYY',
+        LL : '[el] D MMMM [de] YYYY',
         ll : 'D MMM YYYY',
-        LLL : 'D MMMM [de] YYYY [a les] H:mm',
+        LLL : '[el] D MMMM [de] YYYY [a les] H:mm',
         lll : 'D MMM YYYY, H:mm',
-        LLLL : 'dddd D MMMM [de] YYYY [a les] H:mm',
+        LLLL : '[el] dddd D MMMM [de] YYYY [a les] H:mm',
         llll : 'ddd D MMM YYYY, H:mm'
     },
     calendar : {
@@ -17100,7 +16248,6 @@ var ca = moment.defineLocale('ca', {
         future : 'd\'aquí %s',
         past : 'fa %s',
         s : 'uns segons',
-        ss : '%d segons',
         m : 'un minut',
         mm : '%d minuts',
         h : 'una hora',
@@ -17135,7 +16282,7 @@ return ca;
 
 
 /***/ }),
-/* 88 */
+/* 84 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -17159,13 +16306,6 @@ function translate(number, withoutSuffix, key, isFuture) {
     switch (key) {
         case 's':  // a few seconds / in a few seconds / a few seconds ago
             return (withoutSuffix || isFuture) ? 'pár sekund' : 'pár sekundami';
-        case 'ss': // 9 seconds / in 9 seconds / 9 seconds ago
-            if (withoutSuffix || isFuture) {
-                return result + (plural(number) ? 'sekundy' : 'sekund');
-            } else {
-                return result + 'sekundami';
-            }
-            break;
         case 'm':  // a minute / in a minute / a minute ago
             return withoutSuffix ? 'minuta' : (isFuture ? 'minutu' : 'minutou');
         case 'mm': // 9 minutes / in 9 minutes / 9 minutes ago
@@ -17294,7 +16434,6 @@ var cs = moment.defineLocale('cs', {
         future : 'za %s',
         past : 'před %s',
         s : translate,
-        ss : translate,
         m : translate,
         mm : translate,
         h : translate,
@@ -17320,7 +16459,7 @@ return cs;
 
 
 /***/ }),
-/* 89 */
+/* 85 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -17363,7 +16502,6 @@ var cv = moment.defineLocale('cv', {
         },
         past : '%s каялла',
         s : 'пӗр-ик ҫеккунт',
-        ss : '%d ҫеккунт',
         m : 'пӗр минут',
         mm : '%d минут',
         h : 'пӗр сехет',
@@ -17389,7 +16527,7 @@ return cv;
 
 
 /***/ }),
-/* 90 */
+/* 86 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -17432,7 +16570,6 @@ var cy = moment.defineLocale('cy', {
         future: 'mewn %s',
         past: '%s yn ôl',
         s: 'ychydig eiliadau',
-        ss: '%d eiliad',
         m: 'munud',
         mm: '%d munud',
         h: 'awr',
@@ -17476,7 +16613,7 @@ return cy;
 
 
 /***/ }),
-/* 91 */
+/* 87 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -17499,7 +16636,7 @@ var da = moment.defineLocale('da', {
     longDateFormat : {
         LT : 'HH:mm',
         LTS : 'HH:mm:ss',
-        L : 'DD.MM.YYYY',
+        L : 'DD/MM/YYYY',
         LL : 'D. MMMM YYYY',
         LLL : 'D. MMMM YYYY HH:mm',
         LLLL : 'dddd [d.] D. MMMM YYYY [kl.] HH:mm'
@@ -17516,7 +16653,6 @@ var da = moment.defineLocale('da', {
         future : 'om %s',
         past : '%s siden',
         s : 'få sekunder',
-        ss : '%d sekunder',
         m : 'et minut',
         mm : '%d minutter',
         h : 'en time',
@@ -17542,7 +16678,7 @@ return da;
 
 
 /***/ }),
-/* 92 */
+/* 88 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -17574,7 +16710,7 @@ function processRelativeTime(number, withoutSuffix, key, isFuture) {
 
 var de = moment.defineLocale('de', {
     months : 'Januar_Februar_März_April_Mai_Juni_Juli_August_September_Oktober_November_Dezember'.split('_'),
-    monthsShort : 'Jan._Feb._März_Apr._Mai_Juni_Juli_Aug._Sep._Okt._Nov._Dez.'.split('_'),
+    monthsShort : 'Jan._Febr._Mrz._Apr._Mai_Jun._Jul._Aug._Sept._Okt._Nov._Dez.'.split('_'),
     monthsParseExact : true,
     weekdays : 'Sonntag_Montag_Dienstag_Mittwoch_Donnerstag_Freitag_Samstag'.split('_'),
     weekdaysShort : 'So._Mo._Di._Mi._Do._Fr._Sa.'.split('_'),
@@ -17600,7 +16736,6 @@ var de = moment.defineLocale('de', {
         future : 'in %s',
         past : 'vor %s',
         s : 'ein paar Sekunden',
-        ss : '%d Sekunden',
         m : processRelativeTime,
         mm : '%d Minuten',
         h : processRelativeTime,
@@ -17626,7 +16761,7 @@ return de;
 
 
 /***/ }),
-/* 93 */
+/* 89 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -17659,7 +16794,7 @@ function processRelativeTime(number, withoutSuffix, key, isFuture) {
 
 var deAt = moment.defineLocale('de-at', {
     months : 'Jänner_Februar_März_April_Mai_Juni_Juli_August_September_Oktober_November_Dezember'.split('_'),
-    monthsShort : 'Jän._Feb._März_Apr._Mai_Juni_Juli_Aug._Sep._Okt._Nov._Dez.'.split('_'),
+    monthsShort : 'Jän._Febr._Mrz._Apr._Mai_Jun._Jul._Aug._Sept._Okt._Nov._Dez.'.split('_'),
     monthsParseExact : true,
     weekdays : 'Sonntag_Montag_Dienstag_Mittwoch_Donnerstag_Freitag_Samstag'.split('_'),
     weekdaysShort : 'So._Mo._Di._Mi._Do._Fr._Sa.'.split('_'),
@@ -17685,7 +16820,6 @@ var deAt = moment.defineLocale('de-at', {
         future : 'in %s',
         past : 'vor %s',
         s : 'ein paar Sekunden',
-        ss : '%d Sekunden',
         m : processRelativeTime,
         mm : '%d Minuten',
         h : processRelativeTime,
@@ -17711,7 +16845,7 @@ return deAt;
 
 
 /***/ }),
-/* 94 */
+/* 90 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -17743,19 +16877,19 @@ function processRelativeTime(number, withoutSuffix, key, isFuture) {
 
 var deCh = moment.defineLocale('de-ch', {
     months : 'Januar_Februar_März_April_Mai_Juni_Juli_August_September_Oktober_November_Dezember'.split('_'),
-    monthsShort : 'Jan._Feb._März_Apr._Mai_Juni_Juli_Aug._Sep._Okt._Nov._Dez.'.split('_'),
+    monthsShort : 'Jan._Febr._März_April_Mai_Juni_Juli_Aug._Sept._Okt._Nov._Dez.'.split('_'),
     monthsParseExact : true,
     weekdays : 'Sonntag_Montag_Dienstag_Mittwoch_Donnerstag_Freitag_Samstag'.split('_'),
     weekdaysShort : 'So_Mo_Di_Mi_Do_Fr_Sa'.split('_'),
     weekdaysMin : 'So_Mo_Di_Mi_Do_Fr_Sa'.split('_'),
     weekdaysParseExact : true,
     longDateFormat : {
-        LT: 'HH:mm',
-        LTS: 'HH:mm:ss',
+        LT: 'HH.mm',
+        LTS: 'HH.mm.ss',
         L : 'DD.MM.YYYY',
         LL : 'D. MMMM YYYY',
-        LLL : 'D. MMMM YYYY HH:mm',
-        LLLL : 'dddd, D. MMMM YYYY HH:mm'
+        LLL : 'D. MMMM YYYY HH.mm',
+        LLLL : 'dddd, D. MMMM YYYY HH.mm'
     },
     calendar : {
         sameDay: '[heute um] LT [Uhr]',
@@ -17769,7 +16903,6 @@ var deCh = moment.defineLocale('de-ch', {
         future : 'in %s',
         past : 'vor %s',
         s : 'ein paar Sekunden',
-        ss : '%d Sekunden',
         m : processRelativeTime,
         mm : '%d Minuten',
         h : processRelativeTime,
@@ -17795,7 +16928,7 @@ return deCh;
 
 
 /***/ }),
-/* 95 */
+/* 91 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -17871,7 +17004,6 @@ var dv = moment.defineLocale('dv', {
         future : 'ތެރޭގައި %s',
         past : 'ކުރިން %s',
         s : 'ސިކުންތުކޮޅެއް',
-        ss : 'd% ސިކުންތު',
         m : 'މިނިޓެއް',
         mm : 'މިނިޓު %d',
         h : 'ގަޑިއިރެއް',
@@ -17901,7 +17033,7 @@ return dv;
 
 
 /***/ }),
-/* 96 */
+/* 92 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -17925,7 +17057,7 @@ var el = moment.defineLocale('el', {
     months : function (momentToFormat, format) {
         if (!momentToFormat) {
             return this._monthsNominativeEl;
-        } else if (typeof format === 'string' && /D/.test(format.substring(0, format.indexOf('MMMM')))) { // if there is a day number before 'MMMM'
+        } else if (/D/.test(format.substring(0, format.indexOf('MMMM')))) { // if there is a day number before 'MMMM'
             return this._monthsGenitiveEl[momentToFormat.month()];
         } else {
             return this._monthsNominativeEl[momentToFormat.month()];
@@ -17981,7 +17113,6 @@ var el = moment.defineLocale('el', {
         future : 'σε %s',
         past : '%s πριν',
         s : 'λίγα δευτερόλεπτα',
-        ss : '%d δευτερόλεπτα',
         m : 'ένα λεπτό',
         mm : '%d λεπτά',
         h : 'μία ώρα',
@@ -18007,7 +17138,7 @@ return el;
 
 
 /***/ }),
-/* 97 */
+/* 93 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -18047,7 +17178,6 @@ var enAu = moment.defineLocale('en-au', {
         future : 'in %s',
         past : '%s ago',
         s : 'a few seconds',
-        ss : '%d seconds',
         m : 'a minute',
         mm : '%d minutes',
         h : 'an hour',
@@ -18080,7 +17210,7 @@ return enAu;
 
 
 /***/ }),
-/* 98 */
+/* 94 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -18120,7 +17250,6 @@ var enCa = moment.defineLocale('en-ca', {
         future : 'in %s',
         past : '%s ago',
         s : 'a few seconds',
-        ss : '%d seconds',
         m : 'a minute',
         mm : '%d minutes',
         h : 'an hour',
@@ -18149,7 +17278,7 @@ return enCa;
 
 
 /***/ }),
-/* 99 */
+/* 95 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -18189,7 +17318,6 @@ var enGb = moment.defineLocale('en-gb', {
         future : 'in %s',
         past : '%s ago',
         s : 'a few seconds',
-        ss : '%d seconds',
         m : 'a minute',
         mm : '%d minutes',
         h : 'an hour',
@@ -18222,7 +17350,7 @@ return enGb;
 
 
 /***/ }),
-/* 100 */
+/* 96 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -18262,7 +17390,6 @@ var enIe = moment.defineLocale('en-ie', {
         future : 'in %s',
         past : '%s ago',
         s : 'a few seconds',
-        ss : '%d seconds',
         m : 'a minute',
         mm : '%d minutes',
         h : 'an hour',
@@ -18295,7 +17422,7 @@ return enIe;
 
 
 /***/ }),
-/* 101 */
+/* 97 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -18335,7 +17462,6 @@ var enNz = moment.defineLocale('en-nz', {
         future : 'in %s',
         past : '%s ago',
         s : 'a few seconds',
-        ss : '%d seconds',
         m : 'a minute',
         mm : '%d minutes',
         h : 'an hour',
@@ -18368,7 +17494,7 @@ return enNz;
 
 
 /***/ }),
-/* 102 */
+/* 98 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -18421,7 +17547,6 @@ var eo = moment.defineLocale('eo', {
         future : 'post %s',
         past : 'antaŭ %s',
         s : 'sekundoj',
-        ss : '%d sekundoj',
         m : 'minuto',
         mm : '%d minutoj',
         h : 'horo',
@@ -18447,7 +17572,7 @@ return eo;
 
 
 /***/ }),
-/* 103 */
+/* 99 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -18464,9 +17589,6 @@ return eo;
 var monthsShortDot = 'ene._feb._mar._abr._may._jun._jul._ago._sep._oct._nov._dic.'.split('_');
 var monthsShort = 'ene_feb_mar_abr_may_jun_jul_ago_sep_oct_nov_dic'.split('_');
 
-var monthsParse = [/^ene/i, /^feb/i, /^mar/i, /^abr/i, /^may/i, /^jun/i, /^jul/i, /^ago/i, /^sep/i, /^oct/i, /^nov/i, /^dic/i];
-var monthsRegex = /^(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|ene\.?|feb\.?|mar\.?|abr\.?|may\.?|jun\.?|jul\.?|ago\.?|sep\.?|oct\.?|nov\.?|dic\.?)/i;
-
 var es = moment.defineLocale('es', {
     months : 'enero_febrero_marzo_abril_mayo_junio_julio_agosto_septiembre_octubre_noviembre_diciembre'.split('_'),
     monthsShort : function (m, format) {
@@ -18478,13 +17600,7 @@ var es = moment.defineLocale('es', {
             return monthsShortDot[m.month()];
         }
     },
-    monthsRegex : monthsRegex,
-    monthsShortRegex : monthsRegex,
-    monthsStrictRegex : /^(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i,
-    monthsShortStrictRegex : /^(ene\.?|feb\.?|mar\.?|abr\.?|may\.?|jun\.?|jul\.?|ago\.?|sep\.?|oct\.?|nov\.?|dic\.?)/i,
-    monthsParse : monthsParse,
-    longMonthsParse : monthsParse,
-    shortMonthsParse : monthsParse,
+    monthsParseExact : true,
     weekdays : 'domingo_lunes_martes_miércoles_jueves_viernes_sábado'.split('_'),
     weekdaysShort : 'dom._lun._mar._mié._jue._vie._sáb.'.split('_'),
     weekdaysMin : 'do_lu_ma_mi_ju_vi_sá'.split('_'),
@@ -18519,7 +17635,6 @@ var es = moment.defineLocale('es', {
         future : 'en %s',
         past : 'hace %s',
         s : 'unos segundos',
-        ss : '%d segundos',
         m : 'un minuto',
         mm : '%d minutos',
         h : 'una hora',
@@ -18545,7 +17660,7 @@ return es;
 
 
 /***/ }),
-/* 104 */
+/* 100 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -18561,9 +17676,6 @@ return es;
 var monthsShortDot = 'ene._feb._mar._abr._may._jun._jul._ago._sep._oct._nov._dic.'.split('_');
 var monthsShort = 'ene_feb_mar_abr_may_jun_jul_ago_sep_oct_nov_dic'.split('_');
 
-var monthsParse = [/^ene/i, /^feb/i, /^mar/i, /^abr/i, /^may/i, /^jun/i, /^jul/i, /^ago/i, /^sep/i, /^oct/i, /^nov/i, /^dic/i];
-var monthsRegex = /^(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|ene\.?|feb\.?|mar\.?|abr\.?|may\.?|jun\.?|jul\.?|ago\.?|sep\.?|oct\.?|nov\.?|dic\.?)/i;
-
 var esDo = moment.defineLocale('es-do', {
     months : 'enero_febrero_marzo_abril_mayo_junio_julio_agosto_septiembre_octubre_noviembre_diciembre'.split('_'),
     monthsShort : function (m, format) {
@@ -18575,13 +17687,7 @@ var esDo = moment.defineLocale('es-do', {
             return monthsShortDot[m.month()];
         }
     },
-    monthsRegex: monthsRegex,
-    monthsShortRegex: monthsRegex,
-    monthsStrictRegex: /^(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)/i,
-    monthsShortStrictRegex: /^(ene\.?|feb\.?|mar\.?|abr\.?|may\.?|jun\.?|jul\.?|ago\.?|sep\.?|oct\.?|nov\.?|dic\.?)/i,
-    monthsParse: monthsParse,
-    longMonthsParse: monthsParse,
-    shortMonthsParse: monthsParse,
+    monthsParseExact : true,
     weekdays : 'domingo_lunes_martes_miércoles_jueves_viernes_sábado'.split('_'),
     weekdaysShort : 'dom._lun._mar._mié._jue._vie._sáb.'.split('_'),
     weekdaysMin : 'do_lu_ma_mi_ju_vi_sá'.split('_'),
@@ -18616,7 +17722,6 @@ var esDo = moment.defineLocale('es-do', {
         future : 'en %s',
         past : 'hace %s',
         s : 'unos segundos',
-        ss : '%d segundos',
         m : 'un minuto',
         mm : '%d minutos',
         h : 'una hora',
@@ -18642,96 +17747,7 @@ return esDo;
 
 
 /***/ }),
-/* 105 */
-/***/ (function(module, exports, __webpack_require__) {
-
-//! moment.js locale configuration
-//! locale : Spanish (United States) [es-us]
-//! author : bustta : https://github.com/bustta
-
-;(function (global, factory) {
-    true ? factory(__webpack_require__(0)) :
-   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
-   factory(global.moment)
-}(this, (function (moment) { 'use strict';
-
-
-var monthsShortDot = 'ene._feb._mar._abr._may._jun._jul._ago._sep._oct._nov._dic.'.split('_');
-var monthsShort = 'ene_feb_mar_abr_may_jun_jul_ago_sep_oct_nov_dic'.split('_');
-
-var esUs = moment.defineLocale('es-us', {
-    months : 'enero_febrero_marzo_abril_mayo_junio_julio_agosto_septiembre_octubre_noviembre_diciembre'.split('_'),
-    monthsShort : function (m, format) {
-        if (!m) {
-            return monthsShortDot;
-        } else if (/-MMM-/.test(format)) {
-            return monthsShort[m.month()];
-        } else {
-            return monthsShortDot[m.month()];
-        }
-    },
-    monthsParseExact : true,
-    weekdays : 'domingo_lunes_martes_miércoles_jueves_viernes_sábado'.split('_'),
-    weekdaysShort : 'dom._lun._mar._mié._jue._vie._sáb.'.split('_'),
-    weekdaysMin : 'do_lu_ma_mi_ju_vi_sá'.split('_'),
-    weekdaysParseExact : true,
-    longDateFormat : {
-        LT : 'h:mm A',
-        LTS : 'h:mm:ss A',
-        L : 'MM/DD/YYYY',
-        LL : 'MMMM [de] D [de] YYYY',
-        LLL : 'MMMM [de] D [de] YYYY h:mm A',
-        LLLL : 'dddd, MMMM [de] D [de] YYYY h:mm A'
-    },
-    calendar : {
-        sameDay : function () {
-            return '[hoy a la' + ((this.hours() !== 1) ? 's' : '') + '] LT';
-        },
-        nextDay : function () {
-            return '[mañana a la' + ((this.hours() !== 1) ? 's' : '') + '] LT';
-        },
-        nextWeek : function () {
-            return 'dddd [a la' + ((this.hours() !== 1) ? 's' : '') + '] LT';
-        },
-        lastDay : function () {
-            return '[ayer a la' + ((this.hours() !== 1) ? 's' : '') + '] LT';
-        },
-        lastWeek : function () {
-            return '[el] dddd [pasado a la' + ((this.hours() !== 1) ? 's' : '') + '] LT';
-        },
-        sameElse : 'L'
-    },
-    relativeTime : {
-        future : 'en %s',
-        past : 'hace %s',
-        s : 'unos segundos',
-        ss : '%d segundos',
-        m : 'un minuto',
-        mm : '%d minutos',
-        h : 'una hora',
-        hh : '%d horas',
-        d : 'un día',
-        dd : '%d días',
-        M : 'un mes',
-        MM : '%d meses',
-        y : 'un año',
-        yy : '%d años'
-    },
-    dayOfMonthOrdinalParse : /\d{1,2}º/,
-    ordinal : '%dº',
-    week : {
-        dow : 0, // Sunday is the first day of the week.
-        doy : 6  // The week that contains Jan 1st is the first week of the year.
-    }
-});
-
-return esUs;
-
-})));
-
-
-/***/ }),
-/* 106 */
+/* 101 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -18749,7 +17765,6 @@ return esUs;
 function processRelativeTime(number, withoutSuffix, key, isFuture) {
     var format = {
         's' : ['mõne sekundi', 'mõni sekund', 'paar sekundit'],
-        'ss': [number + 'sekundi', number + 'sekundit'],
         'm' : ['ühe minuti', 'üks minut'],
         'mm': [number + ' minuti', number + ' minutit'],
         'h' : ['ühe tunni', 'tund aega', 'üks tund'],
@@ -18792,7 +17807,6 @@ var et = moment.defineLocale('et', {
         future : '%s pärast',
         past   : '%s tagasi',
         s      : processRelativeTime,
-        ss     : processRelativeTime,
         m      : processRelativeTime,
         mm     : processRelativeTime,
         h      : processRelativeTime,
@@ -18818,7 +17832,7 @@ return et;
 
 
 /***/ }),
-/* 107 */
+/* 102 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -18864,7 +17878,6 @@ var eu = moment.defineLocale('eu', {
         future : '%s barru',
         past : 'duela %s',
         s : 'segundo batzuk',
-        ss : '%d segundo',
         m : 'minutu bat',
         mm : '%d minutu',
         h : 'ordu bat',
@@ -18890,7 +17903,7 @@ return eu;
 
 
 /***/ }),
-/* 108 */
+/* 103 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -18967,7 +17980,6 @@ var fa = moment.defineLocale('fa', {
         future : 'در %s',
         past : '%s پیش',
         s : 'چند ثانیه',
-        ss : 'ثانیه d%',
         m : 'یک دقیقه',
         mm : '%d دقیقه',
         h : 'یک ساعت',
@@ -19003,7 +18015,7 @@ return fa;
 
 
 /***/ }),
-/* 109 */
+/* 104 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -19027,8 +18039,6 @@ function translate(number, withoutSuffix, key, isFuture) {
     switch (key) {
         case 's':
             return isFuture ? 'muutaman sekunnin' : 'muutama sekunti';
-        case 'ss':
-            return isFuture ? 'sekunnin' : 'sekuntia';
         case 'm':
             return isFuture ? 'minuutin' : 'minuutti';
         case 'mm':
@@ -19092,7 +18102,6 @@ var fi = moment.defineLocale('fi', {
         future : '%s päästä',
         past : '%s sitten',
         s : translate,
-        ss : translate,
         m : translate,
         mm : translate,
         h : translate,
@@ -19118,7 +18127,7 @@ return fi;
 
 
 /***/ }),
-/* 110 */
+/* 105 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -19158,7 +18167,6 @@ var fo = moment.defineLocale('fo', {
         future : 'um %s',
         past : '%s síðani',
         s : 'fá sekund',
-        ss : '%d sekundir',
         m : 'ein minutt',
         mm : '%d minuttir',
         h : 'ein tími',
@@ -19184,7 +18192,7 @@ return fo;
 
 
 /***/ }),
-/* 111 */
+/* 106 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -19204,7 +18212,7 @@ var fr = moment.defineLocale('fr', {
     monthsParseExact : true,
     weekdays : 'dimanche_lundi_mardi_mercredi_jeudi_vendredi_samedi'.split('_'),
     weekdaysShort : 'dim._lun._mar._mer._jeu._ven._sam.'.split('_'),
-    weekdaysMin : 'di_lu_ma_me_je_ve_sa'.split('_'),
+    weekdaysMin : 'Di_Lu_Ma_Me_Je_Ve_Sa'.split('_'),
     weekdaysParseExact : true,
     longDateFormat : {
         LT : 'HH:mm',
@@ -19226,7 +18234,6 @@ var fr = moment.defineLocale('fr', {
         future : 'dans %s',
         past : 'il y a %s',
         s : 'quelques secondes',
-        ss : '%d secondes',
         m : 'une minute',
         mm : '%d minutes',
         h : 'une heure',
@@ -19273,7 +18280,7 @@ return fr;
 
 
 /***/ }),
-/* 112 */
+/* 107 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -19293,7 +18300,7 @@ var frCa = moment.defineLocale('fr-ca', {
     monthsParseExact : true,
     weekdays : 'dimanche_lundi_mardi_mercredi_jeudi_vendredi_samedi'.split('_'),
     weekdaysShort : 'dim._lun._mar._mer._jeu._ven._sam.'.split('_'),
-    weekdaysMin : 'di_lu_ma_me_je_ve_sa'.split('_'),
+    weekdaysMin : 'Di_Lu_Ma_Me_Je_Ve_Sa'.split('_'),
     weekdaysParseExact : true,
     longDateFormat : {
         LT : 'HH:mm',
@@ -19315,7 +18322,6 @@ var frCa = moment.defineLocale('fr-ca', {
         future : 'dans %s',
         past : 'il y a %s',
         s : 'quelques secondes',
-        ss : '%d secondes',
         m : 'une minute',
         mm : '%d minutes',
         h : 'une heure',
@@ -19353,7 +18359,7 @@ return frCa;
 
 
 /***/ }),
-/* 113 */
+/* 108 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -19373,7 +18379,7 @@ var frCh = moment.defineLocale('fr-ch', {
     monthsParseExact : true,
     weekdays : 'dimanche_lundi_mardi_mercredi_jeudi_vendredi_samedi'.split('_'),
     weekdaysShort : 'dim._lun._mar._mer._jeu._ven._sam.'.split('_'),
-    weekdaysMin : 'di_lu_ma_me_je_ve_sa'.split('_'),
+    weekdaysMin : 'Di_Lu_Ma_Me_Je_Ve_Sa'.split('_'),
     weekdaysParseExact : true,
     longDateFormat : {
         LT : 'HH:mm',
@@ -19395,7 +18401,6 @@ var frCh = moment.defineLocale('fr-ch', {
         future : 'dans %s',
         past : 'il y a %s',
         s : 'quelques secondes',
-        ss : '%d secondes',
         m : 'une minute',
         mm : '%d minutes',
         h : 'une heure',
@@ -19437,7 +18442,7 @@ return frCh;
 
 
 /***/ }),
-/* 114 */
+/* 109 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -19490,7 +18495,6 @@ var fy = moment.defineLocale('fy', {
         future : 'oer %s',
         past : '%s lyn',
         s : 'in pear sekonden',
-        ss : '%d sekonden',
         m : 'ien minút',
         mm : '%d minuten',
         h : 'ien oere',
@@ -19518,7 +18522,7 @@ return fy;
 
 
 /***/ }),
-/* 115 */
+/* 110 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -19571,7 +18575,6 @@ var gd = moment.defineLocale('gd', {
         future : 'ann an %s',
         past : 'bho chionn %s',
         s : 'beagan diogan',
-        ss : '%d diogan',
         m : 'mionaid',
         mm : '%d mionaidean',
         h : 'uair',
@@ -19600,7 +18603,7 @@ return gd;
 
 
 /***/ }),
-/* 116 */
+/* 111 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -19657,7 +18660,6 @@ var gl = moment.defineLocale('gl', {
         },
         past : 'hai %s',
         s : 'uns segundos',
-        ss : '%d segundos',
         m : 'un minuto',
         mm : '%d minutos',
         h : 'unha hora',
@@ -19683,7 +18685,7 @@ return gl;
 
 
 /***/ }),
-/* 117 */
+/* 112 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -19700,7 +18702,6 @@ return gl;
 function processRelativeTime(number, withoutSuffix, key, isFuture) {
     var format = {
         's': ['thodde secondanim', 'thodde second'],
-        'ss': [number + ' secondanim', number + ' second'],
         'm': ['eka mintan', 'ek minute'],
         'mm': [number + ' mintanim', number + ' mintam'],
         'h': ['eka horan', 'ek hor'],
@@ -19744,7 +18745,6 @@ var gomLatn = moment.defineLocale('gom-latn', {
         future : '%s',
         past : '%s adim',
         s : processRelativeTime,
-        ss : processRelativeTime,
         m : processRelativeTime,
         mm : processRelativeTime,
         h : processRelativeTime,
@@ -19812,137 +18812,7 @@ return gomLatn;
 
 
 /***/ }),
-/* 118 */
-/***/ (function(module, exports, __webpack_require__) {
-
-//! moment.js locale configuration
-//! locale : Gujarati [gu]
-//! author : Kaushik Thanki : https://github.com/Kaushik1987
-
-;(function (global, factory) {
-    true ? factory(__webpack_require__(0)) :
-   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
-   factory(global.moment)
-}(this, (function (moment) { 'use strict';
-
-
-var symbolMap = {
-        '1': '૧',
-        '2': '૨',
-        '3': '૩',
-        '4': '૪',
-        '5': '૫',
-        '6': '૬',
-        '7': '૭',
-        '8': '૮',
-        '9': '૯',
-        '0': '૦'
-    };
-var numberMap = {
-        '૧': '1',
-        '૨': '2',
-        '૩': '3',
-        '૪': '4',
-        '૫': '5',
-        '૬': '6',
-        '૭': '7',
-        '૮': '8',
-        '૯': '9',
-        '૦': '0'
-    };
-
-var gu = moment.defineLocale('gu', {
-    months: 'જાન્યુઆરી_ફેબ્રુઆરી_માર્ચ_એપ્રિલ_મે_જૂન_જુલાઈ_ઑગસ્ટ_સપ્ટેમ્બર_ઑક્ટ્બર_નવેમ્બર_ડિસેમ્બર'.split('_'),
-    monthsShort: 'જાન્યુ._ફેબ્રુ._માર્ચ_એપ્રિ._મે_જૂન_જુલા._ઑગ._સપ્ટે._ઑક્ટ્._નવે._ડિસે.'.split('_'),
-    monthsParseExact: true,
-    weekdays: 'રવિવાર_સોમવાર_મંગળવાર_બુધ્વાર_ગુરુવાર_શુક્રવાર_શનિવાર'.split('_'),
-    weekdaysShort: 'રવિ_સોમ_મંગળ_બુધ્_ગુરુ_શુક્ર_શનિ'.split('_'),
-    weekdaysMin: 'ર_સો_મં_બુ_ગુ_શુ_શ'.split('_'),
-    longDateFormat: {
-        LT: 'A h:mm વાગ્યે',
-        LTS: 'A h:mm:ss વાગ્યે',
-        L: 'DD/MM/YYYY',
-        LL: 'D MMMM YYYY',
-        LLL: 'D MMMM YYYY, A h:mm વાગ્યે',
-        LLLL: 'dddd, D MMMM YYYY, A h:mm વાગ્યે'
-    },
-    calendar: {
-        sameDay: '[આજ] LT',
-        nextDay: '[કાલે] LT',
-        nextWeek: 'dddd, LT',
-        lastDay: '[ગઇકાલે] LT',
-        lastWeek: '[પાછલા] dddd, LT',
-        sameElse: 'L'
-    },
-    relativeTime: {
-        future: '%s મા',
-        past: '%s પેહલા',
-        s: 'અમુક પળો',
-        ss: '%d સેકંડ',
-        m: 'એક મિનિટ',
-        mm: '%d મિનિટ',
-        h: 'એક કલાક',
-        hh: '%d કલાક',
-        d: 'એક દિવસ',
-        dd: '%d દિવસ',
-        M: 'એક મહિનો',
-        MM: '%d મહિનો',
-        y: 'એક વર્ષ',
-        yy: '%d વર્ષ'
-    },
-    preparse: function (string) {
-        return string.replace(/[૧૨૩૪૫૬૭૮૯૦]/g, function (match) {
-            return numberMap[match];
-        });
-    },
-    postformat: function (string) {
-        return string.replace(/\d/g, function (match) {
-            return symbolMap[match];
-        });
-    },
-    // Gujarati notation for meridiems are quite fuzzy in practice. While there exists
-    // a rigid notion of a 'Pahar' it is not used as rigidly in modern Gujarati.
-    meridiemParse: /રાત|બપોર|સવાર|સાંજ/,
-    meridiemHour: function (hour, meridiem) {
-        if (hour === 12) {
-            hour = 0;
-        }
-        if (meridiem === 'રાત') {
-            return hour < 4 ? hour : hour + 12;
-        } else if (meridiem === 'સવાર') {
-            return hour;
-        } else if (meridiem === 'બપોર') {
-            return hour >= 10 ? hour : hour + 12;
-        } else if (meridiem === 'સાંજ') {
-            return hour + 12;
-        }
-    },
-    meridiem: function (hour, minute, isLower) {
-        if (hour < 4) {
-            return 'રાત';
-        } else if (hour < 10) {
-            return 'સવાર';
-        } else if (hour < 17) {
-            return 'બપોર';
-        } else if (hour < 20) {
-            return 'સાંજ';
-        } else {
-            return 'રાત';
-        }
-    },
-    week: {
-        dow: 0, // Sunday is the first day of the week.
-        doy: 6 // The week that contains Jan 1st is the first week of the year.
-    }
-});
-
-return gu;
-
-})));
-
-
-/***/ }),
-/* 119 */
+/* 113 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -19988,7 +18858,6 @@ var he = moment.defineLocale('he', {
         future : 'בעוד %s',
         past : 'לפני %s',
         s : 'מספר שניות',
-        ss : '%d שניות',
         m : 'דקה',
         mm : '%d דקות',
         h : 'שעה',
@@ -20047,7 +18916,7 @@ return he;
 
 
 /***/ }),
-/* 120 */
+/* 114 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -20113,7 +18982,6 @@ var hi = moment.defineLocale('hi', {
         future : '%s में',
         past : '%s पहले',
         s : 'कुछ ही क्षण',
-        ss : '%d सेकंड',
         m : 'एक मिनट',
         mm : '%d मिनट',
         h : 'एक घंटा',
@@ -20177,7 +19045,7 @@ return hi;
 
 
 /***/ }),
-/* 121 */
+/* 115 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -20194,15 +19062,6 @@ return hi;
 function translate(number, withoutSuffix, key) {
     var result = number + ' ';
     switch (key) {
-        case 'ss':
-            if (number === 1) {
-                result += 'sekunda';
-            } else if (number === 2 || number === 3 || number === 4) {
-                result += 'sekunde';
-            } else {
-                result += 'sekundi';
-            }
-            return result;
         case 'm':
             return withoutSuffix ? 'jedna minuta' : 'jedne minute';
         case 'mm':
@@ -20311,7 +19170,6 @@ var hr = moment.defineLocale('hr', {
         future : 'za %s',
         past   : 'prije %s',
         s      : 'par sekundi',
-        ss     : translate,
         m      : translate,
         mm     : translate,
         h      : translate,
@@ -20337,7 +19195,7 @@ return hr;
 
 
 /***/ }),
-/* 122 */
+/* 116 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -20353,12 +19211,11 @@ return hr;
 
 var weekEndings = 'vasárnap hétfőn kedden szerdán csütörtökön pénteken szombaton'.split(' ');
 function translate(number, withoutSuffix, key, isFuture) {
-    var num = number;
+    var num = number,
+        suffix;
     switch (key) {
         case 's':
             return (isFuture || withoutSuffix) ? 'néhány másodperc' : 'néhány másodperce';
-        case 'ss':
-            return num + (isFuture || withoutSuffix) ? ' másodperc' : ' másodperce';
         case 'm':
             return 'egy' + (isFuture || withoutSuffix ? ' perc' : ' perce');
         case 'mm':
@@ -20427,7 +19284,6 @@ var hu = moment.defineLocale('hu', {
         future : '%s múlva',
         past : '%s',
         s : translate,
-        ss : translate,
         m : translate,
         mm : translate,
         h : translate,
@@ -20453,7 +19309,7 @@ return hu;
 
 
 /***/ }),
-/* 123 */
+/* 117 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -20500,7 +19356,6 @@ var hyAm = moment.defineLocale('hy-am', {
         future : '%s հետո',
         past : '%s առաջ',
         s : 'մի քանի վայրկյան',
-        ss : '%d վայրկյան',
         m : 'րոպե',
         mm : '%d րոպե',
         h : 'ժամ',
@@ -20554,7 +19409,7 @@ return hyAm;
 
 
 /***/ }),
-/* 124 */
+/* 118 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -20619,7 +19474,6 @@ var id = moment.defineLocale('id', {
         future : 'dalam %s',
         past : '%s yang lalu',
         s : 'beberapa detik',
-        ss : '%d detik',
         m : 'semenit',
         mm : '%d menit',
         h : 'sejam',
@@ -20643,7 +19497,7 @@ return id;
 
 
 /***/ }),
-/* 125 */
+/* 119 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -20670,11 +19524,6 @@ function translate(number, withoutSuffix, key, isFuture) {
     switch (key) {
         case 's':
             return withoutSuffix || isFuture ? 'nokkrar sekúndur' : 'nokkrum sekúndum';
-        case 'ss':
-            if (plural(number)) {
-                return result + (withoutSuffix || isFuture ? 'sekúndur' : 'sekúndum');
-            }
-            return result + 'sekúnda';
         case 'm':
             return withoutSuffix ? 'mínúta' : 'mínútu';
         case 'mm':
@@ -20755,7 +19604,6 @@ var is = moment.defineLocale('is', {
         future : 'eftir %s',
         past : 'fyrir %s síðan',
         s : translate,
-        ss : translate,
         m : translate,
         mm : translate,
         h : 'klukkustund',
@@ -20781,7 +19629,7 @@ return is;
 
 
 /***/ }),
-/* 126 */
+/* 120 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -20808,7 +19656,7 @@ var it = moment.defineLocale('it', {
         L : 'DD/MM/YYYY',
         LL : 'D MMMM YYYY',
         LLL : 'D MMMM YYYY HH:mm',
-        LLLL : 'dddd D MMMM YYYY HH:mm'
+        LLLL : 'dddd, D MMMM YYYY HH:mm'
     },
     calendar : {
         sameDay: '[Oggi alle] LT',
@@ -20831,7 +19679,6 @@ var it = moment.defineLocale('it', {
         },
         past : '%s fa',
         s : 'alcuni secondi',
-        ss : '%d secondi',
         m : 'un minuto',
         mm : '%d minuti',
         h : 'un\'ora',
@@ -20857,7 +19704,7 @@ return it;
 
 
 /***/ }),
-/* 127 */
+/* 121 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -20923,7 +19770,6 @@ var ja = moment.defineLocale('ja', {
         future : '%s後',
         past : '%s前',
         s : '数秒',
-        ss : '%d秒',
         m : '1分',
         mm : '%d分',
         h : '1時間',
@@ -20943,7 +19789,7 @@ return ja;
 
 
 /***/ }),
-/* 128 */
+/* 122 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -21008,7 +19854,6 @@ var jv = moment.defineLocale('jv', {
         future : 'wonten ing %s',
         past : '%s ingkang kepengker',
         s : 'sawetawis detik',
-        ss : '%d detik',
         m : 'setunggal menit',
         mm : '%d menit',
         h : 'setunggal jam',
@@ -21032,7 +19877,7 @@ return jv;
 
 
 /***/ }),
-/* 129 */
+/* 123 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -21090,7 +19935,6 @@ var ka = moment.defineLocale('ka', {
             }
         },
         s : 'რამდენიმე წამი',
-        ss : '%d წამი',
         m : 'წუთი',
         mm : '%d წუთი',
         h : 'საათი',
@@ -21127,7 +19971,7 @@ return ka;
 
 
 /***/ }),
-/* 130 */
+/* 124 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -21190,7 +20034,6 @@ var kk = moment.defineLocale('kk', {
         future : '%s ішінде',
         past : '%s бұрын',
         s : 'бірнеше секунд',
-        ss : '%d секунд',
         m : 'бір минут',
         mm : '%d минут',
         h : 'бір сағат',
@@ -21220,7 +20063,7 @@ return kk;
 
 
 /***/ }),
-/* 131 */
+/* 125 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -21260,7 +20103,6 @@ var km = moment.defineLocale('km', {
         future: '%sទៀត',
         past: '%sមុន',
         s: 'ប៉ុន្មានវិនាទី',
-        ss: '%d វិនាទី',
         m: 'មួយនាទី',
         mm: '%d នាទី',
         h: 'មួយម៉ោង',
@@ -21284,7 +20126,7 @@ return km;
 
 
 /***/ }),
-/* 132 */
+/* 126 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -21350,7 +20192,6 @@ var kn = moment.defineLocale('kn', {
         future : '%s ನಂತರ',
         past : '%s ಹಿಂದೆ',
         s : 'ಕೆಲವು ಕ್ಷಣಗಳು',
-        ss : '%d ಸೆಕೆಂಡುಗಳು',
         m : 'ಒಂದು ನಿಮಿಷ',
         mm : '%d ನಿಮಿಷ',
         h : 'ಒಂದು ಗಂಟೆ',
@@ -21416,7 +20257,7 @@ return kn;
 
 
 /***/ }),
-/* 133 */
+/* 127 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -21473,22 +20314,8 @@ var ko = moment.defineLocale('ko', {
         y : '일 년',
         yy : '%d년'
     },
-    dayOfMonthOrdinalParse : /\d{1,2}(일|월|주)/,
-    ordinal : function (number, period) {
-        switch (period) {
-            case 'd':
-            case 'D':
-            case 'DDD':
-                return number + '일';
-            case 'M':
-                return number + '월';
-            case 'w':
-            case 'W':
-                return number + '주';
-            default:
-                return number;
-        }
-    },
+    dayOfMonthOrdinalParse : /\d{1,2}일/,
+    ordinal : '%d일',
     meridiemParse : /오전|오후/,
     isPM : function (token) {
         return token === '오후';
@@ -21504,7 +20331,7 @@ return ko;
 
 
 /***/ }),
-/* 134 */
+/* 128 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -21568,7 +20395,6 @@ var ky = moment.defineLocale('ky', {
         future : '%s ичинде',
         past : '%s мурун',
         s : 'бирнече секунд',
-        ss : '%d секунд',
         m : 'бир мүнөт',
         mm : '%d мүнөт',
         h : 'бир саат',
@@ -21598,7 +20424,7 @@ return ky;
 
 
 /***/ }),
-/* 135 */
+/* 129 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -21715,7 +20541,6 @@ var lb = moment.defineLocale('lb', {
         future : processFutureTime,
         past : processPastTime,
         s : 'e puer Sekonnen',
-        ss : '%d Sekonnen',
         m : processRelativeTime,
         mm : '%d Minutten',
         h : processRelativeTime,
@@ -21741,7 +20566,7 @@ return lb;
 
 
 /***/ }),
-/* 136 */
+/* 130 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -21793,7 +20618,6 @@ var lo = moment.defineLocale('lo', {
         future : 'ອີກ %s',
         past : '%sຜ່ານມາ',
         s : 'ບໍ່ເທົ່າໃດວິນາທີ',
-        ss : '%d ວິນາທີ' ,
         m : '1 ນາທີ',
         mm : '%d ນາທີ',
         h : '1 ຊົ່ວໂມງ',
@@ -21817,7 +20641,7 @@ return lo;
 
 
 /***/ }),
-/* 137 */
+/* 131 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -21832,7 +20656,6 @@ return lo;
 
 
 var units = {
-    'ss' : 'sekundė_sekundžių_sekundes',
     'm' : 'minutė_minutės_minutę',
     'mm': 'minutės_minučių_minutes',
     'h' : 'valanda_valandos_valandą',
@@ -21913,7 +20736,6 @@ var lt = moment.defineLocale('lt', {
         future : 'po %s',
         past : 'prieš %s',
         s : translateSeconds,
-        ss : translate,
         m : translateSingular,
         mm : translate,
         h : translateSingular,
@@ -21941,7 +20763,7 @@ return lt;
 
 
 /***/ }),
-/* 138 */
+/* 132 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -21957,7 +20779,6 @@ return lt;
 
 
 var units = {
-    'ss': 'sekundes_sekundēm_sekunde_sekundes'.split('_'),
     'm': 'minūtes_minūtēm_minūte_minūtes'.split('_'),
     'mm': 'minūtes_minūtēm_minūte_minūtes'.split('_'),
     'h': 'stundas_stundām_stunda_stundas'.split('_'),
@@ -22019,7 +20840,6 @@ var lv = moment.defineLocale('lv', {
         future : 'pēc %s',
         past : 'pirms %s',
         s : relativeSeconds,
-        ss : relativeTimeWithPlural,
         m : relativeTimeWithSingular,
         mm : relativeTimeWithPlural,
         h : relativeTimeWithSingular,
@@ -22045,7 +20865,7 @@ return lv;
 
 
 /***/ }),
-/* 139 */
+/* 133 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -22061,7 +20881,6 @@ return lv;
 
 var translator = {
     words: { //Different grammatical cases
-        ss: ['sekund', 'sekunda', 'sekundi'],
         m: ['jedan minut', 'jednog minuta'],
         mm: ['minut', 'minuta', 'minuta'],
         h: ['jedan sat', 'jednog sata'],
@@ -22137,7 +20956,6 @@ var me = moment.defineLocale('me', {
         future : 'za %s',
         past   : 'prije %s',
         s      : 'nekoliko sekundi',
-        ss     : translator.translate,
         m      : translator.translate,
         mm     : translator.translate,
         h      : translator.translate,
@@ -22163,7 +20981,7 @@ return me;
 
 
 /***/ }),
-/* 140 */
+/* 134 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -22207,7 +21025,6 @@ var mi = moment.defineLocale('mi', {
         future: 'i roto i %s',
         past: '%s i mua',
         s: 'te hēkona ruarua',
-        ss: '%d hēkona',
         m: 'he meneti',
         mm: '%d meneti',
         h: 'te haora',
@@ -22233,7 +21050,7 @@ return mi;
 
 
 /***/ }),
-/* 141 */
+/* 135 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -22285,7 +21102,6 @@ var mk = moment.defineLocale('mk', {
         future : 'после %s',
         past : 'пред %s',
         s : 'неколку секунди',
-        ss : '%d секунди',
         m : 'минута',
         mm : '%d минути',
         h : 'час',
@@ -22329,7 +21145,7 @@ return mk;
 
 
 /***/ }),
-/* 142 */
+/* 136 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -22370,7 +21186,6 @@ var ml = moment.defineLocale('ml', {
         future : '%s കഴിഞ്ഞ്',
         past : '%s മുൻപ്',
         s : 'അൽപ നിമിഷങ്ങൾ',
-        ss : '%d സെക്കൻഡ്',
         m : 'ഒരു മിനിറ്റ്',
         mm : '%d മിനിറ്റ്',
         h : 'ഒരു മണിക്കൂർ',
@@ -22416,7 +21231,7 @@ return ml;
 
 
 /***/ }),
-/* 143 */
+/* 137 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -22462,7 +21277,6 @@ function relativeTimeMr(number, withoutSuffix, string, isFuture)
     if (withoutSuffix) {
         switch (string) {
             case 's': output = 'काही सेकंद'; break;
-            case 'ss': output = '%d सेकंद'; break;
             case 'm': output = 'एक मिनिट'; break;
             case 'mm': output = '%d मिनिटे'; break;
             case 'h': output = 'एक तास'; break;
@@ -22478,7 +21292,6 @@ function relativeTimeMr(number, withoutSuffix, string, isFuture)
     else {
         switch (string) {
             case 's': output = 'काही सेकंदां'; break;
-            case 'ss': output = '%d सेकंदां'; break;
             case 'm': output = 'एका मिनिटा'; break;
             case 'mm': output = '%d मिनिटां'; break;
             case 'h': output = 'एका तासा'; break;
@@ -22521,7 +21334,6 @@ var mr = moment.defineLocale('mr', {
         future: '%sमध्ये',
         past: '%sपूर्वी',
         s: relativeTimeMr,
-        ss: relativeTimeMr,
         m: relativeTimeMr,
         mm: relativeTimeMr,
         h: relativeTimeMr,
@@ -22583,7 +21395,7 @@ return mr;
 
 
 /***/ }),
-/* 144 */
+/* 138 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -22647,7 +21459,6 @@ var ms = moment.defineLocale('ms', {
         future : 'dalam %s',
         past : '%s yang lepas',
         s : 'beberapa saat',
-        ss : '%d saat',
         m : 'seminit',
         mm : '%d minit',
         h : 'sejam',
@@ -22671,7 +21482,7 @@ return ms;
 
 
 /***/ }),
-/* 145 */
+/* 139 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -22736,7 +21547,6 @@ var msMy = moment.defineLocale('ms-my', {
         future : 'dalam %s',
         past : '%s yang lepas',
         s : 'beberapa saat',
-        ss : '%d saat',
         m : 'seminit',
         mm : '%d minit',
         h : 'sejam',
@@ -22760,73 +21570,7 @@ return msMy;
 
 
 /***/ }),
-/* 146 */
-/***/ (function(module, exports, __webpack_require__) {
-
-//! moment.js locale configuration
-//! locale : Maltese (Malta) [mt]
-//! author : Alessandro Maruccia : https://github.com/alesma
-
-;(function (global, factory) {
-    true ? factory(__webpack_require__(0)) :
-   typeof define === 'function' && define.amd ? define(['../moment'], factory) :
-   factory(global.moment)
-}(this, (function (moment) { 'use strict';
-
-
-var mt = moment.defineLocale('mt', {
-    months : 'Jannar_Frar_Marzu_April_Mejju_Ġunju_Lulju_Awwissu_Settembru_Ottubru_Novembru_Diċembru'.split('_'),
-    monthsShort : 'Jan_Fra_Mar_Apr_Mej_Ġun_Lul_Aww_Set_Ott_Nov_Diċ'.split('_'),
-    weekdays : 'Il-Ħadd_It-Tnejn_It-Tlieta_L-Erbgħa_Il-Ħamis_Il-Ġimgħa_Is-Sibt'.split('_'),
-    weekdaysShort : 'Ħad_Tne_Tli_Erb_Ħam_Ġim_Sib'.split('_'),
-    weekdaysMin : 'Ħa_Tn_Tl_Er_Ħa_Ġi_Si'.split('_'),
-    longDateFormat : {
-        LT : 'HH:mm',
-        LTS : 'HH:mm:ss',
-        L : 'DD/MM/YYYY',
-        LL : 'D MMMM YYYY',
-        LLL : 'D MMMM YYYY HH:mm',
-        LLLL : 'dddd, D MMMM YYYY HH:mm'
-    },
-    calendar : {
-        sameDay : '[Illum fil-]LT',
-        nextDay : '[Għada fil-]LT',
-        nextWeek : 'dddd [fil-]LT',
-        lastDay : '[Il-bieraħ fil-]LT',
-        lastWeek : 'dddd [li għadda] [fil-]LT',
-        sameElse : 'L'
-    },
-    relativeTime : {
-        future : 'f’ %s',
-        past : '%s ilu',
-        s : 'ftit sekondi',
-        ss : '%d sekondi',
-        m : 'minuta',
-        mm : '%d minuti',
-        h : 'siegħa',
-        hh : '%d siegħat',
-        d : 'ġurnata',
-        dd : '%d ġranet',
-        M : 'xahar',
-        MM : '%d xhur',
-        y : 'sena',
-        yy : '%d sni'
-    },
-    dayOfMonthOrdinalParse : /\d{1,2}º/,
-    ordinal: '%dº',
-    week : {
-        dow : 1, // Monday is the first day of the week.
-        doy : 4  // The week that contains Jan 4th is the first week of the year.
-    }
-});
-
-return mt;
-
-})));
-
-
-/***/ }),
-/* 147 */
+/* 140 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -22894,7 +21638,6 @@ var my = moment.defineLocale('my', {
         future: 'လာမည့် %s မှာ',
         past: 'လွန်ခဲ့သော %s က',
         s: 'စက္ကန်.အနည်းငယ်',
-        ss : '%d စက္ကန့်',
         m: 'တစ်မိနစ်',
         mm: '%d မိနစ်',
         h: 'တစ်နာရီ',
@@ -22928,7 +21671,7 @@ return my;
 
 
 /***/ }),
-/* 148 */
+/* 141 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -22971,7 +21714,6 @@ var nb = moment.defineLocale('nb', {
         future : 'om %s',
         past : '%s siden',
         s : 'noen sekunder',
-        ss : '%d sekunder',
         m : 'ett minutt',
         mm : '%d minutter',
         h : 'en time',
@@ -22997,7 +21739,7 @@ return nb;
 
 
 /***/ }),
-/* 149 */
+/* 142 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -23102,7 +21844,6 @@ var ne = moment.defineLocale('ne', {
         future : '%sमा',
         past : '%s अगाडि',
         s : 'केही क्षण',
-        ss : '%d सेकेण्ड',
         m : 'एक मिनेट',
         mm : '%d मिनेट',
         h : 'एक घण्टा',
@@ -23126,7 +21867,7 @@ return ne;
 
 
 /***/ }),
-/* 150 */
+/* 143 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -23170,7 +21911,7 @@ var nl = moment.defineLocale('nl', {
 
     weekdays : 'zondag_maandag_dinsdag_woensdag_donderdag_vrijdag_zaterdag'.split('_'),
     weekdaysShort : 'zo._ma._di._wo._do._vr._za.'.split('_'),
-    weekdaysMin : 'zo_ma_di_wo_do_vr_za'.split('_'),
+    weekdaysMin : 'Zo_Ma_Di_Wo_Do_Vr_Za'.split('_'),
     weekdaysParseExact : true,
     longDateFormat : {
         LT : 'HH:mm',
@@ -23192,7 +21933,6 @@ var nl = moment.defineLocale('nl', {
         future : 'over %s',
         past : '%s geleden',
         s : 'een paar seconden',
-        ss : '%d seconden',
         m : 'één minuut',
         mm : '%d minuten',
         h : 'één uur',
@@ -23220,7 +21960,7 @@ return nl;
 
 
 /***/ }),
-/* 151 */
+/* 144 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -23264,7 +22004,7 @@ var nlBe = moment.defineLocale('nl-be', {
 
     weekdays : 'zondag_maandag_dinsdag_woensdag_donderdag_vrijdag_zaterdag'.split('_'),
     weekdaysShort : 'zo._ma._di._wo._do._vr._za.'.split('_'),
-    weekdaysMin : 'zo_ma_di_wo_do_vr_za'.split('_'),
+    weekdaysMin : 'Zo_Ma_Di_Wo_Do_Vr_Za'.split('_'),
     weekdaysParseExact : true,
     longDateFormat : {
         LT : 'HH:mm',
@@ -23286,7 +22026,6 @@ var nlBe = moment.defineLocale('nl-be', {
         future : 'over %s',
         past : '%s geleden',
         s : 'een paar seconden',
-        ss : '%d seconden',
         m : 'één minuut',
         mm : '%d minuten',
         h : 'één uur',
@@ -23314,7 +22053,7 @@ return nlBe;
 
 
 /***/ }),
-/* 152 */
+/* 145 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -23354,7 +22093,6 @@ var nn = moment.defineLocale('nn', {
         future : 'om %s',
         past : '%s sidan',
         s : 'nokre sekund',
-        ss : '%d sekund',
         m : 'eit minutt',
         mm : '%d minutt',
         h : 'ein time',
@@ -23380,7 +22118,7 @@ return nn;
 
 
 /***/ }),
-/* 153 */
+/* 146 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -23446,7 +22184,6 @@ var paIn = moment.defineLocale('pa-in', {
         future : '%s ਵਿੱਚ',
         past : '%s ਪਿਛਲੇ',
         s : 'ਕੁਝ ਸਕਿੰਟ',
-        ss : '%d ਸਕਿੰਟ',
         m : 'ਇਕ ਮਿੰਟ',
         mm : '%d ਮਿੰਟ',
         h : 'ਇੱਕ ਘੰਟਾ',
@@ -23510,7 +22247,7 @@ return paIn;
 
 
 /***/ }),
-/* 154 */
+/* 147 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -23532,8 +22269,6 @@ function plural(n) {
 function translate(number, withoutSuffix, key) {
     var result = number + ' ';
     switch (key) {
-        case 'ss':
-            return result + (plural(number) ? 'sekundy' : 'sekund');
         case 'm':
             return withoutSuffix ? 'minuta' : 'minutę';
         case 'mm':
@@ -23579,24 +22314,7 @@ var pl = moment.defineLocale('pl', {
     calendar : {
         sameDay: '[Dziś o] LT',
         nextDay: '[Jutro o] LT',
-        nextWeek: function () {
-            switch (this.day()) {
-                case 0:
-                    return '[W niedzielę o] LT';
-
-                case 2:
-                    return '[We wtorek o] LT';
-
-                case 3:
-                    return '[W środę o] LT';
-
-                case 6:
-                    return '[W sobotę o] LT';
-
-                default:
-                    return '[W] dddd [o] LT';
-            }
-        },
+        nextWeek: '[W] dddd [o] LT',
         lastDay: '[Wczoraj o] LT',
         lastWeek: function () {
             switch (this.day()) {
@@ -23616,7 +22334,6 @@ var pl = moment.defineLocale('pl', {
         future : 'za %s',
         past : '%s temu',
         s : 'kilka sekund',
-        ss : translate,
         m : translate,
         mm : translate,
         h : translate,
@@ -23642,7 +22359,7 @@ return pl;
 
 
 /***/ }),
-/* 155 */
+/* 148 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -23657,9 +22374,9 @@ return pl;
 
 
 var pt = moment.defineLocale('pt', {
-    months : 'janeiro_fevereiro_março_abril_maio_junho_julho_agosto_setembro_outubro_novembro_dezembro'.split('_'),
-    monthsShort : 'jan_fev_mar_abr_mai_jun_jul_ago_set_out_nov_dez'.split('_'),
-    weekdays : 'Domingo_Segunda-feira_Terça-feira_Quarta-feira_Quinta-feira_Sexta-feira_Sábado'.split('_'),
+    months : 'Janeiro_Fevereiro_Março_Abril_Maio_Junho_Julho_Agosto_Setembro_Outubro_Novembro_Dezembro'.split('_'),
+    monthsShort : 'Jan_Fev_Mar_Abr_Mai_Jun_Jul_Ago_Set_Out_Nov_Dez'.split('_'),
+    weekdays : 'Domingo_Segunda-Feira_Terça-Feira_Quarta-Feira_Quinta-Feira_Sexta-Feira_Sábado'.split('_'),
     weekdaysShort : 'Dom_Seg_Ter_Qua_Qui_Sex_Sáb'.split('_'),
     weekdaysMin : 'Do_2ª_3ª_4ª_5ª_6ª_Sá'.split('_'),
     weekdaysParseExact : true,
@@ -23687,7 +22404,6 @@ var pt = moment.defineLocale('pt', {
         future : 'em %s',
         past : 'há %s',
         s : 'segundos',
-        ss : '%d segundos',
         m : 'um minuto',
         mm : '%d minutos',
         h : 'uma hora',
@@ -23713,7 +22429,7 @@ return pt;
 
 
 /***/ }),
-/* 156 */
+/* 149 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -23728,8 +22444,8 @@ return pt;
 
 
 var ptBr = moment.defineLocale('pt-br', {
-    months : 'janeiro_fevereiro_março_abril_maio_junho_julho_agosto_setembro_outubro_novembro_dezembro'.split('_'),
-    monthsShort : 'jan_fev_mar_abr_mai_jun_jul_ago_set_out_nov_dez'.split('_'),
+    months : 'Janeiro_Fevereiro_Março_Abril_Maio_Junho_Julho_Agosto_Setembro_Outubro_Novembro_Dezembro'.split('_'),
+    monthsShort : 'Jan_Fev_Mar_Abr_Mai_Jun_Jul_Ago_Set_Out_Nov_Dez'.split('_'),
     weekdays : 'Domingo_Segunda-feira_Terça-feira_Quarta-feira_Quinta-feira_Sexta-feira_Sábado'.split('_'),
     weekdaysShort : 'Dom_Seg_Ter_Qua_Qui_Sex_Sáb'.split('_'),
     weekdaysMin : 'Do_2ª_3ª_4ª_5ª_6ª_Sá'.split('_'),
@@ -23758,7 +22474,6 @@ var ptBr = moment.defineLocale('pt-br', {
         future : 'em %s',
         past : '%s atrás',
         s : 'poucos segundos',
-        ss : '%d segundos',
         m : 'um minuto',
         mm : '%d minutos',
         h : 'uma hora',
@@ -23780,7 +22495,7 @@ return ptBr;
 
 
 /***/ }),
-/* 157 */
+/* 150 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -23797,7 +22512,6 @@ return ptBr;
 
 function relativeTimeWithPlural(number, withoutSuffix, key) {
     var format = {
-            'ss': 'secunde',
             'mm': 'minute',
             'hh': 'ore',
             'dd': 'zile',
@@ -23838,7 +22552,6 @@ var ro = moment.defineLocale('ro', {
         future : 'peste %s',
         past : '%s în urmă',
         s : 'câteva secunde',
-        ss : relativeTimeWithPlural,
         m : 'un minut',
         mm : relativeTimeWithPlural,
         h : 'o oră',
@@ -23862,7 +22575,7 @@ return ro;
 
 
 /***/ }),
-/* 158 */
+/* 151 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -23884,7 +22597,6 @@ function plural(word, num) {
 }
 function relativeTimeWithPlural(number, withoutSuffix, key) {
     var format = {
-        'ss': withoutSuffix ? 'секунда_секунды_секунд' : 'секунду_секунды_секунд',
         'mm': withoutSuffix ? 'минута_минуты_минут' : 'минуту_минуты_минут',
         'hh': 'час_часа_часов',
         'dd': 'день_дня_дней',
@@ -23936,12 +22648,12 @@ var ru = moment.defineLocale('ru', {
     // Выражение, которое соотвествует только сокращённым формам
     monthsShortStrictRegex: /^(янв\.|февр?\.|мар[т.]|апр\.|ма[яй]|июн[ья.]|июл[ья.]|авг\.|сент?\.|окт\.|нояб?\.|дек\.)/i,
     longDateFormat : {
-        LT : 'H:mm',
-        LTS : 'H:mm:ss',
+        LT : 'HH:mm',
+        LTS : 'HH:mm:ss',
         L : 'DD.MM.YYYY',
         LL : 'D MMMM YYYY г.',
-        LLL : 'D MMMM YYYY г., H:mm',
-        LLLL : 'dddd, D MMMM YYYY г., H:mm'
+        LLL : 'D MMMM YYYY г., HH:mm',
+        LLLL : 'dddd, D MMMM YYYY г., HH:mm'
     },
     calendar : {
         sameDay: '[Сегодня в] LT',
@@ -23997,7 +22709,6 @@ var ru = moment.defineLocale('ru', {
         future : 'через %s',
         past : '%s назад',
         s : 'несколько секунд',
-        ss : relativeTimeWithPlural,
         m : relativeTimeWithPlural,
         mm : relativeTimeWithPlural,
         h : 'час',
@@ -24042,7 +22753,7 @@ var ru = moment.defineLocale('ru', {
     },
     week : {
         dow : 1, // Monday is the first day of the week.
-        doy : 4  // The week that contains Jan 4th is the first week of the year.
+        doy : 7  // The week that contains Jan 1st is the first week of the year.
     }
 });
 
@@ -24052,7 +22763,7 @@ return ru;
 
 
 /***/ }),
-/* 159 */
+/* 152 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -24126,7 +22837,6 @@ var sd = moment.defineLocale('sd', {
         future : '%s پوء',
         past : '%s اڳ',
         s : 'چند سيڪنڊ',
-        ss : '%d سيڪنڊ',
         m : 'هڪ منٽ',
         mm : '%d منٽ',
         h : 'هڪ ڪلاڪ',
@@ -24156,7 +22866,7 @@ return sd;
 
 
 /***/ }),
-/* 160 */
+/* 153 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -24197,7 +22907,6 @@ var se = moment.defineLocale('se', {
         future : '%s geažes',
         past : 'maŋit %s',
         s : 'moadde sekunddat',
-        ss: '%d sekunddat',
         m : 'okta minuhta',
         mm : '%d minuhtat',
         h : 'okta diimmu',
@@ -24223,7 +22932,7 @@ return se;
 
 
 /***/ }),
-/* 161 */
+/* 154 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -24265,7 +22974,6 @@ var si = moment.defineLocale('si', {
         future : '%sකින්',
         past : '%sකට පෙර',
         s : 'තත්පර කිහිපය',
-        ss : 'තත්පර %d',
         m : 'මිනිත්තුව',
         mm : 'මිනිත්තු %d',
         h : 'පැය',
@@ -24300,7 +23008,7 @@ return si;
 
 
 /***/ }),
-/* 162 */
+/* 155 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -24325,13 +23033,6 @@ function translate(number, withoutSuffix, key, isFuture) {
     switch (key) {
         case 's':  // a few seconds / in a few seconds / a few seconds ago
             return (withoutSuffix || isFuture) ? 'pár sekúnd' : 'pár sekundami';
-        case 'ss': // 9 seconds / in 9 seconds / 9 seconds ago
-            if (withoutSuffix || isFuture) {
-                return result + (plural(number) ? 'sekundy' : 'sekúnd');
-            } else {
-                return result + 'sekundami';
-            }
-            break;
         case 'm':  // a minute / in a minute / a minute ago
             return withoutSuffix ? 'minúta' : (isFuture ? 'minútu' : 'minútou');
         case 'mm': // 9 minutes / in 9 minutes / 9 minutes ago
@@ -24437,7 +23138,6 @@ var sk = moment.defineLocale('sk', {
         future : 'za %s',
         past : 'pred %s',
         s : translate,
-        ss : translate,
         m : translate,
         mm : translate,
         h : translate,
@@ -24463,7 +23163,7 @@ return sk;
 
 
 /***/ }),
-/* 163 */
+/* 156 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -24482,17 +23182,6 @@ function processRelativeTime(number, withoutSuffix, key, isFuture) {
     switch (key) {
         case 's':
             return withoutSuffix || isFuture ? 'nekaj sekund' : 'nekaj sekundami';
-        case 'ss':
-            if (number === 1) {
-                result += withoutSuffix ? 'sekundo' : 'sekundi';
-            } else if (number === 2) {
-                result += withoutSuffix || isFuture ? 'sekundi' : 'sekundah';
-            } else if (number < 5) {
-                result += withoutSuffix || isFuture ? 'sekunde' : 'sekundah';
-            } else {
-                result += withoutSuffix || isFuture ? 'sekund' : 'sekund';
-            }
-            return result;
         case 'm':
             return withoutSuffix ? 'ena minuta' : 'eno minuto';
         case 'mm':
@@ -24616,7 +23305,6 @@ var sl = moment.defineLocale('sl', {
         future : 'čez %s',
         past   : 'pred %s',
         s      : processRelativeTime,
-        ss     : processRelativeTime,
         m      : processRelativeTime,
         mm     : processRelativeTime,
         h      : processRelativeTime,
@@ -24642,7 +23330,7 @@ return sl;
 
 
 /***/ }),
-/* 164 */
+/* 157 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -24692,7 +23380,6 @@ var sq = moment.defineLocale('sq', {
         future : 'në %s',
         past : '%s më parë',
         s : 'disa sekonda',
-        ss : '%d sekonda',
         m : 'një minutë',
         mm : '%d minuta',
         h : 'një orë',
@@ -24718,7 +23405,7 @@ return sq;
 
 
 /***/ }),
-/* 165 */
+/* 158 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -24734,7 +23421,6 @@ return sq;
 
 var translator = {
     words: { //Different grammatical cases
-        ss: ['sekunda', 'sekunde', 'sekundi'],
         m: ['jedan minut', 'jedne minute'],
         mm: ['minut', 'minute', 'minuta'],
         h: ['jedan sat', 'jednog sata'],
@@ -24809,7 +23495,6 @@ var sr = moment.defineLocale('sr', {
         future : 'za %s',
         past   : 'pre %s',
         s      : 'nekoliko sekundi',
-        ss     : translator.translate,
         m      : translator.translate,
         mm     : translator.translate,
         h      : translator.translate,
@@ -24835,7 +23520,7 @@ return sr;
 
 
 /***/ }),
-/* 166 */
+/* 159 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -24851,7 +23536,6 @@ return sr;
 
 var translator = {
     words: { //Different grammatical cases
-        ss: ['секунда', 'секунде', 'секунди'],
         m: ['један минут', 'једне минуте'],
         mm: ['минут', 'минуте', 'минута'],
         h: ['један сат', 'једног сата'],
@@ -24926,7 +23610,6 @@ var srCyrl = moment.defineLocale('sr-cyrl', {
         future : 'за %s',
         past   : 'пре %s',
         s      : 'неколико секунди',
-        ss     : translator.translate,
         m      : translator.translate,
         mm     : translator.translate,
         h      : translator.translate,
@@ -24952,7 +23635,7 @@ return srCyrl;
 
 
 /***/ }),
-/* 167 */
+/* 160 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -24994,7 +23677,6 @@ var ss = moment.defineLocale('ss', {
         future : 'nga %s',
         past : 'wenteka nga %s',
         s : 'emizuzwana lomcane',
-        ss : '%d mzuzwana',
         m : 'umzuzu',
         mm : '%d emizuzu',
         h : 'lihora',
@@ -25047,7 +23729,7 @@ return ss;
 
 
 /***/ }),
-/* 168 */
+/* 161 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -25089,7 +23771,6 @@ var sv = moment.defineLocale('sv', {
         future : 'om %s',
         past : 'för %s sedan',
         s : 'några sekunder',
-        ss : '%d sekunder',
         m : 'en minut',
         mm : '%d minuter',
         h : 'en timme',
@@ -25122,7 +23803,7 @@ return sv;
 
 
 /***/ }),
-/* 169 */
+/* 162 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -25163,7 +23844,6 @@ var sw = moment.defineLocale('sw', {
         future : '%s baadaye',
         past : 'tokea %s',
         s : 'hivi punde',
-        ss : 'sekunde %d',
         m : 'dakika moja',
         mm : 'dakika %d',
         h : 'saa limoja',
@@ -25187,7 +23867,7 @@ return sw;
 
 
 /***/ }),
-/* 170 */
+/* 163 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -25252,7 +23932,6 @@ var ta = moment.defineLocale('ta', {
         future : '%s இல்',
         past : '%s முன்',
         s : 'ஒரு சில விநாடிகள்',
-        ss : '%d விநாடிகள்',
         m : 'ஒரு நிமிடம்',
         mm : '%d நிமிடங்கள்',
         h : 'ஒரு மணி நேரம்',
@@ -25323,7 +24002,7 @@ return ta;
 
 
 /***/ }),
-/* 171 */
+/* 164 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -25364,7 +24043,6 @@ var te = moment.defineLocale('te', {
         future : '%s లో',
         past : '%s క్రితం',
         s : 'కొన్ని క్షణాలు',
-        ss : '%d సెకన్లు',
         m : 'ఒక నిమిషం',
         mm : '%d నిమిషాలు',
         h : 'ఒక గంట',
@@ -25418,7 +24096,7 @@ return te;
 
 
 /***/ }),
-/* 172 */
+/* 165 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -25459,7 +24137,6 @@ var tet = moment.defineLocale('tet', {
         future : 'iha %s',
         past : '%s liuba',
         s : 'minutu balun',
-        ss : 'minutu %d',
         m : 'minutu ida',
         mm : 'minutus %d',
         h : 'horas ida',
@@ -25492,7 +24169,7 @@ return tet;
 
 
 /***/ }),
-/* 173 */
+/* 166 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -25545,7 +24222,6 @@ var th = moment.defineLocale('th', {
         future : 'อีก %s',
         past : '%sที่แล้ว',
         s : 'ไม่กี่วินาที',
-        ss : '%d วินาที',
         m : '1 นาที',
         mm : '%d นาที',
         h : '1 ชั่วโมง',
@@ -25565,7 +24241,7 @@ return th;
 
 
 /***/ }),
-/* 174 */
+/* 167 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -25605,7 +24281,6 @@ var tlPh = moment.defineLocale('tl-ph', {
         future : 'sa loob ng %s',
         past : '%s ang nakalipas',
         s : 'ilang segundo',
-        ss : '%d segundo',
         m : 'isang minuto',
         mm : '%d minuto',
         h : 'isang oras',
@@ -25633,7 +24308,7 @@ return tlPh;
 
 
 /***/ }),
-/* 175 */
+/* 168 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -25676,8 +24351,6 @@ function translatePast(output) {
 function translate(number, withoutSuffix, string, isFuture) {
     var numberNoun = numberAsNoun(number);
     switch (string) {
-        case 'ss':
-            return numberNoun + ' lup';
         case 'mm':
             return numberNoun + ' tup';
         case 'hh':
@@ -25735,7 +24408,6 @@ var tlh = moment.defineLocale('tlh', {
         future : translateFuture,
         past : translatePast,
         s : 'puS lup',
-        ss : translate,
         m : 'wa’ tup',
         mm : translate,
         h : 'wa’ rep',
@@ -25761,7 +24433,7 @@ return tlh;
 
 
 /***/ }),
-/* 176 */
+/* 169 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -25814,16 +24486,15 @@ var tr = moment.defineLocale('tr', {
     calendar : {
         sameDay : '[bugün saat] LT',
         nextDay : '[yarın saat] LT',
-        nextWeek : '[gelecek] dddd [saat] LT',
+        nextWeek : '[haftaya] dddd [saat] LT',
         lastDay : '[dün] LT',
-        lastWeek : '[geçen] dddd [saat] LT',
+        lastWeek : '[geçen hafta] dddd [saat] LT',
         sameElse : 'L'
     },
     relativeTime : {
         future : '%s sonra',
         past : '%s önce',
         s : 'birkaç saniye',
-        ss : '%d saniye',
         m : 'bir dakika',
         mm : '%d dakika',
         h : 'bir saat',
@@ -25857,7 +24528,7 @@ return tr;
 
 
 /***/ }),
-/* 177 */
+/* 170 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -25911,7 +24582,6 @@ var tzl = moment.defineLocale('tzl', {
         future : 'osprei %s',
         past : 'ja%s',
         s : processRelativeTime,
-        ss : processRelativeTime,
         m : processRelativeTime,
         mm : processRelativeTime,
         h : processRelativeTime,
@@ -25934,7 +24604,6 @@ var tzl = moment.defineLocale('tzl', {
 function processRelativeTime(number, withoutSuffix, key, isFuture) {
     var format = {
         's': ['viensas secunds', '\'iensas secunds'],
-        'ss': [number + ' secunds', '' + number + ' secunds'],
         'm': ['\'n míut', '\'iens míut'],
         'mm': [number + ' míuts', '' + number + ' míuts'],
         'h': ['\'n þora', '\'iensa þora'],
@@ -25955,7 +24624,7 @@ return tzl;
 
 
 /***/ }),
-/* 178 */
+/* 171 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -25995,7 +24664,6 @@ var tzm = moment.defineLocale('tzm', {
         future : 'ⴷⴰⴷⵅ ⵙ ⵢⴰⵏ %s',
         past : 'ⵢⴰⵏ %s',
         s : 'ⵉⵎⵉⴽ',
-        ss : '%d ⵉⵎⵉⴽ',
         m : 'ⵎⵉⵏⵓⴺ',
         mm : '%d ⵎⵉⵏⵓⴺ',
         h : 'ⵙⴰⵄⴰ',
@@ -26019,7 +24687,7 @@ return tzm;
 
 
 /***/ }),
-/* 179 */
+/* 172 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26059,7 +24727,6 @@ var tzmLatn = moment.defineLocale('tzm-latn', {
         future : 'dadkh s yan %s',
         past : 'yan %s',
         s : 'imik',
-        ss : '%d imik',
         m : 'minuḍ',
         mm : '%d minuḍ',
         h : 'saɛa',
@@ -26083,7 +24750,7 @@ return tzmLatn;
 
 
 /***/ }),
-/* 180 */
+/* 173 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26104,7 +24771,6 @@ function plural(word, num) {
 }
 function relativeTimeWithPlural(number, withoutSuffix, key) {
     var format = {
-        'ss': withoutSuffix ? 'секунда_секунди_секунд' : 'секунду_секунди_секунд',
         'mm': withoutSuffix ? 'хвилина_хвилини_хвилин' : 'хвилину_хвилини_хвилин',
         'hh': withoutSuffix ? 'година_години_годин' : 'годину_години_годин',
         'dd': 'день_дні_днів',
@@ -26186,7 +24852,6 @@ var uk = moment.defineLocale('uk', {
         future : 'за %s',
         past : '%s тому',
         s : 'декілька секунд',
-        ss : relativeTimeWithPlural,
         m : relativeTimeWithPlural,
         mm : relativeTimeWithPlural,
         h : 'годину',
@@ -26241,7 +24906,7 @@ return uk;
 
 
 /***/ }),
-/* 181 */
+/* 174 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26316,7 +24981,6 @@ var ur = moment.defineLocale('ur', {
         future : '%s بعد',
         past : '%s قبل',
         s : 'چند سیکنڈ',
-        ss : '%d سیکنڈ',
         m : 'ایک منٹ',
         mm : '%d منٹ',
         h : 'ایک گھنٹہ',
@@ -26346,7 +25010,7 @@ return ur;
 
 
 /***/ }),
-/* 182 */
+/* 175 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26386,7 +25050,6 @@ var uz = moment.defineLocale('uz', {
         future : 'Якин %s ичида',
         past : 'Бир неча %s олдин',
         s : 'фурсат',
-        ss : '%d фурсат',
         m : 'бир дакика',
         mm : '%d дакика',
         h : 'бир соат',
@@ -26410,7 +25073,7 @@ return uz;
 
 
 /***/ }),
-/* 183 */
+/* 176 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26450,7 +25113,6 @@ var uzLatn = moment.defineLocale('uz-latn', {
         future : 'Yaqin %s ichida',
         past : 'Bir necha %s oldin',
         s : 'soniya',
-        ss : '%d soniya',
         m : 'bir daqiqa',
         mm : '%d daqiqa',
         h : 'bir soat',
@@ -26474,7 +25136,7 @@ return uzLatn;
 
 
 /***/ }),
-/* 184 */
+/* 177 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26531,7 +25193,6 @@ var vi = moment.defineLocale('vi', {
         future : '%s tới',
         past : '%s trước',
         s : 'vài giây',
-        ss : '%d giây' ,
         m : 'một phút',
         mm : '%d phút',
         h : 'một giờ',
@@ -26559,7 +25220,7 @@ return vi;
 
 
 /***/ }),
-/* 185 */
+/* 178 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26600,7 +25261,6 @@ var xPseudo = moment.defineLocale('x-pseudo', {
         future : 'í~ñ %s',
         past : '%s á~gó',
         s : 'á ~féw ~sécó~ñds',
-        ss : '%d s~écóñ~ds',
         m : 'á ~míñ~úté',
         mm : '%d m~íñú~tés',
         h : 'á~ñ hó~úr',
@@ -26633,7 +25293,7 @@ return xPseudo;
 
 
 /***/ }),
-/* 186 */
+/* 179 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26673,7 +25333,6 @@ var yo = moment.defineLocale('yo', {
         future : 'ní %s',
         past : '%s kọjá',
         s : 'ìsẹjú aayá die',
-        ss :'aayá %d',
         m : 'ìsẹjú kan',
         mm : 'ìsẹjú %d',
         h : 'wákati kan',
@@ -26699,7 +25358,7 @@ return yo;
 
 
 /***/ }),
-/* 187 */
+/* 180 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26723,14 +25382,14 @@ var zhCn = moment.defineLocale('zh-cn', {
     longDateFormat : {
         LT : 'HH:mm',
         LTS : 'HH:mm:ss',
-        L : 'YYYY/MM/DD',
-        LL : 'YYYY年M月D日',
-        LLL : 'YYYY年M月D日Ah点mm分',
-        LLLL : 'YYYY年M月D日ddddAh点mm分',
-        l : 'YYYY/M/D',
-        ll : 'YYYY年M月D日',
-        lll : 'YYYY年M月D日 HH:mm',
-        llll : 'YYYY年M月D日dddd HH:mm'
+        L : 'YYYY年MMMD日',
+        LL : 'YYYY年MMMD日',
+        LLL : 'YYYY年MMMD日Ah点mm分',
+        LLLL : 'YYYY年MMMD日ddddAh点mm分',
+        l : 'YYYY年MMMD日',
+        ll : 'YYYY年MMMD日',
+        lll : 'YYYY年MMMD日 HH:mm',
+        llll : 'YYYY年MMMD日dddd HH:mm'
     },
     meridiemParse: /凌晨|早上|上午|中午|下午|晚上/,
     meridiemHour: function (hour, meridiem) {
@@ -26791,7 +25450,6 @@ var zhCn = moment.defineLocale('zh-cn', {
         future : '%s内',
         past : '%s前',
         s : '几秒',
-        ss : '%d 秒',
         m : '1 分钟',
         mm : '%d 分钟',
         h : '1 小时',
@@ -26816,7 +25474,7 @@ return zhCn;
 
 
 /***/ }),
-/* 188 */
+/* 181 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26841,14 +25499,14 @@ var zhHk = moment.defineLocale('zh-hk', {
     longDateFormat : {
         LT : 'HH:mm',
         LTS : 'HH:mm:ss',
-        L : 'YYYY/MM/DD',
-        LL : 'YYYY年M月D日',
-        LLL : 'YYYY年M月D日 HH:mm',
-        LLLL : 'YYYY年M月D日dddd HH:mm',
-        l : 'YYYY/M/D',
-        ll : 'YYYY年M月D日',
-        lll : 'YYYY年M月D日 HH:mm',
-        llll : 'YYYY年M月D日dddd HH:mm'
+        L : 'YYYY年MMMD日',
+        LL : 'YYYY年MMMD日',
+        LLL : 'YYYY年MMMD日 HH:mm',
+        LLLL : 'YYYY年MMMD日dddd HH:mm',
+        l : 'YYYY年MMMD日',
+        ll : 'YYYY年MMMD日',
+        lll : 'YYYY年MMMD日 HH:mm',
+        llll : 'YYYY年MMMD日dddd HH:mm'
     },
     meridiemParse: /凌晨|早上|上午|中午|下午|晚上/,
     meridiemHour : function (hour, meridiem) {
@@ -26907,7 +25565,6 @@ var zhHk = moment.defineLocale('zh-hk', {
         future : '%s內',
         past : '%s前',
         s : '幾秒',
-        ss : '%d 秒',
         m : '1 分鐘',
         mm : '%d 分鐘',
         h : '1 小時',
@@ -26927,7 +25584,7 @@ return zhHk;
 
 
 /***/ }),
-/* 189 */
+/* 182 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26951,14 +25608,14 @@ var zhTw = moment.defineLocale('zh-tw', {
     longDateFormat : {
         LT : 'HH:mm',
         LTS : 'HH:mm:ss',
-        L : 'YYYY/MM/DD',
-        LL : 'YYYY年M月D日',
-        LLL : 'YYYY年M月D日 HH:mm',
-        LLLL : 'YYYY年M月D日dddd HH:mm',
-        l : 'YYYY/M/D',
-        ll : 'YYYY年M月D日',
-        lll : 'YYYY年M月D日 HH:mm',
-        llll : 'YYYY年M月D日dddd HH:mm'
+        L : 'YYYY年MMMD日',
+        LL : 'YYYY年MMMD日',
+        LLL : 'YYYY年MMMD日 HH:mm',
+        LLLL : 'YYYY年MMMD日dddd HH:mm',
+        l : 'YYYY年MMMD日',
+        ll : 'YYYY年MMMD日',
+        lll : 'YYYY年MMMD日 HH:mm',
+        llll : 'YYYY年MMMD日dddd HH:mm'
     },
     meridiemParse: /凌晨|早上|上午|中午|下午|晚上/,
     meridiemHour : function (hour, meridiem) {
@@ -27017,7 +25674,6 @@ var zhTw = moment.defineLocale('zh-tw', {
         future : '%s內',
         past : '%s前',
         s : '幾秒',
-        ss : '%d 秒',
         m : '1 分鐘',
         mm : '%d 分鐘',
         h : '1 小時',
@@ -27037,77 +25693,7 @@ return zhTw;
 
 
 /***/ }),
-/* 190 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__api_getData__ = __webpack_require__(191);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__api_getData___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__api_getData__);
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-
-
-
-/* harmony default export */ __webpack_exports__["a"] = ({
-	data() {
-		return {};
-	}, created() {
-		//AXIOS
-		// 用户登录
-		// this.$ajax.post('clientLogin',
-		// 	{username:'jige',password:"123321"}
-		// ).then(res=>{
-		// 		// console.log(res)
-
-		// 	}).catch(error=> {
-		//     console.log(error);
-		//   });
-
-
-		//   封装的ajax
-		// this.ajax('POST', this.baseUrl+'clientLogin',{username:'jige',password:"123321"}).then(res=>{
-		// 	console.log("res",res)
-		// }).catch(err=>{
-		// 	console.log("err",err)
-
-		// })
-		this.login();
-	}, methods: {
-		async login() {
-			let msg = await Object(__WEBPACK_IMPORTED_MODULE_0__api_getData__["clientLogin"])({ username: 'jige', password: "123" });
-			console.log("msg", msg);
-		}
-	}
-});
-
-/***/ }),
-/* 191 */
+/* 183 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27118,7 +25704,7 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.clientLogin = exports.starTestUrl = exports.getAdvertisementList = undefined;
 
-var _fetch = __webpack_require__(294);
+var _fetch = __webpack_require__(289);
 
 var _fetch2 = _interopRequireDefault(_fetch);
 
@@ -27147,19 +25733,18 @@ var clientLogin = exports.clientLogin = function clientLogin(data) {
 };
 
 /***/ }),
-/* 192 */
+/* 184 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*!
- * Vue-Lazyload.js v1.1.4
+ * Vue-Lazyload.js v1.0.6
  * (c) 2017 Awe <hilongjw@gmail.com>
  * Released under the MIT License.
  */
-!function(e,t){ true?module.exports=t():"function"==typeof define&&define.amd?define(t):e.VueLazyload=t()}(this,function(){"use strict";function e(e,t){if(e.length){var n=e.indexOf(t);return n>-1?e.splice(n,1):void 0}}function t(e,t){if(!e||!t)return e||{};if(e instanceof Object)for(var n in t)e[n]=t[n];return e}function n(e,t){for(var n=!1,r=0,i=e.length;r<i;r++)if(t(e[r])){n=!0;break}return n}function r(e,t){if("IMG"===e.tagName&&e.getAttribute("data-srcset")){var n=e.getAttribute("data-srcset"),r=[],i=e.parentNode,o=i.offsetWidth*t,s=void 0,a=void 0,u=void 0;n=n.trim().split(","),n.map(function(e){e=e.trim(),s=e.lastIndexOf(" "),-1===s?(a=e,u=999998):(a=e.substr(0,s),u=parseInt(e.substr(s+1,e.length-s-2),10)),r.push([u,a])}),r.sort(function(e,t){if(e[0]<t[0])return-1;if(e[0]>t[0])return 1;if(e[0]===t[0]){if(-1!==t[1].indexOf(".webp",t[1].length-5))return 1;if(-1!==e[1].indexOf(".webp",e[1].length-5))return-1}return 0});for(var l="",d=void 0,c=r.length,h=0;h<c;h++)if(d=r[h],d[0]>=o){l=d[1];break}return l}}function i(e,t){for(var n=void 0,r=0,i=e.length;r<i;r++)if(t(e[r])){n=e[r];break}return n}function o(){if(!h)return!1;var e=!0,t=document;try{var n=t.createElement("object");n.type="image/webp",n.style.visibility="hidden",n.innerHTML="!",t.body.appendChild(n),e=!n.offsetWidth,t.body.removeChild(n)}catch(t){e=!1}return e}function s(e,t){var n=null,r=0;return function(){if(!n){var i=Date.now()-r,o=this,s=arguments,a=function(){r=Date.now(),n=!1,e.apply(o,s)};i>=t?a():n=setTimeout(a,t)}}}function a(e){return null!==e&&"object"===(void 0===e?"undefined":c(e))}function u(e){if(!(e instanceof Object))return[];if(Object.keys)return Object.keys(e);var t=[];for(var n in e)e.hasOwnProperty(n)&&t.push(n);return t}function l(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}function d(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}var c="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e},h="undefined"!=typeof window,f=h&&"IntersectionObserver"in window,v={event:"event",observer:"observer"},p=function(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:1;return h&&window.devicePixelRatio||e},g=function(){if(h){var e=!1;try{var t=Object.defineProperty({},"passive",{get:function(){e=!0}});window.addEventListener("test",null,t)}catch(e){}return e}}(),y={on:function(e,t,n){var r=arguments.length>3&&void 0!==arguments[3]&&arguments[3];g?e.addEventListener(t,n,{capture:r,passive:!0}):e.addEventListener(t,n,r)},off:function(e,t,n){var r=arguments.length>3&&void 0!==arguments[3]&&arguments[3];e.removeEventListener(t,n,r)}},b=function(e,t,n){var r=new Image;r.src=e.src,r.onload=function(){t({naturalHeight:r.naturalHeight,naturalWidth:r.naturalWidth,src:r.src})},r.onerror=function(e){n(e)}},m=function(e,t){return"undefined"!=typeof getComputedStyle?getComputedStyle(e,null).getPropertyValue(t):e.style[t]},L=function(e){return m(e,"overflow")+m(e,"overflow-y")+m(e,"overflow-x")},w=function(e){if(h){if(!(e instanceof HTMLElement))return window;for(var t=e;t&&t!==document.body&&t!==document.documentElement&&t.parentNode;){if(/(scroll|auto)/.test(L(t)))return t;t=t.parentNode}return window}},_=function(){function e(e,t){for(var n=0;n<t.length;n++){var r=t[n];r.enumerable=r.enumerable||!1,r.configurable=!0,"value"in r&&(r.writable=!0),Object.defineProperty(e,r.key,r)}}return function(t,n,r){return n&&e(t.prototype,n),r&&e(t,r),t}}(),k={},E=function(){function e(t){var n=t.el,r=t.src,i=t.error,o=t.loading,s=t.bindType,a=t.$parent,u=t.options,d=t.elRenderer;l(this,e),this.el=n,this.src=r,this.error=i,this.loading=o,this.bindType=s,this.attempt=0,this.naturalHeight=0,this.naturalWidth=0,this.options=u,this.filter(),this.initState(),this.performanceData={init:Date.now(),loadStart:null,loadEnd:null},this.rect=n.getBoundingClientRect(),this.$parent=a,this.elRenderer=d,this.render("loading",!1)}return _(e,[{key:"initState",value:function(){this.state={error:!1,loaded:!1,rendered:!1}}},{key:"record",value:function(e){this.performanceData[e]=Date.now()}},{key:"update",value:function(e){var t=e.src,n=e.loading,r=e.error,i=this.src;this.src=t,this.loading=n,this.error=r,this.filter(),i!==this.src&&(this.attempt=0,this.initState())}},{key:"getRect",value:function(){this.rect=this.el.getBoundingClientRect()}},{key:"checkInView",value:function(){return this.getRect(),this.rect.top<window.innerHeight*this.options.preLoad&&this.rect.bottom>this.options.preLoadTop&&this.rect.left<window.innerWidth*this.options.preLoad&&this.rect.right>0}},{key:"filter",value:function(){var e=this;u(this.options.filter).map(function(t){e.options.filter[t](e,e.options)})}},{key:"renderLoading",value:function(e){var t=this;b({src:this.loading},function(n){t.render("loading",!1),e()},function(n){e(),t.options.silent||console.warn("VueLazyload log: load failed with loading image("+t.loading+")")})}},{key:"load",value:function(){var e=this;return this.attempt>this.options.attempt-1&&this.state.error?void(this.options.silent||console.log("VueLazyload log: "+this.src+" tried too more than "+this.options.attempt+" times")):this.state.loaded||k[this.src]?this.render("loaded",!0):void this.renderLoading(function(){e.attempt++,e.record("loadStart"),b({src:e.src},function(t){e.naturalHeight=t.naturalHeight,e.naturalWidth=t.naturalWidth,e.state.loaded=!0,e.state.error=!1,e.record("loadEnd"),e.render("loaded",!1),k[e.src]=1},function(t){e.state.error=!0,e.state.loaded=!1,e.render("error",!1)})})}},{key:"render",value:function(e,t){this.elRenderer(this,e,t)}},{key:"performance",value:function(){var e="loading",t=0;return this.state.loaded&&(e="loaded",t=(this.performanceData.loadEnd-this.performanceData.loadStart)/1e3),this.state.error&&(e="error"),{src:this.src,state:e,time:t}}},{key:"destroy",value:function(){this.el=null,this.src=null,this.error=null,this.loading=null,this.bindType=null,this.attempt=0}}]),e}(),T=function(){function e(e,t){for(var n=0;n<t.length;n++){var r=t[n];r.enumerable=r.enumerable||!1,r.configurable=!0,"value"in r&&(r.writable=!0),Object.defineProperty(e,r.key,r)}}return function(t,n,r){return n&&e(t.prototype,n),r&&e(t,r),t}}(),A="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",$=["scroll","wheel","mousewheel","resize","animationend","transitionend","touchmove"],z={rootMargin:"0px",threshold:0},H=function(u){return function(){function l(e){var t=e.preLoad,n=e.error,r=e.throttleWait,i=e.preLoadTop,a=e.dispatchEvent,u=e.loading,c=e.attempt,h=e.silent,f=e.scale,g=e.listenEvents,y=(e.hasbind,e.filter),b=e.adapter,m=e.observer,L=e.observerOptions;d(this,l),this.version="1.1.4",this.mode=v.event,this.ListenerQueue=[],this.TargetIndex=0,this.TargetQueue=[],this.options={silent:h||!0,dispatchEvent:!!a,throttleWait:r||200,preLoad:t||1.3,preLoadTop:i||0,error:n||A,loading:u||A,attempt:c||3,scale:f||p(f),ListenEvents:g||$,hasbind:!1,supportWebp:o(),filter:y||{},adapter:b||{},observer:!!m,observerOptions:L||z},this._initEvent(),this.lazyLoadHandler=s(this._lazyLoadHandler.bind(this),this.options.throttleWait),this.setMode(this.options.observer?v.observer:v.event)}return T(l,[{key:"config",value:function(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:{};t(this.options,e)}},{key:"performance",value:function(){var e=[];return this.ListenerQueue.map(function(t){e.push(t.performance())}),e}},{key:"addLazyBox",value:function(e){this.ListenerQueue.push(e),h&&(this._addListenerTarget(window),this._observer&&this._observer.observe(e.el),e.$el&&e.$el.parentNode&&this._addListenerTarget(e.$el.parentNode))}},{key:"add",value:function(e,t,i){var o=this;if(n(this.ListenerQueue,function(t){return t.el===e}))return this.update(e,t),u.nextTick(this.lazyLoadHandler);var s=this._valueFormatter(t.value),a=s.src,l=s.loading,d=s.error;u.nextTick(function(){a=r(e,o.options.scale)||a,o._observer&&o._observer.observe(e);var n=Object.keys(t.modifiers)[0],s=void 0;n&&(s=i.context.$refs[n],s=s?s.$el||s:document.getElementById(n)),s||(s=w(e));var c=new E({bindType:t.arg,$parent:s,el:e,loading:l,error:d,src:a,elRenderer:o._elRenderer.bind(o),options:o.options});o.ListenerQueue.push(c),h&&(o._addListenerTarget(window),o._addListenerTarget(s)),o.lazyLoadHandler(),u.nextTick(function(){return o.lazyLoadHandler()})})}},{key:"update",value:function(e,t){var n=this,o=this._valueFormatter(t.value),s=o.src,a=o.loading,l=o.error;s=r(e,this.options.scale)||s;var d=i(this.ListenerQueue,function(t){return t.el===e});d&&d.update({src:s,loading:a,error:l}),this._observer&&this._observer.observe(e),this.lazyLoadHandler(),u.nextTick(function(){return n.lazyLoadHandler()})}},{key:"remove",value:function(t){if(t){this._observer&&this._observer.unobserve(t);var n=i(this.ListenerQueue,function(e){return e.el===t});n&&(this._removeListenerTarget(n.$parent),this._removeListenerTarget(window),e(this.ListenerQueue,n)&&n.destroy())}}},{key:"removeComponent",value:function(t){t&&(e(this.ListenerQueue,t),this._observer&&this._observer.unobserve(t.el),t.$parent&&t.$el.parentNode&&this._removeListenerTarget(t.$el.parentNode),this._removeListenerTarget(window))}},{key:"setMode",value:function(e){var t=this;f||e!==v.observer||(e=v.event),this.mode=e,e===v.event?(this._observer&&(this.ListenerQueue.forEach(function(e){t._observer.unobserve(e.el)}),this._observer=null),this.TargetQueue.forEach(function(e){t._initListen(e.el,!0)})):(this.TargetQueue.forEach(function(e){t._initListen(e.el,!1)}),this._initIntersectionObserver())}},{key:"_addListenerTarget",value:function(e){if(e){var t=i(this.TargetQueue,function(t){return t.el===e});return t?t.childrenCount++:(t={el:e,id:++this.TargetIndex,childrenCount:1,listened:!0},this.mode===v.event&&this._initListen(t.el,!0),this.TargetQueue.push(t)),this.TargetIndex}}},{key:"_removeListenerTarget",value:function(e){var t=this;this.TargetQueue.forEach(function(n,r){n.el===e&&(--n.childrenCount||(t._initListen(n.el,!1),t.TargetQueue.splice(r,1),n=null))})}},{key:"_initListen",value:function(e,t){var n=this;this.options.ListenEvents.forEach(function(r){return y[t?"on":"off"](e,r,n.lazyLoadHandler)})}},{key:"_initEvent",value:function(){var t=this;this.Event={listeners:{loading:[],loaded:[],error:[]}},this.$on=function(e,n){t.Event.listeners[e].push(n)},this.$once=function(e,n){function r(){i.$off(e,r),n.apply(i,arguments)}var i=t;t.$on(e,r)},this.$off=function(n,r){if(!r)return void(t.Event.listeners[n]=[]);e(t.Event.listeners[n],r)},this.$emit=function(e,n,r){t.Event.listeners[e].forEach(function(e){return e(n,r)})}}},{key:"_lazyLoadHandler",value:function(){var e=!1;this.ListenerQueue.forEach(function(t){t.state.loaded||(e=t.checkInView())&&t.load()})}},{key:"_initIntersectionObserver",value:function(){var e=this;f&&(this._observer=new IntersectionObserver(this._observerHandler.bind(this),this.options.observerOptions),this.ListenerQueue.length&&this.ListenerQueue.forEach(function(t){e._observer.observe(t.el)}))}},{key:"_observerHandler",value:function(e,t){var n=this;e.forEach(function(e){e.isIntersecting&&n.ListenerQueue.forEach(function(t){if(t.el===e.target){if(t.state.loaded)return n._observer.unobserve(t.el);t.load()}})})}},{key:"_elRenderer",value:function(e,t,n){if(e.el){var r=e.el,i=e.bindType,o=void 0;switch(t){case"loading":o=e.loading;break;case"error":o=e.error;break;default:o=e.src}if(i?r.style[i]="url("+o+")":r.getAttribute("src")!==o&&r.setAttribute("src",o),r.setAttribute("lazy",t),this.$emit(t,e,n),this.options.adapter[t]&&this.options.adapter[t](e,this.options),this.options.dispatchEvent){var s=new CustomEvent(t,{detail:e});r.dispatchEvent(s)}}}},{key:"_valueFormatter",value:function(e){var t=e,n=this.options.loading,r=this.options.error;return a(e)&&(e.src||this.options.silent||console.error("Vue Lazyload warning: miss src with "+e),t=e.src,n=e.loading||this.options.loading,r=e.error||this.options.error),{src:t,loading:n,error:r}}}]),l}()},O=function(e){return{props:{tag:{type:String,default:"div"}},render:function(e){return!1===this.show?e(this.tag):e(this.tag,null,this.$slots.default)},data:function(){return{el:null,state:{loaded:!1},rect:{},show:!1}},mounted:function(){this.el=this.$el,e.addLazyBox(this),e.lazyLoadHandler()},beforeDestroy:function(){e.removeComponent(this)},methods:{getRect:function(){this.rect=this.$el.getBoundingClientRect()},checkInView:function(){return this.getRect(),h&&this.rect.top<window.innerHeight*e.options.preLoad&&this.rect.bottom>0&&this.rect.left<window.innerWidth*e.options.preLoad&&this.rect.right>0},load:function(){this.show=!0,this.state.loaded=!0,this.$emit("show",this)}}}};return{install:function(e){var n=arguments.length>1&&void 0!==arguments[1]?arguments[1]:{},r=H(e),i=new r(n),o="2"===e.version.split(".")[0];e.prototype.$Lazyload=i,n.lazyComponent&&e.component("lazy-component",O(i)),o?e.directive("lazy",{bind:i.add.bind(i),update:i.update.bind(i),componentUpdated:i.lazyLoadHandler.bind(i),unbind:i.remove.bind(i)}):e.directive("lazy",{bind:i.lazyLoadHandler.bind(i),update:function(e,n){t(this.vm.$refs,this.vm.$els),i.add(this.el,{modifiers:this.modifiers||{},arg:this.arg,value:e,oldValue:n},{context:this.vm})},unbind:function(){i.remove(this.el)}})}}});
-
+!function(e,t){ true?module.exports=t():"function"==typeof define&&define.amd?define(t):e.VueLazyload=t()}(this,function(){"use strict";function e(e,t){if(e.length){var n=e.indexOf(t);return n>-1?e.splice(n,1):void 0}}function t(e,t){if(!e||!t)return e||{};if(e instanceof Object)for(var n in t)e[n]=t[n];return e}function n(e,t){for(var n=!1,i=0,r=e.length;i<r;i++)if(t(e[i])){n=!0;break}return n}function i(e,t){if("IMG"===e.tagName&&e.getAttribute("data-srcset")){var n=e.getAttribute("data-srcset"),i=[],r=e.parentNode,o=r.offsetWidth*t,a=void 0,s=void 0,u=void 0;n=n.trim().split(","),n.map(function(e){e=e.trim(),a=e.lastIndexOf(" "),a===-1?(s=e,u=999998):(s=e.substr(0,a),u=parseInt(e.substr(a+1,e.length-a-2),10)),i.push([u,s])}),i.sort(function(e,t){if(e[0]<t[0])return-1;if(e[0]>t[0])return 1;if(e[0]===t[0]){if(t[1].indexOf(".webp",t[1].length-5)!==-1)return 1;if(e[1].indexOf(".webp",e[1].length-5)!==-1)return-1}return 0});for(var d="",l=void 0,c=i.length,h=0;h<c;h++)if(l=i[h],l[0]>=o){d=l[1];break}return d}}function r(e,t){for(var n=void 0,i=0,r=e.length;i<r;i++)if(t(e[i])){n=e[i];break}return n}function o(){if(!f)return!1;var e=!0,t=document;try{var n=t.createElement("object");n.type="image/webp",n.style.visibility="hidden",n.innerHTML="!",t.body.appendChild(n),e=!n.offsetWidth,t.body.removeChild(n)}catch(t){e=!1}return e}function a(e,t){var n=null,i=0;return function(){if(!n){var r=Date.now()-i,o=this,a=arguments,s=function(){i=Date.now(),n=!1,e.apply(o,a)};r>=t?s():n=setTimeout(s,t)}}}function s(){if(f){var e=!1;try{var t=Object.defineProperty({},"passive",{get:function(){e=!0}});window.addEventListener("test",null,t)}catch(e){}return e}}function u(e){return null!==e&&"object"===("undefined"==typeof e?"undefined":l(e))}function d(e){if(!(e instanceof Object))return[];if(Object.keys)return Object.keys(e);var t=[];for(var n in e)e.hasOwnProperty(n)&&t.push(n);return t}var l="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol?"symbol":typeof e},c=function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")},h=function(){function e(e,t){for(var n=0;n<t.length;n++){var i=t[n];i.enumerable=i.enumerable||!1,i.configurable=!0,"value"in i&&(i.writable=!0),Object.defineProperty(e,i.key,i)}}return function(t,n,i){return n&&e(t.prototype,n),i&&e(t,i),t}}(),f="undefined"!=typeof window,p=function(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:1;return f&&window.devicePixelRatio||e},v=s(),y={on:function(e,t,n){v?e.addEventListener(t,n,{passive:!0}):e.addEventListener(t,n,!1)},off:function(e,t,n){e.removeEventListener(t,n)}},g=function(e,t,n){var i=new Image;i.src=e.src,i.onload=function(){t({naturalHeight:i.naturalHeight,naturalWidth:i.naturalWidth,src:i.src})},i.onerror=function(e){n(e)}},m=function(e,t){return"undefined"!=typeof getComputedStyle?getComputedStyle(e,null).getPropertyValue(t):e.style[t]},b=function(e){return m(e,"overflow")+m(e,"overflow-y")+m(e,"overflow-x")},L=function(e){if(f){if(!(e instanceof HTMLElement))return window;for(var t=e;t&&t!==document.body&&t!==document.documentElement&&t.parentNode;){if(/(scroll|auto)/.test(b(t)))return t;t=t.parentNode}return window}},w={},k=function(){function e(t){var n=t.el,i=t.src,r=t.error,o=t.loading,a=t.bindType,s=t.$parent,u=t.options,d=t.elRenderer;c(this,e),this.el=n,this.src=i,this.error=r,this.loading=o,this.bindType=a,this.attempt=0,this.naturalHeight=0,this.naturalWidth=0,this.options=u,this.filter(),this.initState(),this.performanceData={init:Date.now(),loadStart:null,loadEnd:null},this.rect=n.getBoundingClientRect(),this.$parent=s,this.elRenderer=d,this.render("loading",!1)}return h(e,[{key:"initState",value:function(){this.state={error:!1,loaded:!1,rendered:!1}}},{key:"record",value:function(e){this.performanceData[e]=Date.now()}},{key:"update",value:function(e){var t=e.src,n=e.loading,i=e.error,r=this.src;this.src=t,this.loading=n,this.error=i,this.filter(),r!==this.src&&(this.attempt=0,this.initState())}},{key:"getRect",value:function(){this.rect=this.el.getBoundingClientRect()}},{key:"checkInView",value:function(){return this.getRect(),this.rect.top<window.innerHeight*this.options.preLoad&&this.rect.bottom>this.options.preLoadTop&&this.rect.left<window.innerWidth*this.options.preLoad&&this.rect.right>0}},{key:"filter",value:function(){var e=this;d(this.options.filter).map(function(t){e.options.filter[t](e,e.options)})}},{key:"renderLoading",value:function(e){var t=this;g({src:this.loading},function(n){t.render("loading",!1),e()})}},{key:"load",value:function(){var e=this;return this.attempt>this.options.attempt-1&&this.state.error?void(this.options.silent||console.log("error end")):this.state.loaded||w[this.src]?this.render("loaded",!0):void this.renderLoading(function(){e.attempt++,e.record("loadStart"),g({src:e.src},function(t){e.naturalHeight=t.naturalHeight,e.naturalWidth=t.naturalWidth,e.state.loaded=!0,e.state.error=!1,e.record("loadEnd"),e.render("loaded",!1),w[e.src]=1},function(t){e.state.error=!0,e.state.loaded=!1,e.render("error",!1)})})}},{key:"render",value:function(e,t){this.elRenderer(this,e,t)}},{key:"performance",value:function(){var e="loading",t=0;return this.state.loaded&&(e="loaded",t=(this.performanceData.loadEnd-this.performanceData.loadStart)/1e3),this.state.error&&(e="error"),{src:this.src,state:e,time:t}}},{key:"destroy",value:function(){this.el=null,this.src=null,this.error=null,this.loading=null,this.bindType=null,this.attempt=0}}]),e}(),A="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",E=["scroll","wheel","mousewheel","resize","animationend","transitionend","touchmove"],T=function(s){return function(){function d(e){var t=this,n=e.preLoad,i=e.error,r=e.preLoadTop,s=e.dispatchEvent,u=e.loading,l=e.attempt,h=e.silent,f=e.scale,v=e.listenEvents,y=(e.hasbind,e.filter),g=e.adapter;c(this,d),this.version="1.0.6",this.ListenerQueue=[],this.TargetIndex=0,this.TargetQueue=[],this.options={silent:h||!0,dispatchEvent:!!s,preLoad:n||1.3,preLoadTop:r||0,error:i||A,loading:u||A,attempt:l||3,scale:f||p(f),ListenEvents:v||E,hasbind:!1,supportWebp:o(),filter:y||{},adapter:g||{}},this._initEvent(),this.lazyLoadHandler=a(function(){var e=!1;t.ListenerQueue.forEach(function(t){t.state.loaded||(e=t.checkInView(),e&&t.load())})},200)}return h(d,[{key:"config",value:function(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:{};t(this.options,e)}},{key:"performance",value:function(){var e=[];return this.ListenerQueue.map(function(t){e.push(t.performance())}),e}},{key:"addLazyBox",value:function(e){this.ListenerQueue.push(e),f&&(this._addListenerTarget(window),e.$el&&e.$el.parentNode&&this._addListenerTarget(e.$el.parentNode))}},{key:"add",value:function(e,t,r){var o=this;if(n(this.ListenerQueue,function(t){return t.el===e}))return this.update(e,t),s.nextTick(this.lazyLoadHandler);var a=this._valueFormatter(t.value),u=a.src,d=a.loading,l=a.error;s.nextTick(function(){u=i(e,o.options.scale)||u;var n=Object.keys(t.modifiers)[0],a=void 0;n&&(a=r.context.$refs[n],a=a?a.$el||a:document.getElementById(n)),a||(a=L(e));var c=new k({bindType:t.arg,$parent:a,el:e,loading:d,error:l,src:u,elRenderer:o._elRenderer.bind(o),options:o.options});o.ListenerQueue.push(c),f&&(o._addListenerTarget(window),o._addListenerTarget(a)),o.lazyLoadHandler(),s.nextTick(function(){return o.lazyLoadHandler()})})}},{key:"update",value:function(e,t){var n=this,o=this._valueFormatter(t.value),a=o.src,u=o.loading,d=o.error;a=i(e,this.options.scale)||a;var l=r(this.ListenerQueue,function(t){return t.el===e});l&&l.update({src:a,loading:u,error:d}),this.lazyLoadHandler(),s.nextTick(function(){return n.lazyLoadHandler()})}},{key:"remove",value:function(t){if(t){var n=r(this.ListenerQueue,function(e){return e.el===t});n&&(this._removeListenerTarget(n.$parent),this._removeListenerTarget(window),e(this.ListenerQueue,n)&&n.destroy())}}},{key:"removeComponent",value:function(t){t&&(e(this.ListenerQueue,t),t.$parent&&t.$el.parentNode&&this._removeListenerTarget(t.$el.parentNode),this._removeListenerTarget(window))}},{key:"_addListenerTarget",value:function(e){if(e){var t=r(this.TargetQueue,function(t){return t.el===e});return t?t.childrenCount++:(t={el:e,id:++this.TargetIndex,childrenCount:1,listened:!0},this._initListen(t.el,!0),this.TargetQueue.push(t)),this.TargetIndex}}},{key:"_removeListenerTarget",value:function(e){var t=this;this.TargetQueue.forEach(function(n,i){n.el===e&&(n.childrenCount--,n.childrenCount||(t._initListen(n.el,!1),t.TargetQueue.splice(i,1),n=null))})}},{key:"_initListen",value:function(e,t){var n=this;this.options.ListenEvents.forEach(function(i){return y[t?"on":"off"](e,i,n.lazyLoadHandler)})}},{key:"_initEvent",value:function(){var t=this;this.Event={listeners:{loading:[],loaded:[],error:[]}},this.$on=function(e,n){t.Event.listeners[e].push(n)},this.$once=function(e,n){function i(){r.$off(e,i),n.apply(r,arguments)}var r=t;t.$on(e,i)},this.$off=function(n,i){return i?void e(t.Event.listeners[n],i):void(t.Event.listeners[n]=[])},this.$emit=function(e,n,i){t.Event.listeners[e].forEach(function(e){return e(n,i)})}}},{key:"_elRenderer",value:function(e,t,n){if(e.el){var i=e.el,r=e.bindType,o=void 0;switch(t){case"loading":o=e.loading;break;case"error":o=e.error;break;default:o=e.src}if(r?i.style[r]="url("+o+")":i.getAttribute("src")!==o&&i.setAttribute("src",o),i.setAttribute("lazy",t),this.$emit(t,e,n),this.options.adapter[t]&&this.options.adapter[t](e,this.options),this.options.dispatchEvent){var a=new CustomEvent(t,{detail:e});i.dispatchEvent(a)}}}},{key:"_valueFormatter",value:function(e){var t=e,n=this.options.loading,i=this.options.error;return u(e)&&(e.src||this.options.silent||console.error("Vue Lazyload warning: miss src with "+e),t=e.src,n=e.loading||this.options.loading,i=e.error||this.options.error),{src:t,loading:n,error:i}}}]),d}()},_=function(e){return{props:{tag:{type:String,default:"div"}},render:function(e){return this.show===!1?e(this.tag):e(this.tag,null,this.$slots.default)},data:function(){return{state:{loaded:!1},rect:{},show:!1}},mounted:function(){e.addLazyBox(this),e.lazyLoadHandler()},beforeDestroy:function(){e.removeComponent(this)},methods:{getRect:function(){this.rect=this.$el.getBoundingClientRect()},checkInView:function(){return this.getRect(),f&&this.rect.top<window.innerHeight*e.options.preLoad&&this.rect.bottom>0&&this.rect.left<window.innerWidth*e.options.preLoad&&this.rect.right>0},load:function(){this.show=!0,this.state.loaded=!0,this.$emit("show",this)}}}},$={install:function(e){var n=arguments.length>1&&void 0!==arguments[1]?arguments[1]:{},i=T(e),r=new i(n),o="2"===e.version.split(".")[0];e.prototype.$Lazyload=r,n.lazyComponent&&e.component("lazy-component",_(r)),o?e.directive("lazy",{bind:r.add.bind(r),update:r.update.bind(r),componentUpdated:r.lazyLoadHandler.bind(r),unbind:r.remove.bind(r)}):e.directive("lazy",{bind:r.lazyLoadHandler.bind(r),update:function(e,n){t(this.vm.$refs,this.vm.$els),r.add(this.el,{modifiers:this.modifiers||{},arg:this.arg,value:e,oldValue:n},{context:this.vm})},unbind:function(){r.remove(this.el)}})}};return $});
 
 /***/ }),
-/* 193 */
+/* 185 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27169,19 +25754,19 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
-var _typeof2 = __webpack_require__(47);
+var _typeof2 = __webpack_require__(46);
 
 var _typeof3 = _interopRequireDefault(_typeof2);
 
-var _stringify = __webpack_require__(61);
+var _stringify = __webpack_require__(60);
 
 var _stringify2 = _interopRequireDefault(_stringify);
 
-var _keys = __webpack_require__(62);
+var _keys = __webpack_require__(61);
 
 var _keys2 = _interopRequireDefault(_keys);
 
-var _promise = __webpack_require__(63);
+var _promise = __webpack_require__(62);
 
 var _promise2 = _interopRequireDefault(_promise);
 
@@ -27242,7 +25827,13 @@ exports.default = function () {
 };
 
 /***/ }),
-/* 194 */
+/* 186 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports = __webpack_require__.p + "add_upload.png";
+
+/***/ }),
+/* 187 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27253,61 +25844,61 @@ var _vue = __webpack_require__(28);
 
 var _vue2 = _interopRequireDefault(_vue);
 
-var _vueRouter = __webpack_require__(197);
+var _vueRouter = __webpack_require__(189);
 
 var _vueRouter2 = _interopRequireDefault(_vueRouter);
 
-__webpack_require__(198);
+__webpack_require__(190);
 
-var _header = __webpack_require__(201);
+var _header = __webpack_require__(193);
 
 var _header2 = _interopRequireDefault(_header);
 
-var _switch = __webpack_require__(202);
+var _switch = __webpack_require__(194);
 
 var _switch2 = _interopRequireDefault(_switch);
 
-var _swipe = __webpack_require__(203);
+var _swipe = __webpack_require__(195);
 
 var _swipe2 = _interopRequireDefault(_swipe);
 
-var _swipeItem = __webpack_require__(204);
+var _swipeItem = __webpack_require__(196);
 
 var _swipeItem2 = _interopRequireDefault(_swipeItem);
 
-var _lazyload = __webpack_require__(205);
+var _lazyload = __webpack_require__(197);
 
 var _lazyload2 = _interopRequireDefault(_lazyload);
 
-var _loadmore = __webpack_require__(206);
+var _loadmore = __webpack_require__(198);
 
 var _loadmore2 = _interopRequireDefault(_loadmore);
 
-var _indicator = __webpack_require__(207);
+var _indicator = __webpack_require__(199);
 
 var _indicator2 = _interopRequireDefault(_indicator);
 
-var _button = __webpack_require__(211);
+var _button = __webpack_require__(203);
 
 var _button2 = _interopRequireDefault(_button);
 
-__webpack_require__(214);
+__webpack_require__(206);
 
-__webpack_require__(218);
+__webpack_require__(210);
 
-var _axios = __webpack_require__(220);
+var _axios = __webpack_require__(212);
 
 var _axios2 = _interopRequireDefault(_axios);
 
-var _selfAjax = __webpack_require__(193);
+var _selfAjax = __webpack_require__(185);
 
 var _selfAjax2 = _interopRequireDefault(_selfAjax);
 
-var _navBar = __webpack_require__(279);
+var _navBar = __webpack_require__(272);
 
 var _navBar2 = _interopRequireDefault(_navBar);
 
-var _Upload = __webpack_require__(284);
+var _Upload = __webpack_require__(278);
 
 var _Upload2 = _interopRequireDefault(_Upload);
 
@@ -27315,7 +25906,7 @@ var _moment = __webpack_require__(0);
 
 var _moment2 = _interopRequireDefault(_moment);
 
-var _app = __webpack_require__(291);
+var _app = __webpack_require__(285);
 
 var _app2 = _interopRequireDefault(_app);
 
@@ -27356,18 +25947,18 @@ _vue2.default.prototype.ajax = _selfAjax2.default;
 _vue2.default.prototype.baseUrl = 'http://test.legle.cc/';
 _axios2.default.defaults.withCredentials = true;
 _axios2.default.interceptors.request.use(function (config) {
-    //显示图标
-    _indicator2.default.open({
-        text: '加载中...',
-        spinnerType: 'fading-circle'
-    });
-    return config;
+  //显示图标
+  _indicator2.default.open({
+    text: '加载中...',
+    spinnerType: 'fading-circle'
+  });
+  return config;
 });
 _axios2.default.interceptors.response.use(function (config) {
-    //隐藏图标
-    _indicator2.default.close();
-    //获取到config中的data，进行加工
-    return config;
+  //隐藏图标
+  _indicator2.default.close();
+  //获取到config中的data，进行加工
+  return config;
 });
 //引入全局组件需要的组件对象 开始
 
@@ -27375,7 +25966,7 @@ _axios2.default.interceptors.response.use(function (config) {
 
 //定义全局过滤器
 _vue2.default.filter('convertDate', function (value) {
-    return (0, _moment2.default)(value).format('YYYY-MM-DD');
+  return (0, _moment2.default)(value).format('YYYY-MM-DD');
 });
 _vue2.default.component('navBar', _navBar2.default); //使用最好以nav-bar
 _vue2.default.component('upload', _Upload2.default); //使用最好以upload
@@ -27383,305 +25974,88 @@ _vue2.default.component('upload', _Upload2.default); //使用最好以upload
 //引入自己的vue文件
 
 var Home = function Home(r) {
-    return __webpack_require__.e/* require */(3).then(function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(297)]; ((r).apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));}.bind(this)).catch(__webpack_require__.oe);
+  return __webpack_require__.e/* require */(3).then(function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(292)]; (r.apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));}.bind(this)).catch(__webpack_require__.oe);
 };
 var Member = function Member(r) {
-    return __webpack_require__.e/* require */(2).then(function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(298)]; ((r).apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));}.bind(this)).catch(__webpack_require__.oe);
+  return __webpack_require__.e/* require */(2).then(function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(293)]; (r.apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));}.bind(this)).catch(__webpack_require__.oe);
 };
 var Shopcart = function Shopcart(r) {
-    return __webpack_require__.e/* require */(0).then(function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(299)]; ((r).apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));}.bind(this)).catch(__webpack_require__.oe);
+  return __webpack_require__.e/* require */(0).then(function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(294)]; (r.apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));}.bind(this)).catch(__webpack_require__.oe);
 };
 var Search = function Search(r) {
-    return __webpack_require__.e/* require */(1).then(function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(300)]; ((r).apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));}.bind(this)).catch(__webpack_require__.oe);
+  return __webpack_require__.e/* require */(1).then(function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(295)]; (r.apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));}.bind(this)).catch(__webpack_require__.oe);
 };
 var NewsList = function NewsList(r) {
-    return __webpack_require__.e/* require */(4).then(function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(301)]; ((r).apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));}.bind(this)).catch(__webpack_require__.oe);
+  return __webpack_require__.e/* require */(4).then(function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(296)]; (r.apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));}.bind(this)).catch(__webpack_require__.oe);
 };
 var NewsDetail = function NewsDetail(r) {
-    return __webpack_require__.e/* require */(5).then(function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(302)]; ((r).apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));}.bind(this)).catch(__webpack_require__.oe);
+  return __webpack_require__.e/* require */(5).then(function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(297)]; (r.apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));}.bind(this)).catch(__webpack_require__.oe);
+};
+var Camera = function Camera(r) {
+  return __webpack_require__.e/* require */(7).then(function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(298)]; (r.apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));}.bind(this)).catch(__webpack_require__.oe);
+};
+var newCamera = function newCamera(r) {
+  return __webpack_require__.e/* require */(6).then(function() { var __WEBPACK_AMD_REQUIRE_ARRAY__ = [__webpack_require__(299)]; (r.apply(null, __WEBPACK_AMD_REQUIRE_ARRAY__));}.bind(this)).catch(__webpack_require__.oe);
 };
 
 //路由规则
 var router = new _vueRouter2.default({
-    linkActiveClass: 'mui-active',
-    routes: [
-    //vuerouter配置路由规则
-    { path: '/', redirect: { name: 'home' } }, //重定向
-    { name: 'home', path: '/home', component: Home }, //首页
-    { name: 'member', path: '/member', component: Member }, //会员
-    { name: 'shopcart', path: '/shopcart', component: Shopcart }, //购物车
-    { name: 'search', path: '/search', component: Search }, //查找
-    { name: 'news.list', path: '/news/list', component: NewsList }, //手术列表
-    { name: 'news.detail', path: '/news/detail', component: NewsDetail }]
+  linkActiveClass: 'mui-active',
+  routes: [
+  //vuerouter配置路由规则
+  { path: '/', redirect: { name: 'home' } }, //重定向
+  { name: 'home', path: '/home', component: Home }, //首页
+  { name: 'member', path: '/member', component: Member }, //会员
+  { name: 'shopcart', path: '/shopcart', component: Shopcart }, //购物车
+  { name: 'search', path: '/search', component: Search }, //查找
+  { name: 'news.list', path: '/news/list', component: NewsList }, //手术列表
+  { name: 'news.detail', path: '/news/detail', component: NewsDetail }, //手术详情
+  { name: 'Camera', path: '/camera', component: Camera }, //照相机
+  { name: 'newCamera', path: '/newCamera', component: newCamera }]
 });
 new _vue2.default({
-    el: '#app',
-    router: router,
-    render: function render(c) {
-        return c(_app2.default);
-    }
+  el: '#app',
+  router: router,
+  render: function render(c) {
+    return c(_app2.default);
+  }
 });
 
 /***/ }),
-/* 195 */
-/***/ (function(module, exports, __webpack_require__) {
+/* 188 */
+/***/ (function(module, exports) {
 
-var apply = Function.prototype.apply;
+var g;
 
-// DOM APIs, for completeness
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
 
-exports.setTimeout = function() {
-  return new Timeout(apply.call(setTimeout, window, arguments), clearTimeout);
-};
-exports.setInterval = function() {
-  return new Timeout(apply.call(setInterval, window, arguments), clearInterval);
-};
-exports.clearTimeout =
-exports.clearInterval = function(timeout) {
-  if (timeout) {
-    timeout.close();
-  }
-};
-
-function Timeout(id, clearFn) {
-  this._id = id;
-  this._clearFn = clearFn;
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1,eval)("this");
+} catch(e) {
+	// This works if the window reference is available
+	if(typeof window === "object")
+		g = window;
 }
-Timeout.prototype.unref = Timeout.prototype.ref = function() {};
-Timeout.prototype.close = function() {
-  this._clearFn.call(window, this._id);
-};
 
-// Does not start the time, just sets up the members needed.
-exports.enroll = function(item, msecs) {
-  clearTimeout(item._idleTimeoutId);
-  item._idleTimeout = msecs;
-};
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
 
-exports.unenroll = function(item) {
-  clearTimeout(item._idleTimeoutId);
-  item._idleTimeout = -1;
-};
-
-exports._unrefActive = exports.active = function(item) {
-  clearTimeout(item._idleTimeoutId);
-
-  var msecs = item._idleTimeout;
-  if (msecs >= 0) {
-    item._idleTimeoutId = setTimeout(function onTimeout() {
-      if (item._onTimeout)
-        item._onTimeout();
-    }, msecs);
-  }
-};
-
-// setimmediate attaches itself to the global object
-__webpack_require__(196);
-exports.setImmediate = setImmediate;
-exports.clearImmediate = clearImmediate;
+module.exports = g;
 
 
 /***/ }),
-/* 196 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
-    "use strict";
-
-    if (global.setImmediate) {
-        return;
-    }
-
-    var nextHandle = 1; // Spec says greater than zero
-    var tasksByHandle = {};
-    var currentlyRunningATask = false;
-    var doc = global.document;
-    var registerImmediate;
-
-    function setImmediate(callback) {
-      // Callback can either be a function or a string
-      if (typeof callback !== "function") {
-        callback = new Function("" + callback);
-      }
-      // Copy function arguments
-      var args = new Array(arguments.length - 1);
-      for (var i = 0; i < args.length; i++) {
-          args[i] = arguments[i + 1];
-      }
-      // Store and register the task
-      var task = { callback: callback, args: args };
-      tasksByHandle[nextHandle] = task;
-      registerImmediate(nextHandle);
-      return nextHandle++;
-    }
-
-    function clearImmediate(handle) {
-        delete tasksByHandle[handle];
-    }
-
-    function run(task) {
-        var callback = task.callback;
-        var args = task.args;
-        switch (args.length) {
-        case 0:
-            callback();
-            break;
-        case 1:
-            callback(args[0]);
-            break;
-        case 2:
-            callback(args[0], args[1]);
-            break;
-        case 3:
-            callback(args[0], args[1], args[2]);
-            break;
-        default:
-            callback.apply(undefined, args);
-            break;
-        }
-    }
-
-    function runIfPresent(handle) {
-        // From the spec: "Wait until any invocations of this algorithm started before this one have completed."
-        // So if we're currently running a task, we'll need to delay this invocation.
-        if (currentlyRunningATask) {
-            // Delay by doing a setTimeout. setImmediate was tried instead, but in Firefox 7 it generated a
-            // "too much recursion" error.
-            setTimeout(runIfPresent, 0, handle);
-        } else {
-            var task = tasksByHandle[handle];
-            if (task) {
-                currentlyRunningATask = true;
-                try {
-                    run(task);
-                } finally {
-                    clearImmediate(handle);
-                    currentlyRunningATask = false;
-                }
-            }
-        }
-    }
-
-    function installNextTickImplementation() {
-        registerImmediate = function(handle) {
-            process.nextTick(function () { runIfPresent(handle); });
-        };
-    }
-
-    function canUsePostMessage() {
-        // The test against `importScripts` prevents this implementation from being installed inside a web worker,
-        // where `global.postMessage` means something completely different and can't be used for this purpose.
-        if (global.postMessage && !global.importScripts) {
-            var postMessageIsAsynchronous = true;
-            var oldOnMessage = global.onmessage;
-            global.onmessage = function() {
-                postMessageIsAsynchronous = false;
-            };
-            global.postMessage("", "*");
-            global.onmessage = oldOnMessage;
-            return postMessageIsAsynchronous;
-        }
-    }
-
-    function installPostMessageImplementation() {
-        // Installs an event handler on `global` for the `message` event: see
-        // * https://developer.mozilla.org/en/DOM/window.postMessage
-        // * http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#crossDocumentMessages
-
-        var messagePrefix = "setImmediate$" + Math.random() + "$";
-        var onGlobalMessage = function(event) {
-            if (event.source === global &&
-                typeof event.data === "string" &&
-                event.data.indexOf(messagePrefix) === 0) {
-                runIfPresent(+event.data.slice(messagePrefix.length));
-            }
-        };
-
-        if (global.addEventListener) {
-            global.addEventListener("message", onGlobalMessage, false);
-        } else {
-            global.attachEvent("onmessage", onGlobalMessage);
-        }
-
-        registerImmediate = function(handle) {
-            global.postMessage(messagePrefix + handle, "*");
-        };
-    }
-
-    function installMessageChannelImplementation() {
-        var channel = new MessageChannel();
-        channel.port1.onmessage = function(event) {
-            var handle = event.data;
-            runIfPresent(handle);
-        };
-
-        registerImmediate = function(handle) {
-            channel.port2.postMessage(handle);
-        };
-    }
-
-    function installReadyStateChangeImplementation() {
-        var html = doc.documentElement;
-        registerImmediate = function(handle) {
-            // Create a <script> element; its readystatechange event will be fired asynchronously once it is inserted
-            // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
-            var script = doc.createElement("script");
-            script.onreadystatechange = function () {
-                runIfPresent(handle);
-                script.onreadystatechange = null;
-                html.removeChild(script);
-                script = null;
-            };
-            html.appendChild(script);
-        };
-    }
-
-    function installSetTimeoutImplementation() {
-        registerImmediate = function(handle) {
-            setTimeout(runIfPresent, 0, handle);
-        };
-    }
-
-    // If supported, we should attach to the prototype of global, since that is where setTimeout et al. live.
-    var attachTo = Object.getPrototypeOf && Object.getPrototypeOf(global);
-    attachTo = attachTo && attachTo.setTimeout ? attachTo : global;
-
-    // Don't get fooled by e.g. browserify environments.
-    if ({}.toString.call(global.process) === "[object process]") {
-        // For Node.js before 0.9
-        installNextTickImplementation();
-
-    } else if (canUsePostMessage()) {
-        // For non-IE10 modern browsers
-        installPostMessageImplementation();
-
-    } else if (global.MessageChannel) {
-        // For web workers, where supported
-        installMessageChannelImplementation();
-
-    } else if (doc && "onreadystatechange" in doc.createElement("script")) {
-        // For IE 6–8
-        installReadyStateChangeImplementation();
-
-    } else {
-        // For older browsers
-        installSetTimeoutImplementation();
-    }
-
-    attachTo.setImmediate = setImmediate;
-    attachTo.clearImmediate = clearImmediate;
-}(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
-
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(41), __webpack_require__(14)))
-
-/***/ }),
-/* 197 */
+/* 189 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* WEBPACK VAR INJECTION */(function(process) {/**
-  * vue-router v2.8.1
+  * vue-router v2.7.0
   * (c) 2017 Evan You
   * @license MIT
   */
@@ -27769,26 +26143,14 @@ var View = {
       }
     }
 
-    // also register instance in prepatch hook
+    // also regiseter instance in prepatch hook
     // in case the same component instance is reused across different routes
     ;(data.hook || (data.hook = {})).prepatch = function (_, vnode) {
       matched.instances[name] = vnode.componentInstance;
     };
 
     // resolve props
-    var propsToPass = data.props = resolveProps(route, matched.props && matched.props[name]);
-    if (propsToPass) {
-      // clone to prevent mutation
-      propsToPass = data.props = extend({}, propsToPass);
-      // pass non-declared props as attrs
-      var attrs = data.attrs = data.attrs || {};
-      for (var key in propsToPass) {
-        if (!component.props || !(key in component.props)) {
-          attrs[key] = propsToPass[key];
-          delete propsToPass[key];
-        }
-      }
-    }
+    data.props = resolveProps(route, matched.props && matched.props[name]);
 
     return h(component, data, children)
   }
@@ -27813,13 +26175,6 @@ function resolveProps (route, config) {
         );
       }
   }
-}
-
-function extend (to, from) {
-  for (var key in from) {
-    to[key] = from[key];
-  }
-  return to
 }
 
 /*  */
@@ -27853,7 +26208,8 @@ function resolveQuery (
     parsedQuery = {};
   }
   for (var key in extraQuery) {
-    parsedQuery[key] = extraQuery[key];
+    var val = extraQuery[key];
+    parsedQuery[key] = Array.isArray(val) ? val.slice() : val;
   }
   return parsedQuery
 }
@@ -27930,18 +26286,12 @@ function createRoute (
   router
 ) {
   var stringifyQuery$$1 = router && router.options.stringifyQuery;
-
-  var query = location.query || {};
-  try {
-    query = clone(query);
-  } catch (e) {}
-
   var route = {
     name: location.name || (record && record.name),
     meta: (record && record.meta) || {},
     path: location.path || '/',
     hash: location.hash || '',
-    query: query,
+    query: location.query || {},
     params: location.params || {},
     fullPath: getFullPath(location, stringifyQuery$$1),
     matched: record ? formatMatch(record) : []
@@ -27950,20 +26300,6 @@ function createRoute (
     route.redirectedFrom = getFullPath(redirectedFrom, stringifyQuery$$1);
   }
   return Object.freeze(route)
-}
-
-function clone (value) {
-  if (Array.isArray(value)) {
-    return value.map(clone)
-  } else if (value && typeof value === 'object') {
-    var res = {};
-    for (var key in value) {
-      res[key] = clone(value[key]);
-    }
-    return res
-  } else {
-    return value
-  }
 }
 
 // the starting route that represents the initial state
@@ -28019,8 +26355,6 @@ function isObjectEqual (a, b) {
   if ( a === void 0 ) a = {};
   if ( b === void 0 ) b = {};
 
-  // handle null value #1566
-  if (!a || !b) { return a === b }
   var aKeys = Object.keys(a);
   var bKeys = Object.keys(b);
   if (aKeys.length !== bKeys.length) {
@@ -28200,7 +26534,7 @@ function findAnchor (children) {
 var _Vue;
 
 function install (Vue) {
-  if (install.installed && _Vue === Vue) { return }
+  if (install.installed) { return }
   install.installed = true;
 
   _Vue = Vue;
@@ -28322,14 +26656,14 @@ function cleanPath (path) {
   return path.replace(/\/\//g, '/')
 }
 
-var isarray = Array.isArray || function (arr) {
+var index$1 = Array.isArray || function (arr) {
   return Object.prototype.toString.call(arr) == '[object Array]';
 };
 
 /**
  * Expose `pathToRegexp`.
  */
-var pathToRegexp_1 = pathToRegexp;
+var index = pathToRegexp;
 var parse_1 = parse;
 var compile_1 = compile;
 var tokensToFunction_1 = tokensToFunction;
@@ -28506,7 +26840,7 @@ function tokensToFunction (tokens) {
         }
       }
 
-      if (isarray(value)) {
+      if (index$1(value)) {
         if (!token.repeat) {
           throw new TypeError('Expected "' + token.name + '" to not repeat, but received `' + JSON.stringify(value) + '`')
         }
@@ -28657,7 +26991,7 @@ function stringToRegexp (path, keys, options) {
  * @return {!RegExp}
  */
 function tokensToRegExp (tokens, keys, options) {
-  if (!isarray(keys)) {
+  if (!index$1(keys)) {
     options = /** @type {!Object} */ (keys || options);
     keys = [];
   }
@@ -28733,7 +27067,7 @@ function tokensToRegExp (tokens, keys, options) {
  * @return {!RegExp}
  */
 function pathToRegexp (path, keys, options) {
-  if (!isarray(keys)) {
+  if (!index$1(keys)) {
     options = /** @type {!Object} */ (keys || options);
     keys = [];
   }
@@ -28744,21 +27078,20 @@ function pathToRegexp (path, keys, options) {
     return regexpToRegexp(path, /** @type {!Array} */ (keys))
   }
 
-  if (isarray(path)) {
+  if (index$1(path)) {
     return arrayToRegexp(/** @type {!Array} */ (path), /** @type {!Array} */ (keys), options)
   }
 
   return stringToRegexp(/** @type {string} */ (path), /** @type {!Array} */ (keys), options)
 }
 
-pathToRegexp_1.parse = parse_1;
-pathToRegexp_1.compile = compile_1;
-pathToRegexp_1.tokensToFunction = tokensToFunction_1;
-pathToRegexp_1.tokensToRegExp = tokensToRegExp_1;
+index.parse = parse_1;
+index.compile = compile_1;
+index.tokensToFunction = tokensToFunction_1;
+index.tokensToRegExp = tokensToRegExp_1;
 
 /*  */
 
-// $flow-disable-line
 var regexpCompileCache = Object.create(null);
 
 function fillParams (
@@ -28769,7 +27102,7 @@ function fillParams (
   try {
     var filler =
       regexpCompileCache[path] ||
-      (regexpCompileCache[path] = pathToRegexp_1.compile(path));
+      (regexpCompileCache[path] = index.compile(path));
     return filler(params || {}, { pretty: true })
   } catch (e) {
     if (process.env.NODE_ENV !== 'production') {
@@ -28789,9 +27122,7 @@ function createRouteMap (
 ) {
   // the path list is used to control path matching priority
   var pathList = oldPathList || [];
-  // $flow-disable-line
   var pathMap = oldPathMap || Object.create(null);
-  // $flow-disable-line
   var nameMap = oldNameMap || Object.create(null);
 
   routes.forEach(function (route) {
@@ -28833,12 +27164,8 @@ function addRouteRecord (
     );
   }
 
+  var normalizedPath = normalizePath(path, parent);
   var pathToRegexpOptions = route.pathToRegexpOptions || {};
-  var normalizedPath = normalizePath(
-    path,
-    parent,
-    pathToRegexpOptions.strict
-  );
 
   if (typeof route.caseSensitive === 'boolean') {
     pathToRegexpOptions.sensitive = route.caseSensitive;
@@ -28926,9 +27253,9 @@ function addRouteRecord (
 }
 
 function compileRouteRegex (path, pathToRegexpOptions) {
-  var regex = pathToRegexp_1(path, [], pathToRegexpOptions);
+  var regex = index(path, [], pathToRegexpOptions);
   if (process.env.NODE_ENV !== 'production') {
-    var keys = Object.create(null);
+    var keys = {};
     regex.keys.forEach(function (key) {
       warn(!keys[key.name], ("Duplicate param keys in route with path: \"" + path + "\""));
       keys[key.name] = true;
@@ -28937,8 +27264,8 @@ function compileRouteRegex (path, pathToRegexpOptions) {
   return regex
 }
 
-function normalizePath (path, parent, strict) {
-  if (!strict) { path = path.replace(/\/$/, ''); }
+function normalizePath (path, parent) {
+  path = path.replace(/\/$/, '');
   if (path[0] === '/') { return path }
   if (parent == null) { return path }
   return cleanPath(((parent.path) + "/" + path))
@@ -29210,8 +27537,6 @@ function resolveRecordPath (path, record) {
 var positionStore = Object.create(null);
 
 function setupScroll () {
-  // Fix for #1585 for Firefox
-  window.history.replaceState({ key: getStateKey() }, '');
   window.addEventListener('popstate', function (e) {
     saveScrollPosition();
     if (e.state && e.state.key) {
@@ -29243,21 +27568,25 @@ function handleScroll (
   router.app.$nextTick(function () {
     var position = getScrollPosition();
     var shouldScroll = behavior(to, from, isPop ? position : null);
-
     if (!shouldScroll) {
       return
     }
+    var isObject = typeof shouldScroll === 'object';
+    if (isObject && typeof shouldScroll.selector === 'string') {
+      var el = document.querySelector(shouldScroll.selector);
+      if (el) {
+        var offset = shouldScroll.offset && typeof shouldScroll.offset === 'object' ? shouldScroll.offset : {};
+        offset = normalizeOffset(offset);
+        position = getElementPosition(el, offset);
+      } else if (isValidPosition(shouldScroll)) {
+        position = normalizePosition(shouldScroll);
+      }
+    } else if (isObject && isValidPosition(shouldScroll)) {
+      position = normalizePosition(shouldScroll);
+    }
 
-    if (typeof shouldScroll.then === 'function') {
-      shouldScroll.then(function (shouldScroll) {
-        scrollToPosition((shouldScroll), position);
-      }).catch(function (err) {
-        if (process.env.NODE_ENV !== 'production') {
-          assert(false, err.toString());
-        }
-      });
-    } else {
-      scrollToPosition(shouldScroll, position);
+    if (position) {
+      window.scrollTo(position.x, position.y);
     }
   });
 }
@@ -29309,26 +27638,6 @@ function normalizeOffset (obj) {
 
 function isNumber (v) {
   return typeof v === 'number'
-}
-
-function scrollToPosition (shouldScroll, position) {
-  var isObject = typeof shouldScroll === 'object';
-  if (isObject && typeof shouldScroll.selector === 'string') {
-    var el = document.querySelector(shouldScroll.selector);
-    if (el) {
-      var offset = shouldScroll.offset && typeof shouldScroll.offset === 'object' ? shouldScroll.offset : {};
-      offset = normalizeOffset(offset);
-      position = getElementPosition(el, offset);
-    } else if (isValidPosition(shouldScroll)) {
-      position = normalizePosition(shouldScroll);
-    }
-  } else if (isObject && isValidPosition(shouldScroll)) {
-    position = normalizePosition(shouldScroll);
-  }
-
-  if (position) {
-    window.scrollTo(position.x, position.y);
-  }
 }
 
 /*  */
@@ -29426,7 +27735,7 @@ function resolveAsyncComponents (matched) {
         pending++;
 
         var resolve = once(function (resolvedDef) {
-          if (isESModule(resolvedDef)) {
+          if (resolvedDef.__esModule && resolvedDef.default) {
             resolvedDef = resolvedDef.default;
           }
           // save resolved on async factory in case it's used elsewhere
@@ -29490,14 +27799,6 @@ function flatMapComponents (
 
 function flatten (arr) {
   return Array.prototype.concat.apply([], arr)
-}
-
-var hasSymbol =
-  typeof Symbol === 'function' &&
-  typeof Symbol.toStringTag === 'symbol';
-
-function isESModule (obj) {
-  return obj.__esModule || (hasSymbol && obj[Symbol.toStringTag] === 'Module')
 }
 
 // in Webpack 2, require.ensure now also returns a Promise
@@ -29828,18 +28129,9 @@ var HTML5History = (function (History$$1) {
       setupScroll();
     }
 
-    var initLocation = getLocation(this.base);
     window.addEventListener('popstate', function (e) {
       var current = this$1.current;
-
-      // Avoiding first `popstate` event dispatched in some browsers but first
-      // history route not updated since async guard at the same time.
-      var location = getLocation(this$1.base);
-      if (this$1.current === START && location === initLocation) {
-        return
-      }
-
-      this$1.transitionTo(location, function (route) {
+      this$1.transitionTo(getLocation(this$1.base), function (route) {
         if (expectScroll) {
           handleScroll(router, route, current, true);
         }
@@ -29923,50 +28215,26 @@ var HashHistory = (function (History$$1) {
   HashHistory.prototype.setupListeners = function setupListeners () {
     var this$1 = this;
 
-    var router = this.router;
-    var expectScroll = router.options.scrollBehavior;
-    var supportsScroll = supportsPushState && expectScroll;
-
-    if (supportsScroll) {
-      setupScroll();
-    }
-
-    window.addEventListener(supportsPushState ? 'popstate' : 'hashchange', function () {
-      var current = this$1.current;
+    window.addEventListener('hashchange', function () {
       if (!ensureSlash()) {
         return
       }
       this$1.transitionTo(getHash(), function (route) {
-        if (supportsScroll) {
-          handleScroll(this$1.router, route, current, true);
-        }
-        if (!supportsPushState) {
-          replaceHash(route.fullPath);
-        }
+        replaceHash(route.fullPath);
       });
     });
   };
 
   HashHistory.prototype.push = function push (location, onComplete, onAbort) {
-    var this$1 = this;
-
-    var ref = this;
-    var fromRoute = ref.current;
     this.transitionTo(location, function (route) {
       pushHash(route.fullPath);
-      handleScroll(this$1.router, route, fromRoute, false);
       onComplete && onComplete(route);
     }, onAbort);
   };
 
   HashHistory.prototype.replace = function replace (location, onComplete, onAbort) {
-    var this$1 = this;
-
-    var ref = this;
-    var fromRoute = ref.current;
     this.transitionTo(location, function (route) {
       replaceHash(route.fullPath);
-      handleScroll(this$1.router, route, fromRoute, false);
       onComplete && onComplete(route);
     }, onAbort);
   };
@@ -30016,27 +28284,15 @@ function getHash () {
   return index === -1 ? '' : href.slice(index + 1)
 }
 
-function getUrl (path) {
-  var href = window.location.href;
-  var i = href.indexOf('#');
-  var base = i >= 0 ? href.slice(0, i) : href;
-  return (base + "#" + path)
-}
-
 function pushHash (path) {
-  if (supportsPushState) {
-    pushState(getUrl(path));
-  } else {
-    window.location.hash = path;
-  }
+  window.location.hash = path;
 }
 
 function replaceHash (path) {
-  if (supportsPushState) {
-    replaceState(getUrl(path));
-  } else {
-    window.location.replace(getUrl(path));
-  }
+  var href = window.location.href;
+  var i = href.indexOf('#');
+  var base = i >= 0 ? href.slice(0, i) : href;
+  window.location.replace((base + "#" + path));
 }
 
 /*  */
@@ -30138,7 +28394,7 @@ var VueRouter = function VueRouter (options) {
   }
 };
 
-var prototypeAccessors = { currentRoute: { configurable: true } };
+var prototypeAccessors = { currentRoute: {} };
 
 VueRouter.prototype.match = function match (
   raw,
@@ -30296,7 +28552,7 @@ function createHref (base, fullPath, mode) {
 }
 
 VueRouter.install = install;
-VueRouter.version = '2.8.1';
+VueRouter.version = '2.7.0';
 
 if (inBrowser && window.Vue) {
   window.Vue.use(VueRouter);
@@ -30304,16 +28560,16 @@ if (inBrowser && window.Vue) {
 
 /* harmony default export */ __webpack_exports__["default"] = (VueRouter);
 
-/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(14)))
+/* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(19)))
 
 /***/ }),
-/* 198 */
+/* 190 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(199);
+var content = __webpack_require__(191);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -30321,14 +28577,14 @@ var transform;
 var options = {}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(15)(content, options);
+var update = __webpack_require__(13)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
 	// When the styles change, update the <style> tags
 	if(!content.locals) {
-		module.hot.accept("!!../../_css-loader@0.28.7@css-loader/index.js!../../_autoprefixer-loader@3.2.0@autoprefixer-loader/index.js!./style.css", function() {
-			var newContent = require("!!../../_css-loader@0.28.7@css-loader/index.js!../../_autoprefixer-loader@3.2.0@autoprefixer-loader/index.js!./style.css");
+		module.hot.accept("!!../../css-loader/index.js!../../autoprefixer-loader/index.js!./style.css", function() {
+			var newContent = require("!!../../css-loader/index.js!../../autoprefixer-loader/index.js!./style.css");
 			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 			update(newContent);
 		});
@@ -30338,7 +28594,7 @@ if(false) {
 }
 
 /***/ }),
-/* 199 */
+/* 191 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(5)(undefined);
@@ -30352,7 +28608,7 @@ exports.push([module.i, "/* Cell Component */\n/* Header Component */\n/* Button
 
 
 /***/ }),
-/* 200 */
+/* 192 */
 /***/ (function(module, exports) {
 
 
@@ -30447,7 +28703,7 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 201 */
+/* 193 */
 /***/ (function(module, exports) {
 
 module.exports =
@@ -30744,7 +29000,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /******/ });
 
 /***/ }),
-/* 202 */
+/* 194 */
 /***/ (function(module, exports) {
 
 module.exports =
@@ -31071,7 +29327,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /******/ });
 
 /***/ }),
-/* 203 */
+/* 195 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports =
@@ -31684,42 +29940,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
       }, 100);
     },
 
-    rafTranslate: function rafTranslate(element, initOffset, offset, callback, nextElement) {
-      var ALPHA = 0.88;
-      this.animating = true;
-      var _offset = initOffset;
-      var raf = 0;
-
-      function animationLoop() {
-        if (Math.abs(_offset - offset) < 0.5) {
-          this.animating = false;
-          _offset = offset;
-          element.style.webkitTransform = '';
-          if (nextElement) {
-            nextElement.style.webkitTransform = '';
-          }
-          cancelAnimationFrame(raf);
-
-          if (callback) {
-            callback();
-          }
-
-          return;
-        }
-
-        _offset = ALPHA * _offset + (1.0 - ALPHA) * offset;
-        element.style.webkitTransform = "translate3d(" + _offset + "px, 0, 0)";
-
-        if (nextElement) {
-          nextElement.style.webkitTransform = "translate3d(" + (_offset - offset) + "px, 0, 0)";
-        }
-
-        raf = requestAnimationFrame(animationLoop.bind(this));
-      }
-
-      animationLoop.call(this);
-    },
-
     translate: function translate(element, offset, speed, callback) {
       var arguments$1 = arguments;
       var this$1 = this;
@@ -31780,7 +30000,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
       if (this.$children.length === 0) return;
       if (!options && this.$children.length < 2) return;
 
-      var prevPage, nextPage, currentPage, pageWidth, offsetLeft, speedX;
+      var prevPage, nextPage, currentPage, pageWidth, offsetLeft;
       var speed = this.speed || 300;
       var index = this.index;
       var pages = this.pages;
@@ -31813,7 +30033,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
         nextPage = options.nextPage;
         pageWidth = options.pageWidth;
         offsetLeft = options.offsetLeft;
-        speedX = options.speedX;
       }
 
       var newIndex;
@@ -31861,24 +30080,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
         if (towards === 'next') {
           this$1.isDone = true;
           this$1.before(currentPage);
-          if (speedX) {
-            this$1.rafTranslate(currentPage, offsetLeft, -pageWidth, callback, nextPage);
-          } else {
-            this$1.translate(currentPage, -pageWidth, speed, callback);
-            if (nextPage) {
-              this$1.translate(nextPage, 0, speed);
-            }
+          this$1.translate(currentPage, -pageWidth, speed, callback);
+          if (nextPage) {
+            this$1.translate(nextPage, 0, speed);
           }
         } else if (towards === 'prev') {
           this$1.isDone = true;
           this$1.before(currentPage);
-          if (speedX) {
-            this$1.rafTranslate(currentPage, offsetLeft, pageWidth, callback, prevPage);
-          } else {
-            this$1.translate(currentPage, pageWidth, speed, callback);
-            if (prevPage) {
-              this$1.translate(prevPage, 0, speed);
-            }
+          this$1.translate(currentPage, pageWidth, speed, callback);
+          if (prevPage) {
+            this$1.translate(prevPage, 0, speed);
           }
         } else {
           this$1.isDone = false;
@@ -31965,7 +30176,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
       var dragState = this.dragState;
       var touch = event.touches[0];
 
-      dragState.speedX = touch.pageX - dragState.currentLeft;
       dragState.currentLeft = touch.pageX;
       dragState.currentTop = touch.pageY;
       dragState.currentTopAbsolute = touch.clientY;
@@ -32040,8 +30250,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
         pageWidth: dragState.pageWidth,
         prevPage: dragState.prevPage,
         currentPage: dragState.dragPage,
-        nextPage: dragState.nextPage,
-        speedX: dragState.speedX
+        nextPage: dragState.nextPage
       });
 
       this.dragState = {};
@@ -32131,7 +30340,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /******/ });
 
 /***/ }),
-/* 204 */
+/* 196 */
 /***/ (function(module, exports) {
 
 module.exports =
@@ -32396,7 +30605,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /******/ });
 
 /***/ }),
-/* 205 */
+/* 197 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports =
@@ -32473,7 +30682,7 @@ module.exports =
 /***/ 208:
 /***/ function(module, exports) {
 
-module.exports = __webpack_require__(192);
+module.exports = __webpack_require__(184);
 
 /***/ },
 
@@ -32526,7 +30735,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /******/ });
 
 /***/ }),
-/* 206 */
+/* 198 */
 /***/ (function(module, exports) {
 
 module.exports =
@@ -32864,7 +31073,7 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
       'is-dropped': _vm.topDropped || _vm.bottomDropped
     },
     style: ({
-      'transform': _vm.transform
+      'transform': 'translate3d(0, ' + _vm.translate + 'px, 0)'
     })
   }, [_vm._t("top", [(_vm.topMethod) ? _c('div', {
     staticClass: "mint-loadmore-top"
@@ -33080,12 +31289,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
       topStatus: '',
       bottomStatus: ''
     };
-  },
-
-  computed: {
-    transform: function transform() {
-      return this.translate === 0 ? null : 'translate3d(0, ' + this.translate + 'px, 0)';
-    }
   },
 
   watch: {
@@ -33314,7 +31517,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /******/ });
 
 /***/ }),
-/* 207 */
+/* 199 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports =
@@ -33575,14 +31778,14 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
 /***/ 205:
 /***/ function(module, exports) {
 
-module.exports = __webpack_require__(208);
+module.exports = __webpack_require__(200);
 
 /***/ },
 
 /***/ 206:
 /***/ function(module, exports) {
 
-module.exports = __webpack_require__(209);
+module.exports = __webpack_require__(201);
 
 /***/ },
 
@@ -33744,7 +31947,7 @@ if (true) {
 /******/ });
 
 /***/ }),
-/* 208 */
+/* 200 */
 /***/ (function(module, exports) {
 
 module.exports =
@@ -34455,13 +32658,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 /******/ });
 
 /***/ }),
-/* 209 */
+/* 201 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(210);
+var content = __webpack_require__(202);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -34469,14 +32672,14 @@ var transform;
 var options = {}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(15)(content, options);
+var update = __webpack_require__(13)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
 	// When the styles change, update the <style> tags
 	if(!content.locals) {
-		module.hot.accept("!!../../../_css-loader@0.28.7@css-loader/index.js!../../../_autoprefixer-loader@3.2.0@autoprefixer-loader/index.js!./style.css", function() {
-			var newContent = require("!!../../../_css-loader@0.28.7@css-loader/index.js!../../../_autoprefixer-loader@3.2.0@autoprefixer-loader/index.js!./style.css");
+		module.hot.accept("!!../../../css-loader/index.js!../../../autoprefixer-loader/index.js!./style.css", function() {
+			var newContent = require("!!../../../css-loader/index.js!../../../autoprefixer-loader/index.js!./style.css");
 			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 			update(newContent);
 		});
@@ -34486,7 +32689,7 @@ if(false) {
 }
 
 /***/ }),
-/* 210 */
+/* 202 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(5)(undefined);
@@ -34500,7 +32703,7 @@ exports.push([module.i, "\n.mint-spinner-snake {\n  -webkit-animation: mint-spin
 
 
 /***/ }),
-/* 211 */
+/* 203 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports =
@@ -34706,7 +32909,7 @@ module.exports = Component.exports
 /***/ 17:
 /***/ function(module, exports) {
 
-module.exports = __webpack_require__(212);
+module.exports = __webpack_require__(204);
 
 /***/ },
 
@@ -34850,13 +33053,13 @@ if (true) {
 /******/ });
 
 /***/ }),
-/* 212 */
+/* 204 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(213);
+var content = __webpack_require__(205);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -34864,14 +33067,14 @@ var transform;
 var options = {}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(15)(content, options);
+var update = __webpack_require__(13)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
 	// When the styles change, update the <style> tags
 	if(!content.locals) {
-		module.hot.accept("!!../../../_css-loader@0.28.7@css-loader/index.js!../../../_autoprefixer-loader@3.2.0@autoprefixer-loader/index.js!./style.css", function() {
-			var newContent = require("!!../../../_css-loader@0.28.7@css-loader/index.js!../../../_autoprefixer-loader@3.2.0@autoprefixer-loader/index.js!./style.css");
+		module.hot.accept("!!../../../css-loader/index.js!../../../autoprefixer-loader/index.js!./style.css", function() {
+			var newContent = require("!!../../../css-loader/index.js!../../../autoprefixer-loader/index.js!./style.css");
 			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 			update(newContent);
 		});
@@ -34881,7 +33084,7 @@ if(false) {
 }
 
 /***/ }),
-/* 213 */
+/* 205 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(5)(undefined);
@@ -34895,13 +33098,13 @@ exports.push([module.i, "\n@font-face {font-family: \"mintui\";\n  src: url(data
 
 
 /***/ }),
-/* 214 */
+/* 206 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(215);
+var content = __webpack_require__(207);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -34909,14 +33112,14 @@ var transform;
 var options = {}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(15)(content, options);
+var update = __webpack_require__(13)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
 	// When the styles change, update the <style> tags
 	if(!content.locals) {
-		module.hot.accept("!!../../../../../../node_modules/_css-loader@0.28.7@css-loader/index.js!../../../../../../node_modules/_autoprefixer-loader@3.2.0@autoprefixer-loader/index.js!./mui.css", function() {
-			var newContent = require("!!../../../../../../node_modules/_css-loader@0.28.7@css-loader/index.js!../../../../../../node_modules/_autoprefixer-loader@3.2.0@autoprefixer-loader/index.js!./mui.css");
+		module.hot.accept("!!../../../../../../node_modules/css-loader/index.js!../../../../../../node_modules/autoprefixer-loader/index.js!./mui.css", function() {
+			var newContent = require("!!../../../../../../node_modules/css-loader/index.js!../../../../../../node_modules/autoprefixer-loader/index.js!./mui.css");
 			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 			update(newContent);
 		});
@@ -34926,7 +33129,7 @@ if(false) {
 }
 
 /***/ }),
-/* 215 */
+/* 207 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(5)(undefined);
@@ -34934,31 +33137,31 @@ exports = module.exports = __webpack_require__(5)(undefined);
 
 
 // module
-exports.push([module.i, "/*!\n * =====================================================\n * Mui v3.6.0 (http://dev.dcloud.net.cn/mui)\n * =====================================================\n */\n\n\n/*! normalize.css v3.0.1 | MIT License | git.io/normalize */\n\nhtml {\n    font-family: sans-serif;\n    -webkit-text-size-adjust: 100%;\n}\n\nbody {\n    margin: 0;\n}\n\narticle,\naside,\ndetails,\nfigcaption,\nfigure,\nfooter,\nheader,\nhgroup,\nmain,\nnav,\nsection,\nsummary {\n    display: block;\n}\n\naudio,\ncanvas,\nprogress,\nvideo {\n    display: inline-block;\n    vertical-align: baseline;\n}\n\naudio:not([controls]) {\n    display: none;\n    height: 0;\n}\n\n[hidden],\ntemplate {\n    display: none;\n}\n\na {\n    background: transparent;\n}\n\na:active,\na:hover {\n    outline: 0;\n}\n\nabbr[title] {\n    border-bottom: 1px dotted;\n}\n\nb,\nstrong {\n    font-weight: bold;\n}\n\ndfn {\n    font-style: italic;\n}\n\nh1 {\n    font-size: 2em;\n    margin: .67em 0;\n}\n\nmark {\n    color: #000;\n    background: #ff0;\n}\n\nsmall {\n    font-size: 80%;\n}\n\nsub,\nsup {\n    font-size: 75%;\n    line-height: 0;\n    position: relative;\n    vertical-align: baseline;\n}\n\nsup {\n    top: -.5em;\n}\n\nsub {\n    bottom: -.25em;\n}\n\nimg {\n    border: 0;\n}\n\nsvg:not(:root) {\n    overflow: hidden;\n}\n\nfigure {\n    margin: 1em 40px;\n}\n\nhr {\n    box-sizing: content-box;\n    height: 0;\n}\n\npre {\n    overflow: auto;\n}\n\ncode,\nkbd,\npre,\nsamp {\n    font-family: monospace, monospace;\n    font-size: 1em;\n}\n\nbutton,\ninput,\noptgroup,\nselect,\ntextarea {\n    font: inherit;\n    margin: 0;\n    color: inherit;\n}\n\nbutton {\n    overflow: visible;\n}\n\nbutton,\nselect {\n    text-transform: none;\n}\n\nbutton,\nhtml input[type='button'],\ninput[type='reset'],\ninput[type='submit'] {\n    cursor: pointer;\n    -webkit-appearance: button;\n}\n\nbutton[disabled],\nhtml input[disabled] {\n    cursor: default;\n}\n\ninput {\n    line-height: normal;\n}\n\ninput[type='checkbox'],\ninput[type='radio'] {\n    box-sizing: border-box;\n    padding: 0;\n}\n\ninput[type='number']::-webkit-inner-spin-button,\ninput[type='number']::-webkit-outer-spin-button {\n    height: auto;\n}\n\ninput[type='search'] {\n    box-sizing: content-box;\n    -webkit-appearance: textfield;\n}\n\ninput[type='search']::-webkit-search-cancel-button,\ninput[type='search']::-webkit-search-decoration {\n    -webkit-appearance: none;\n}\n\nfieldset {\n    margin: 0 2px;\n    padding: .35em .625em .75em;\n    border: 1px solid #c0c0c0;\n}\n\nlegend {\n    padding: 0;\n    border: 0;\n}\n\ntextarea {\n    overflow: auto;\n}\n\noptgroup {\n    font-weight: bold;\n}\n\ntable {\n    border-spacing: 0;\n    border-collapse: collapse;\n}\n\ntd,\nth {\n    padding: 0;\n}\n\n* {\n    box-sizing: border-box;\n    -webkit-user-select: none;\n    outline: none;\n    -webkit-tap-highlight-color: transparent;\n    -webkit-tap-highlight-color: transparent;\n}\n\nbody {\n    font-family: 'Helvetica Neue', Helvetica, sans-serif;\n    font-size: 17px;\n    line-height: 21px;\n    color: #000;\n    background-color: #efeff4;\n    -webkit-overflow-scrolling: touch;\n}\n\na {\n    text-decoration: none;\n    color: #007aff;\n}\n\na:active {\n    color: #0062cc;\n}\n\n.mui-content {\n    background-color: #efeff4;\n    -webkit-overflow-scrolling: touch;\n}\n\n.mui-bar-nav~.mui-content {\n    padding-top: 44px;\n}\n\n.mui-bar-nav~.mui-content.mui-scroll-wrapper .mui-scrollbar-vertical {\n    top: 44px;\n}\n\n.mui-bar-header-secondary~.mui-content {\n    padding-top: 88px;\n}\n\n.mui-bar-header-secondary~.mui-content.mui-scroll-wrapper .mui-scrollbar-vertical {\n    top: 88px;\n}\n\n.mui-bar-footer~.mui-content {\n    padding-bottom: 44px;\n}\n\n.mui-bar-footer~.mui-content.mui-scroll-wrapper .mui-scrollbar-vertical {\n    bottom: 44px;\n}\n\n.mui-bar-footer-secondary~.mui-content {\n    padding-bottom: 88px;\n}\n\n.mui-bar-footer-secondary~.mui-content.mui-scroll-wrapper .mui-scrollbar-vertical {\n    bottom: 88px;\n}\n\n.mui-bar-tab~.mui-content {\n    padding-bottom: 50px;\n}\n\n.mui-bar-tab~.mui-content.mui-scroll-wrapper .mui-scrollbar-vertical {\n    bottom: 50px;\n}\n\n.mui-bar-footer-secondary-tab~.mui-content {\n    padding-bottom: 94px;\n}\n\n.mui-bar-footer-secondary-tab~.mui-content.mui-scroll-wrapper .mui-scrollbar-vertical {\n    bottom: 94px;\n}\n\n.mui-content-padded {\n    margin: 10px;\n}\n\n.mui-inline {\n    display: inline-block;\n    vertical-align: top;\n}\n\n.mui-block {\n    display: block !important;\n}\n\n.mui-visibility {\n    visibility: visible !important;\n}\n\n.mui-hidden {\n    display: none !important;\n}\n\n.mui-ellipsis {\n    overflow: hidden;\n    white-space: nowrap;\n    text-overflow: ellipsis;\n}\n\n.mui-ellipsis-2 {\n    display: -webkit-box;\n    overflow: hidden;\n    white-space: normal !important;\n    text-overflow: ellipsis;\n    word-wrap: break-word;\n    -webkit-line-clamp: 2;\n    -webkit-box-orient: vertical;\n}\n\n.mui-table {\n    display: table;\n    width: 100%;\n    table-layout: fixed;\n}\n\n.mui-table-cell {\n    position: relative;\n    display: table-cell;\n}\n\n.mui-text-left {\n    text-align: left !important;\n}\n\n.mui-text-center {\n    text-align: center !important;\n}\n\n.mui-text-justify {\n    text-align: justify !important;\n}\n\n.mui-text-right {\n    text-align: right !important;\n}\n\n.mui-pull-left {\n    float: left;\n}\n\n.mui-pull-right {\n    float: right;\n}\n\n.mui-list-unstyled {\n    padding-left: 0;\n    list-style: none;\n}\n\n.mui-list-inline {\n    margin-left: -5px;\n    padding-left: 0;\n    list-style: none;\n}\n\n.mui-list-inline>li {\n    display: inline-block;\n    padding-right: 5px;\n    padding-left: 5px;\n}\n\n.mui-clearfix:before,\n.mui-clearfix:after {\n    display: table;\n    content: ' ';\n}\n\n.mui-clearfix:after {\n    clear: both;\n}\n\n.mui-bg-primary {\n    background-color: #007aff;\n}\n\n.mui-bg-positive {\n    background-color: #4cd964;\n}\n\n.mui-bg-negative {\n    background-color: #dd524d;\n}\n\n.mui-error {\n    margin: 88px 35px;\n    padding: 10px;\n    border-radius: 6px;\n    background-color: #bbb;\n}\n\n.mui-subtitle {\n    font-size: 15px;\n}\n\nh1,\nh2,\nh3,\nh4,\nh5,\nh6 {\n    line-height: 1;\n    margin-top: 5px;\n    margin-bottom: 5px;\n}\n\nh1,\n.mui-h1 {\n    font-size: 36px;\n}\n\nh2,\n.mui-h2 {\n    font-size: 30px;\n}\n\nh3,\n.mui-h3 {\n    font-size: 24px;\n}\n\nh4,\n.mui-h4 {\n    font-size: 18px;\n}\n\nh5,\n.mui-h5 {\n    font-size: 14px;\n    font-weight: normal;\n    color: #8f8f94;\n}\n\nh6,\n.mui-h6 {\n    font-size: 12px;\n    font-weight: normal;\n    color: #8f8f94;\n}\n\np {\n    font-size: 14px;\n    margin-top: 0;\n    margin-bottom: 10px;\n    color: #8f8f94;\n}\n\n.mui-row:before,\n.mui-row:after {\n    display: table;\n    content: ' ';\n}\n\n.mui-row:after {\n    clear: both;\n}\n\n.mui-col-xs-1,\n.mui-col-sm-1,\n.mui-col-xs-2,\n.mui-col-sm-2,\n.mui-col-xs-3,\n.mui-col-sm-3,\n.mui-col-xs-4,\n.mui-col-sm-4,\n.mui-col-xs-5,\n.mui-col-sm-5,\n.mui-col-xs-6,\n.mui-col-sm-6,\n.mui-col-xs-7,\n.mui-col-sm-7,\n.mui-col-xs-8,\n.mui-col-sm-8,\n.mui-col-xs-9,\n.mui-col-sm-9,\n.mui-col-xs-10,\n.mui-col-sm-10,\n.mui-col-xs-11,\n.mui-col-sm-11,\n.mui-col-xs-12,\n.mui-col-sm-12 {\n    position: relative;\n    min-height: 1px;\n}\n\n.mui-row>[class*='mui-col-'] {\n    float: left;\n}\n\n.mui-col-xs-12 {\n    width: 100%;\n}\n\n.mui-col-xs-11 {\n    width: 91.66666667%;\n}\n\n.mui-col-xs-10 {\n    width: 83.33333333%;\n}\n\n.mui-col-xs-9 {\n    width: 75%;\n}\n\n.mui-col-xs-8 {\n    width: 66.66666667%;\n}\n\n.mui-col-xs-7 {\n    width: 58.33333333%;\n}\n\n.mui-col-xs-6 {\n    width: 50%;\n}\n\n.mui-col-xs-5 {\n    width: 41.66666667%;\n}\n\n.mui-col-xs-4 {\n    width: 33.33333333%;\n}\n\n.mui-col-xs-3 {\n    width: 25%;\n}\n\n.mui-col-xs-2 {\n    width: 16.66666667%;\n}\n\n.mui-col-xs-1 {\n    width: 8.33333333%;\n}\n\n@media (min-width: 400px) {\n    .mui-col-sm-12 {\n        width: 100%;\n    }\n    .mui-col-sm-11 {\n        width: 91.66666667%;\n    }\n    .mui-col-sm-10 {\n        width: 83.33333333%;\n    }\n    .mui-col-sm-9 {\n        width: 75%;\n    }\n    .mui-col-sm-8 {\n        width: 66.66666667%;\n    }\n    .mui-col-sm-7 {\n        width: 58.33333333%;\n    }\n    .mui-col-sm-6 {\n        width: 50%;\n    }\n    .mui-col-sm-5 {\n        width: 41.66666667%;\n    }\n    .mui-col-sm-4 {\n        width: 33.33333333%;\n    }\n    .mui-col-sm-3 {\n        width: 25%;\n    }\n    .mui-col-sm-2 {\n        width: 16.66666667%;\n    }\n    .mui-col-sm-1 {\n        width: 8.33333333%;\n    }\n}\n\n.mui-scroll-wrapper {\n    position: absolute;\n    z-index: 2;\n    top: 0;\n    bottom: 0;\n    left: 0;\n    overflow: hidden;\n    width: 100%;\n}\n\n.mui-scroll {\n    position: absolute;\n    z-index: 1;\n    width: 100%;\n    -webkit-transform: translateZ(0);\n    transform: translateZ(0);\n}\n\n.mui-scrollbar {\n    position: absolute;\n    z-index: 9998;\n    overflow: hidden;\n    transition: 500ms;\n    -webkit-transform: translateZ(0px);\n            transform: translateZ(0px);\n    pointer-events: none;\n    opacity: 0;\n}\n\n.mui-scrollbar-vertical {\n    top: 0;\n    right: 1px;\n    bottom: 2px;\n    width: 4px;\n}\n\n.mui-scrollbar-vertical .mui-scrollbar-indicator {\n    width: 100%;\n}\n\n.mui-scrollbar-horizontal {\n    right: 2px;\n    bottom: 0;\n    left: 2px;\n    height: 4px;\n}\n\n.mui-scrollbar-horizontal .mui-scrollbar-indicator {\n    height: 100%;\n}\n\n.mui-scrollbar-indicator {\n    position: absolute;\n    display: block;\n    box-sizing: border-box;\n    transition: .01s cubic-bezier(.1, .57, .1, 1);\n    -webkit-transform: translate(0px, 0px) translateZ(0px);\n            transform: translate(0px, 0px) translateZ(0px);\n    border: 1px solid rgba(255, 255, 255, .80196);\n    border-radius: 2px;\n    background: rgba(0, 0, 0, .39804);\n}\n\n.mui-plus-pullrefresh .mui-fullscreen .mui-scroll-wrapper .mui-scroll-wrapper,\n.mui-plus-pullrefresh .mui-fullscreen .mui-slider-group .mui-scroll-wrapper {\n    position: absolute;\n    top: 0;\n    bottom: 0;\n    left: 0;\n    overflow: hidden;\n    width: 100%;\n}\n\n.mui-plus-pullrefresh .mui-fullscreen .mui-scroll-wrapper .mui-scroll,\n.mui-plus-pullrefresh .mui-fullscreen .mui-slider-group .mui-scroll {\n    position: absolute;\n    width: 100%;\n}\n\n.mui-plus-pullrefresh .mui-scroll-wrapper,\n.mui-plus-pullrefresh .mui-slider-group {\n    position: static;\n    top: auto;\n    bottom: auto;\n    left: auto;\n    overflow: auto;\n    width: auto;\n}\n\n.mui-plus-pullrefresh .mui-slider-group {\n    overflow: visible;\n}\n\n.mui-plus-pullrefresh .mui-scroll {\n    position: static;\n    width: auto;\n}\n\n.mui-off-canvas-wrap .mui-bar {\n    position: absolute !important;\n    -webkit-transform: translate3d(0, 0, 0);\n    transform: translate3d(0, 0, 0);\n    box-shadow: none;\n}\n\n.mui-off-canvas-wrap {\n    position: relative;\n    z-index: 1;\n    overflow: hidden;\n    width: 100%;\n    height: 100%;\n}\n\n.mui-off-canvas-wrap .mui-inner-wrap {\n    position: relative;\n    z-index: 1;\n    width: 100%;\n    height: 100%;\n}\n\n.mui-off-canvas-wrap .mui-inner-wrap.mui-transitioning {\n    transition: -webkit-transform 350ms cubic-bezier(.165, .84, .44, 1);\n    transition: transform 350ms cubic-bezier(.165, .84, .44, 1);\n    transition: transform 350ms cubic-bezier(.165, .84, .44, 1), -webkit-transform 350ms cubic-bezier(.165, .84, .44, 1);\n}\n\n.mui-off-canvas-wrap .mui-inner-wrap .mui-off-canvas-left {\n    -webkit-transform: translate3d(-100%, 0, 0);\n    transform: translate3d(-100%, 0, 0);\n}\n\n.mui-off-canvas-wrap .mui-inner-wrap .mui-off-canvas-right {\n    -webkit-transform: translate3d(100%, 0, 0);\n    transform: translate3d(100%, 0, 0);\n}\n\n.mui-off-canvas-wrap.mui-active {\n    overflow: hidden;\n    height: 100%;\n}\n\n.mui-off-canvas-wrap.mui-active .mui-off-canvas-backdrop {\n    position: absolute;\n    z-index: 998;\n    top: 0;\n    right: 0;\n    bottom: 0;\n    left: 0;\n    display: block;\n    transition: background 350ms cubic-bezier(.165, .84, .44, 1);\n    background: rgba(0, 0, 0, .4);\n    box-shadow: -4px 0 4px rgba(0, 0, 0, .5), 4px 0 4px rgba(0, 0, 0, .5);\n    -webkit-tap-highlight-color: transparent;\n}\n\n.mui-off-canvas-wrap.mui-slide-in .mui-off-canvas-right {\n    z-index: 10000 !important;\n    -webkit-transform: translate3d(100%, 0px, 0px);\n}\n\n.mui-off-canvas-wrap.mui-slide-in .mui-off-canvas-left {\n    z-index: 10000 !important;\n    -webkit-transform: translate3d(-100%, 0px, 0px);\n}\n\n.mui-off-canvas-left,\n.mui-off-canvas-right {\n    position: absolute;\n    z-index: -1;\n    top: 0;\n    bottom: 0;\n    visibility: hidden;\n    box-sizing: content-box;\n    width: 70%;\n    min-height: 100%;\n    background: #333;\n    -webkit-overflow-scrolling: touch;\n}\n\n.mui-off-canvas-left.mui-transitioning,\n.mui-off-canvas-right.mui-transitioning {\n    transition: -webkit-transform 350ms cubic-bezier(.165, .84, .44, 1);\n    transition: transform 350ms cubic-bezier(.165, .84, .44, 1);\n    transition: transform 350ms cubic-bezier(.165, .84, .44, 1), -webkit-transform 350ms cubic-bezier(.165, .84, .44, 1);\n}\n\n.mui-off-canvas-left {\n    left: 0;\n}\n\n.mui-off-canvas-right {\n    right: 0;\n}\n\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable {\n    background-color: #333;\n}\n\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable>.mui-off-canvas-left,\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable>.mui-off-canvas-right {\n    width: 80%;\n    -webkit-transform: scale(.8);\n    transform: scale(.8);\n    opacity: .1;\n}\n\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable>.mui-off-canvas-left.mui-transitioning,\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable>.mui-off-canvas-right.mui-transitioning {\n    transition: opacity 350ms cubic-bezier(.165, .84, .44, 1), -webkit-transform 350ms cubic-bezier(.165, .84, .44, 1);\n    transition: transform 350ms cubic-bezier(.165, .84, .44, 1), opacity 350ms cubic-bezier(.165, .84, .44, 1);\n    transition: transform 350ms cubic-bezier(.165, .84, .44, 1), opacity 350ms cubic-bezier(.165, .84, .44, 1), -webkit-transform 350ms cubic-bezier(.165, .84, .44, 1);\n}\n\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable>.mui-off-canvas-left {\n    -webkit-transform-origin: -100%;\n    transform-origin: -100%;\n}\n\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable>.mui-off-canvas-right {\n    -webkit-transform-origin: 200%;\n    transform-origin: 200%;\n}\n\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable.mui-active>.mui-inner-wrap {\n    -webkit-transform: scale(.8);\n    transform: scale(.8);\n}\n\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable.mui-active>.mui-off-canvas-left,\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable.mui-active>.mui-off-canvas-right {\n    -webkit-transform: scale(1);\n    transform: scale(1);\n    opacity: 1;\n}\n\n.mui-loading .mui-spinner {\n    display: block;\n    margin: 0 auto;\n}\n\n.mui-spinner {\n    display: inline-block;\n    width: 24px;\n    height: 24px;\n    -webkit-transform-origin: 50%;\n    transform-origin: 50%;\n    -webkit-animation: spinner-spin 1s step-end infinite;\n    animation: spinner-spin 1s step-end infinite;\n}\n\n.mui-spinner:after {\n    display: block;\n    width: 100%;\n    height: 100%;\n    content: '';\n    background-image: url('data:image/svg+xml;charset=utf-8,<svg viewBox=\\'0 0 120 120\\' xmlns=\\'http://www.w3.org/2000/svg\\' xmlns:xlink=\\'http://www.w3.org/1999/xlink\\'><defs><line id=\\'l\\' x1=\\'60\\' x2=\\'60\\' y1=\\'7\\' y2=\\'27\\' stroke=\\'%236c6c6c\\' stroke-width=\\'11\\' stroke-linecap=\\'round\\'/></defs><g><use xlink:href=\\'%23l\\' opacity=\\'.27\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(30 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(60 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(90 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(120 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(150 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.37\\' transform=\\'rotate(180 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.46\\' transform=\\'rotate(210 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.56\\' transform=\\'rotate(240 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.66\\' transform=\\'rotate(270 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.75\\' transform=\\'rotate(300 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.85\\' transform=\\'rotate(330 60,60)\\'/></g></svg>');\n    background-repeat: no-repeat;\n    background-position: 50%;\n    background-size: 100%;\n}\n\n.mui-spinner-white:after {\n    background-image: url('data:image/svg+xml;charset=utf-8,<svg viewBox=\\'0 0 120 120\\' xmlns=\\'http://www.w3.org/2000/svg\\' xmlns:xlink=\\'http://www.w3.org/1999/xlink\\'><defs><line id=\\'l\\' x1=\\'60\\' x2=\\'60\\' y1=\\'7\\' y2=\\'27\\' stroke=\\'%23fff\\' stroke-width=\\'11\\' stroke-linecap=\\'round\\'/></defs><g><use xlink:href=\\'%23l\\' opacity=\\'.27\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(30 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(60 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(90 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(120 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(150 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.37\\' transform=\\'rotate(180 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.46\\' transform=\\'rotate(210 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.56\\' transform=\\'rotate(240 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.66\\' transform=\\'rotate(270 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.75\\' transform=\\'rotate(300 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.85\\' transform=\\'rotate(330 60,60)\\'/></g></svg>');\n}\n\n@-webkit-keyframes spinner-spin {\n    0% {\n        -webkit-transform: rotate(0deg);\n    }\n    8.33333333% {\n        -webkit-transform: rotate(30deg);\n    }\n    16.66666667% {\n        -webkit-transform: rotate(60deg);\n    }\n    25% {\n        -webkit-transform: rotate(90deg);\n    }\n    33.33333333% {\n        -webkit-transform: rotate(120deg);\n    }\n    41.66666667% {\n        -webkit-transform: rotate(150deg);\n    }\n    50% {\n        -webkit-transform: rotate(180deg);\n    }\n    58.33333333% {\n        -webkit-transform: rotate(210deg);\n    }\n    66.66666667% {\n        -webkit-transform: rotate(240deg);\n    }\n    75% {\n        -webkit-transform: rotate(270deg);\n    }\n    83.33333333% {\n        -webkit-transform: rotate(300deg);\n    }\n    91.66666667% {\n        -webkit-transform: rotate(330deg);\n    }\n    100% {\n        -webkit-transform: rotate(360deg);\n    }\n}\n\n@keyframes spinner-spin {\n    0% {\n        -webkit-transform: rotate(0deg);\n                transform: rotate(0deg);\n    }\n    8.33333333% {\n        -webkit-transform: rotate(30deg);\n                transform: rotate(30deg);\n    }\n    16.66666667% {\n        -webkit-transform: rotate(60deg);\n                transform: rotate(60deg);\n    }\n    25% {\n        -webkit-transform: rotate(90deg);\n                transform: rotate(90deg);\n    }\n    33.33333333% {\n        -webkit-transform: rotate(120deg);\n                transform: rotate(120deg);\n    }\n    41.66666667% {\n        -webkit-transform: rotate(150deg);\n                transform: rotate(150deg);\n    }\n    50% {\n        -webkit-transform: rotate(180deg);\n                transform: rotate(180deg);\n    }\n    58.33333333% {\n        -webkit-transform: rotate(210deg);\n                transform: rotate(210deg);\n    }\n    66.66666667% {\n        -webkit-transform: rotate(240deg);\n                transform: rotate(240deg);\n    }\n    75% {\n        -webkit-transform: rotate(270deg);\n                transform: rotate(270deg);\n    }\n    83.33333333% {\n        -webkit-transform: rotate(300deg);\n                transform: rotate(300deg);\n    }\n    91.66666667% {\n        -webkit-transform: rotate(330deg);\n                transform: rotate(330deg);\n    }\n    100% {\n        -webkit-transform: rotate(360deg);\n                transform: rotate(360deg);\n    }\n}\n\ninput[type='button'],\ninput[type='submit'],\ninput[type='reset'],\nbutton,\n.mui-btn {\n    font-size: 14px;\n    font-weight: 400;\n    line-height: 1.42;\n    position: relative;\n    display: inline-block;\n    margin-bottom: 0;\n    padding: 6px 12px;\n    cursor: pointer;\n    transition: all;\n    transition-timing-function: linear;\n    transition-duration: .2s;\n    text-align: center;\n    vertical-align: top;\n    white-space: nowrap;\n    color: #333;\n    border: 1px solid #ccc;\n    border-radius: 3px;\n    border-top-left-radius: 3px;\n    border-top-right-radius: 3px;\n    border-bottom-right-radius: 3px;\n    border-bottom-left-radius: 3px;\n    background-color: #fff;\n    background-clip: padding-box;\n}\n\ninput[type='button']:enabled:active,\ninput[type='button'].mui-active:enabled,\ninput[type='submit']:enabled:active,\ninput[type='submit'].mui-active:enabled,\ninput[type='reset']:enabled:active,\ninput[type='reset'].mui-active:enabled,\nbutton:enabled:active,\nbutton.mui-active:enabled,\n.mui-btn:enabled:active,\n.mui-btn.mui-active:enabled {\n    color: #fff;\n    background-color: #929292;\n}\n\ninput[type='button']:disabled,\ninput[type='button'].mui-disabled,\ninput[type='submit']:disabled,\ninput[type='submit'].mui-disabled,\ninput[type='reset']:disabled,\ninput[type='reset'].mui-disabled,\nbutton:disabled,\nbutton.mui-disabled,\n.mui-btn:disabled,\n.mui-btn.mui-disabled {\n    opacity: .6;\n}\n\ninput[type='submit'],\n.mui-btn-primary,\n.mui-btn-blue {\n    color: #fff;\n    border: 1px solid #007aff;\n    background-color: #007aff;\n}\n\ninput[type='submit']:enabled:active,\ninput[type='submit'].mui-active:enabled,\n.mui-btn-primary:enabled:active,\n.mui-btn-primary.mui-active:enabled,\n.mui-btn-blue:enabled:active,\n.mui-btn-blue.mui-active:enabled {\n    color: #fff;\n    border: 1px solid #0062cc;\n    background-color: #0062cc;\n}\n\n.mui-btn-positive,\n.mui-btn-success,\n.mui-btn-green {\n    color: #fff;\n    border: 1px solid #4cd964;\n    background-color: #4cd964;\n}\n\n.mui-btn-positive:enabled:active,\n.mui-btn-positive.mui-active:enabled,\n.mui-btn-success:enabled:active,\n.mui-btn-success.mui-active:enabled,\n.mui-btn-green:enabled:active,\n.mui-btn-green.mui-active:enabled {\n    color: #fff;\n    border: 1px solid #2ac845;\n    background-color: #2ac845;\n}\n\n.mui-btn-warning,\n.mui-btn-yellow {\n    color: #fff;\n    border: 1px solid #f0ad4e;\n    background-color: #f0ad4e;\n}\n\n.mui-btn-warning:enabled:active,\n.mui-btn-warning.mui-active:enabled,\n.mui-btn-yellow:enabled:active,\n.mui-btn-yellow.mui-active:enabled {\n    color: #fff;\n    border: 1px solid #ec971f;\n    background-color: #ec971f;\n}\n\n.mui-btn-negative,\n.mui-btn-danger,\n.mui-btn-red {\n    color: #fff;\n    border: 1px solid #dd524d;\n    background-color: #dd524d;\n}\n\n.mui-btn-negative:enabled:active,\n.mui-btn-negative.mui-active:enabled,\n.mui-btn-danger:enabled:active,\n.mui-btn-danger.mui-active:enabled,\n.mui-btn-red:enabled:active,\n.mui-btn-red.mui-active:enabled {\n    color: #fff;\n    border: 1px solid #cf2d28;\n    background-color: #cf2d28;\n}\n\n.mui-btn-royal,\n.mui-btn-purple {\n    color: #fff;\n    border: 1px solid #8a6de9;\n    background-color: #8a6de9;\n}\n\n.mui-btn-royal:enabled:active,\n.mui-btn-royal.mui-active:enabled,\n.mui-btn-purple:enabled:active,\n.mui-btn-purple.mui-active:enabled {\n    color: #fff;\n    border: 1px solid #6641e2;\n    background-color: #6641e2;\n}\n\n.mui-btn-grey {\n    color: #fff;\n    border: 1px solid #c7c7cc;\n    background-color: #c7c7cc;\n}\n\n.mui-btn-grey:enabled:active,\n.mui-btn-grey.mui-active:enabled {\n    color: #fff;\n    border: 1px solid #acacb4;\n    background-color: #acacb4;\n}\n\n.mui-btn-outlined {\n    background-color: transparent;\n}\n\n.mui-btn-outlined.mui-btn-primary,\n.mui-btn-outlined.mui-btn-blue {\n    color: #007aff;\n}\n\n.mui-btn-outlined.mui-btn-positive,\n.mui-btn-outlined.mui-btn-success,\n.mui-btn-outlined.mui-btn-green {\n    color: #4cd964;\n}\n\n.mui-btn-outlined.mui-btn-warning,\n.mui-btn-outlined.mui-btn-yellow {\n    color: #f0ad4e;\n}\n\n.mui-btn-outlined.mui-btn-negative,\n.mui-btn-outlined.mui-btn-danger,\n.mui-btn-outlined.mui-btn-red {\n    color: #dd524d;\n}\n\n.mui-btn-outlined.mui-btn-royal,\n.mui-btn-outlined.mui-btn-purple {\n    color: #8a6de9;\n}\n\n.mui-btn-outlined.mui-btn-primary:enabled:active,\n.mui-btn-outlined.mui-btn-blue:enabled:active,\n.mui-btn-outlined.mui-btn-positive:enabled:active,\n.mui-btn-outlined.mui-btn-success:enabled:active,\n.mui-btn-outlined.mui-btn-green:enabled:active,\n.mui-btn-outlined.mui-btn-warning:enabled:active,\n.mui-btn-outlined.mui-btn-yellow:enabled:active,\n.mui-btn-outlined.mui-btn-negative:enabled:active,\n.mui-btn-outlined.mui-btn-danger:enabled:active,\n.mui-btn-outlined.mui-btn-red:enabled:active,\n.mui-btn-outlined.mui-btn-royal:enabled:active,\n.mui-btn-outlined.mui-btn-purple:enabled:active {\n    color: #fff;\n}\n\n.mui-btn-link {\n    padding-top: 6px;\n    padding-bottom: 6px;\n    color: #007aff;\n    border: 0;\n    background-color: transparent;\n}\n\n.mui-btn-link:enabled:active,\n.mui-btn-link.mui-active:enabled {\n    color: #0062cc;\n    background-color: transparent;\n}\n\n.mui-btn-block {\n    font-size: 18px;\n    display: block;\n    width: 100%;\n    margin-bottom: 10px;\n    padding: 15px 0;\n}\n\n.mui-btn .mui-badge {\n    font-size: 14px;\n    margin: -2px -4px -2px 4px;\n    background-color: rgba(0, 0, 0, .15);\n}\n\n.mui-btn .mui-badge-inverted,\n.mui-btn:enabled:active .mui-badge-inverted {\n    background-color: transparent;\n}\n\n.mui-btn-primary:enabled:active .mui-badge-inverted,\n.mui-btn-positive:enabled:active .mui-badge-inverted,\n.mui-btn-negative:enabled:active .mui-badge-inverted {\n    color: #fff;\n}\n\n.mui-btn-block .mui-badge {\n    position: absolute;\n    right: 0;\n    margin-right: 10px;\n}\n\n.mui-btn .mui-icon {\n    font-size: inherit;\n}\n\n.mui-btn.mui-icon {\n    font-size: 14px;\n    line-height: 1.42;\n}\n\n.mui-btn.mui-fab {\n    width: 56px;\n    height: 56px;\n    padding: 16px;\n    border-radius: 50%;\n    outline: none;\n}\n\n.mui-btn.mui-fab.mui-btn-mini {\n    width: 40px;\n    height: 40px;\n    padding: 8px;\n}\n\n.mui-btn.mui-fab .mui-icon {\n    font-size: 24px;\n    line-height: 24px;\n    width: 24px;\n    height: 24px;\n}\n\n.mui-btn .mui-spinner {\n    width: 14px;\n    height: 14px;\n    vertical-align: text-bottom;\n}\n\n.mui-btn-block .mui-spinner {\n    width: 22px;\n    height: 22px;\n}\n\n.mui-bar {\n    position: fixed;\n    z-index: 10;\n    right: 0;\n    left: 0;\n    height: 44px;\n    padding-right: 10px;\n    padding-left: 10px;\n    border-bottom: 0;\n    background-color: #f7f7f7;\n    box-shadow: 0 0 1px rgba(0, 0, 0, .85);\n    -webkit-backface-visibility: hidden;\n    backface-visibility: hidden;\n}\n\n.mui-bar .mui-title {\n    right: 40px;\n    left: 40px;\n    display: inline-block;\n    overflow: hidden;\n    width: auto;\n    margin: 0;\n    text-overflow: ellipsis;\n}\n\n.mui-bar .mui-backdrop {\n    background: none;\n}\n\n.mui-bar-header-secondary {\n    top: 44px;\n}\n\n.mui-bar-footer {\n    bottom: 0;\n}\n\n.mui-bar-footer-secondary {\n    bottom: 44px;\n}\n\n.mui-bar-footer-secondary-tab {\n    bottom: 50px;\n}\n\n.mui-bar-footer,\n.mui-bar-footer-secondary,\n.mui-bar-footer-secondary-tab {\n    border-top: 0;\n}\n\n.mui-bar-transparent {\n    top: 0;\n    background-color: rgba(247, 247, 247, 0);\n    box-shadow: none;\n}\n\n.mui-bar-nav {\n    top: 0;\n    box-shadow: 0 1px 6px #ccc;\n}\n\n.mui-bar-nav~.mui-content .mui-anchor {\n    display: block;\n    visibility: hidden;\n    height: 45px;\n    margin-top: -45px;\n}\n\n.mui-bar-nav.mui-bar .mui-icon {\n    margin-right: -10px;\n    margin-left: -10px;\n    padding-right: 10px;\n    padding-left: 10px;\n}\n\n.mui-title {\n    font-size: 17px;\n    font-weight: 500;\n    line-height: 44px;\n    position: absolute;\n    display: block;\n    width: 100%;\n    margin: 0 -10px;\n    padding: 0;\n    text-align: center;\n    white-space: nowrap;\n    color: #000;\n}\n\n.mui-title a {\n    color: inherit;\n}\n\n.mui-bar-tab {\n    bottom: 0;\n    display: table;\n    width: 100%;\n    height: 50px;\n    padding: 0;\n    table-layout: fixed;\n    border-top: 0;\n    border-bottom: 0;\n    -webkit-touch-callout: none;\n}\n\n.mui-bar-tab .mui-tab-item {\n    display: table-cell;\n    overflow: hidden;\n    width: 1%;\n    height: 50px;\n    text-align: center;\n    vertical-align: middle;\n    white-space: nowrap;\n    text-overflow: ellipsis;\n    color: #929292;\n}\n\n.mui-bar-tab .mui-tab-item.mui-active {\n    color: #007aff;\n}\n\n.mui-bar-tab .mui-tab-item .mui-icon {\n    top: 3px;\n    width: 24px;\n    height: 24px;\n    padding-top: 0;\n    padding-bottom: 0;\n}\n\n.mui-bar-tab .mui-tab-item .mui-icon~.mui-tab-label {\n    font-size: 11px;\n    display: block;\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n\n.mui-bar-tab .mui-tab-item .mui-icon:active {\n    background: none;\n}\n\n.mui-focusin>.mui-bar-nav,\n.mui-focusin>.mui-bar-header-secondary {\n    position: absolute;\n}\n\n.mui-focusin>.mui-bar~.mui-content {\n    padding-bottom: 0;\n}\n\n.mui-bar .mui-btn {\n    font-weight: 400;\n    position: relative;\n    z-index: 20;\n    top: 7px;\n    margin-top: 0;\n    padding: 6px 12px 7px;\n}\n\n.mui-bar .mui-btn.mui-pull-right {\n    margin-left: 10px;\n}\n\n.mui-bar .mui-btn.mui-pull-left {\n    margin-right: 10px;\n}\n\n.mui-bar .mui-btn-link {\n    font-size: 16px;\n    line-height: 44px;\n    top: 0;\n    padding: 0;\n    color: #007aff;\n    border: 0;\n}\n\n.mui-bar .mui-btn-link:active,\n.mui-bar .mui-btn-link.mui-active {\n    color: #0062cc;\n}\n\n.mui-bar .mui-btn-block {\n    font-size: 16px;\n    top: 6px;\n    margin-bottom: 0;\n    padding: 5px 0;\n}\n\n.mui-bar .mui-btn-nav.mui-pull-left {\n    margin-left: -5px;\n}\n\n.mui-bar .mui-btn-nav.mui-pull-left .mui-icon-left-nav {\n    margin-right: -3px;\n}\n\n.mui-bar .mui-btn-nav.mui-pull-right {\n    margin-right: -5px;\n}\n\n.mui-bar .mui-btn-nav.mui-pull-right .mui-icon-right-nav {\n    margin-left: -3px;\n}\n\n.mui-bar .mui-btn-nav:active {\n    opacity: .3;\n}\n\n.mui-bar .mui-icon {\n    font-size: 24px;\n    position: relative;\n    z-index: 20;\n    padding-top: 10px;\n    padding-bottom: 10px;\n}\n\n.mui-bar .mui-icon:active {\n    opacity: .3;\n}\n\n.mui-bar .mui-btn .mui-icon {\n    top: 1px;\n    margin: 0;\n    padding: 0;\n}\n\n.mui-bar .mui-title .mui-icon {\n    margin: 0;\n    padding: 0;\n}\n\n.mui-bar .mui-title .mui-icon.mui-icon-caret {\n    top: 4px;\n    margin-left: -5px;\n}\n\n.mui-bar input[type='search'] {\n    height: 29px;\n    margin: 6px 0;\n}\n\n.mui-bar .mui-input-row .mui-btn {\n    padding: 12px 10px;\n}\n\n.mui-bar .mui-search:before {\n    margin-top: -10px;\n}\n\n.mui-bar .mui-input-row .mui-input-clear~.mui-icon-clear,\n.mui-bar .mui-input-row .mui-input-speech~.mui-icon-speech {\n    top: 0;\n    right: 12px;\n}\n\n.mui-bar.mui-bar-header-secondary .mui-input-row .mui-input-clear~.mui-icon-clear,\n.mui-bar.mui-bar-header-secondary .mui-input-row .mui-input-speech~.mui-icon-speech {\n    top: 0;\n    right: 0;\n}\n\n.mui-bar .mui-segmented-control {\n    top: 7px;\n    width: auto;\n    margin: 0 auto;\n}\n\n.mui-bar.mui-bar-header-secondary .mui-segmented-control {\n    top: 0;\n}\n\n.mui-badge {\n    font-size: 12px;\n    line-height: 1;\n    display: inline-block;\n    padding: 3px 6px;\n    color: #333;\n    border-radius: 100px;\n    background-color: rgba(0, 0, 0, .15);\n}\n\n.mui-badge.mui-badge-inverted {\n    padding: 0 5px 0 0;\n    color: #929292;\n    background-color: transparent;\n}\n\n.mui-badge-primary,\n.mui-badge-blue {\n    color: #fff;\n    background-color: #007aff;\n}\n\n.mui-badge-primary.mui-badge-inverted,\n.mui-badge-blue.mui-badge-inverted {\n    color: #007aff;\n    background-color: transparent;\n}\n\n.mui-badge-success,\n.mui-badge-green {\n    color: #fff;\n    background-color: #4cd964;\n}\n\n.mui-badge-success.mui-badge-inverted,\n.mui-badge-green.mui-badge-inverted {\n    color: #4cd964;\n    background-color: transparent;\n}\n\n.mui-badge-warning,\n.mui-badge-yellow {\n    color: #fff;\n    background-color: #f0ad4e;\n}\n\n.mui-badge-warning.mui-badge-inverted,\n.mui-badge-yellow.mui-badge-inverted {\n    color: #f0ad4e;\n    background-color: transparent;\n}\n\n.mui-badge-danger,\n.mui-badge-red {\n    color: #fff;\n    background-color: #dd524d;\n}\n\n.mui-badge-danger.mui-badge-inverted,\n.mui-badge-red.mui-badge-inverted {\n    color: #dd524d;\n    background-color: transparent;\n}\n\n.mui-badge-royal,\n.mui-badge-purple {\n    color: #fff;\n    background-color: #8a6de9;\n}\n\n.mui-badge-royal.mui-badge-inverted,\n.mui-badge-purple.mui-badge-inverted {\n    color: #8a6de9;\n    background-color: transparent;\n}\n\n.mui-icon .mui-badge {\n    font-size: 10px;\n    line-height: 1.4;\n    position: absolute;\n    top: -2px;\n    left: 100%;\n    margin-left: -10px;\n    padding: 1px 5px;\n    color: white;\n    background: red;\n}\n\n.mui-card {\n    font-size: 14px;\n    position: relative;\n    overflow: hidden;\n    margin: 10px;\n    border-radius: 2px;\n    background-color: white;\n    background-clip: padding-box;\n    box-shadow: 0 1px 2px rgba(0, 0, 0, .3);\n}\n\n.mui-content>.mui-card:first-child {\n    margin-top: 15px;\n}\n\n.mui-card .mui-input-group:before,\n.mui-card .mui-input-group:after {\n    height: 0;\n}\n\n.mui-card .mui-input-group .mui-input-row:last-child:before,\n.mui-card .mui-input-group .mui-input-row:last-child:after {\n    height: 0;\n}\n\n.mui-card .mui-table-view {\n    margin-bottom: 0;\n    border-top: 0;\n    border-bottom: 0;\n    border-radius: 6px;\n}\n\n.mui-card .mui-table-view .mui-table-view-divider:first-child,\n.mui-card .mui-table-view .mui-table-view-cell:first-child {\n    top: 0;\n    border-top-left-radius: 6px;\n    border-top-right-radius: 6px;\n}\n\n.mui-card .mui-table-view .mui-table-view-divider:last-child,\n.mui-card .mui-table-view .mui-table-view-cell:last-child {\n    border-bottom-right-radius: 6px;\n    border-bottom-left-radius: 6px;\n}\n\n.mui-card .mui-table-view:before,\n.mui-card .mui-table-view:after {\n    height: 0;\n}\n\n.mui-card>.mui-table-view>.mui-table-view-cell:last-child:before,\n.mui-card>.mui-table-view>.mui-table-view-cell:last-child:after {\n    height: 0;\n}\n\n.mui-card-header,\n.mui-card-footer {\n    position: relative;\n    display: -webkit-box;\n    display: -ms-flexbox;\n    display: flex;\n    min-height: 44px;\n    padding: 10px 15px;\n    -webkit-box-pack: justify;\n    -ms-flex-pack: justify;\n        justify-content: space-between;\n    -webkit-box-align: center;\n    -ms-flex-align: center;\n        align-items: center;\n}\n\n.mui-card-header .mui-card-link,\n.mui-card-footer .mui-card-link {\n    line-height: 44px;\n    position: relative;\n    display: -webkit-box;\n    display: -ms-flexbox;\n    display: flex;\n    height: 44px;\n    margin-top: -10px;\n    margin-bottom: -10px;\n    transition-duration: .3s;\n    text-decoration: none;\n    -webkit-box-pack: start;\n    -ms-flex-pack: start;\n        justify-content: flex-start;\n    -webkit-box-align: center;\n    -ms-flex-align: center;\n        align-items: center;\n}\n\n.mui-card-header:after,\n.mui-card-footer:before {\n    position: absolute;\n    top: 0;\n    right: 0;\n    left: 0;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #c8c7cc;\n}\n\n.mui-card-header {\n    font-size: 17px;\n    border-radius: 2px 2px 0 0;\n}\n\n.mui-card-header:after {\n    top: auto;\n    bottom: 0;\n}\n\n.mui-card-header>img:first-child {\n    font-size: 0;\n    line-height: 0;\n    float: left;\n    width: 34px;\n    height: 34px;\n}\n\n.mui-card-footer {\n    color: #6d6d72;\n    border-radius: 0 0 2px 2px;\n}\n\n.mui-card-content {\n    font-size: 14px;\n    position: relative;\n}\n\n.mui-card-content-inner {\n    position: relative;\n    padding: 15px;\n}\n\n.mui-card-media {\n    vertical-align: bottom;\n    color: #fff;\n    background-position: center;\n    background-size: cover;\n}\n\n.mui-card-header.mui-card-media {\n    display: block;\n    padding: 10px;\n}\n\n.mui-card-header.mui-card-media .mui-media-body {\n    font-size: 14px;\n    font-weight: 500;\n    line-height: 17px;\n    margin-bottom: 0;\n    margin-left: 44px;\n    color: #333;\n}\n\n.mui-card-header.mui-card-media .mui-media-body p {\n    font-size: 13px;\n    margin-bottom: 0;\n}\n\n.mui-table-view {\n    position: relative;\n    margin-top: 0;\n    margin-bottom: 0;\n    padding-left: 0;\n    list-style: none;\n    background-color: #fff;\n}\n\n.mui-table-view:after {\n    position: absolute;\n    right: 0;\n    bottom: 0;\n    left: 0;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #c8c7cc;\n}\n\n.mui-table-view:before {\n    position: absolute;\n    top: 0;\n    right: 0;\n    left: 0;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #c8c7cc;\n}\n\n.mui-table-view:before {\n    top: -1px;\n}\n\n.mui-table-view-icon .mui-table-view-cell .mui-navigate-right .mui-icon {\n    font-size: 20px;\n    margin-top: -1px;\n    margin-right: 5px;\n    margin-left: -5px;\n}\n\n.mui-table-view-icon .mui-table-view-cell:after {\n    left: 40px;\n}\n\n.mui-table-view-chevron .mui-table-view-cell {\n    padding-right: 65px;\n}\n\n.mui-table-view-chevron .mui-table-view-cell>a:not(.mui-btn) {\n    margin-right: -65px;\n}\n\n.mui-table-view-radio .mui-table-view-cell {\n    padding-right: 65px;\n}\n\n.mui-table-view-radio .mui-table-view-cell>a:not(.mui-btn) {\n    margin-right: -65px;\n}\n\n.mui-table-view-radio .mui-table-view-cell .mui-navigate-right:after {\n    font-size: 30px;\n    font-weight: 600;\n    right: 9px;\n    content: '';\n    color: #007aff;\n}\n\n.mui-table-view-radio .mui-table-view-cell.mui-selected .mui-navigate-right:after {\n    content: '\\E472';\n}\n\n.mui-table-view-inverted {\n    color: #fff;\n    background: #333;\n}\n\n.mui-table-view-inverted:after {\n    position: absolute;\n    right: 0;\n    bottom: 0;\n    left: 0;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #222;\n}\n\n.mui-table-view-inverted:before {\n    position: absolute;\n    top: 0;\n    right: 0;\n    left: 0;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #222;\n}\n\n.mui-table-view-inverted .mui-table-view-cell:after {\n    position: absolute;\n    right: 0;\n    bottom: 0;\n    left: 15px;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #222;\n}\n\n.mui-table-view-inverted .mui-table-view-cell.mui-active {\n    background-color: #242424;\n}\n\n.mui-table-view-inverted .mui-table-view-cell>a:not(.mui-btn).mui-active {\n    background-color: #242424;\n}\n\n.mui-table-view-cell {\n    position: relative;\n    overflow: hidden;\n    padding: 11px 15px;\n    -webkit-touch-callout: none;\n}\n\n.mui-table-view-cell:after {\n    position: absolute;\n    right: 0;\n    bottom: 0;\n    left: 15px;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #c8c7cc;\n}\n\n.mui-table-view-cell.mui-radio input[type=radio],\n.mui-table-view-cell.mui-checkbox input[type=checkbox] {\n    top: 8px;\n}\n\n.mui-table-view-cell.mui-radio.mui-left,\n.mui-table-view-cell.mui-checkbox.mui-left {\n    padding-left: 58px;\n}\n\n.mui-table-view-cell.mui-active {\n    background-color: #eee;\n}\n\n.mui-table-view-cell:last-child:before,\n.mui-table-view-cell:last-child:after {\n    height: 0;\n}\n\n.mui-table-view-cell>a:not(.mui-btn) {\n    position: relative;\n    display: block;\n    overflow: hidden;\n    margin: -11px -15px;\n    padding: inherit;\n    white-space: nowrap;\n    text-overflow: ellipsis;\n    color: inherit;\n    /*&:active {\n      background-color: #eee;\n  }*/\n}\n\n.mui-table-view-cell>a:not(.mui-btn).mui-active {\n    background-color: #eee;\n}\n\n.mui-table-view-cell p {\n    margin-bottom: 0;\n}\n\n.mui-table-view-cell.mui-transitioning>.mui-slider-handle,\n.mui-table-view-cell.mui-transitioning>.mui-slider-left .mui-btn,\n.mui-table-view-cell.mui-transitioning>.mui-slider-right .mui-btn {\n    transition: -webkit-transform 300ms ease;\n    transition: transform 300ms ease;\n    transition: transform 300ms ease, -webkit-transform 300ms ease;\n}\n\n.mui-table-view-cell.mui-active>.mui-slider-handle {\n    background-color: #eee;\n}\n\n.mui-table-view-cell>.mui-slider-handle {\n    position: relative;\n    background-color: #fff;\n}\n\n.mui-table-view-cell>.mui-slider-handle.mui-navigate-right:after,\n.mui-table-view-cell>.mui-slider-handle .mui-navigate-right:after {\n    right: 0;\n}\n\n.mui-table-view-cell>.mui-slider-handle,\n.mui-table-view-cell>.mui-slider-left .mui-btn,\n.mui-table-view-cell>.mui-slider-right .mui-btn {\n    transition: -webkit-transform 0ms ease;\n    transition: transform 0ms ease;\n    transition: transform 0ms ease, -webkit-transform 0ms ease;\n}\n\n.mui-table-view-cell>.mui-slider-left,\n.mui-table-view-cell>.mui-slider-right {\n    position: absolute;\n    top: 0;\n    display: -webkit-box;\n    display: -ms-flexbox;\n    display: flex;\n    height: 100%;\n}\n\n.mui-table-view-cell>.mui-slider-left>.mui-btn,\n.mui-table-view-cell>.mui-slider-right>.mui-btn {\n    position: relative;\n    left: 0;\n    display: -webkit-box;\n    display: -ms-flexbox;\n    display: flex;\n    padding: 0 30px;\n    color: #fff;\n    border: 0;\n    border-radius: 0;\n    -webkit-box-align: center;\n    -ms-flex-align: center;\n        align-items: center;\n}\n\n.mui-table-view-cell>.mui-slider-left>.mui-btn:after,\n.mui-table-view-cell>.mui-slider-right>.mui-btn:after {\n    position: absolute;\n    z-index: -1;\n    top: 0;\n    width: 600%;\n    height: 100%;\n    content: '';\n    background: inherit;\n}\n\n.mui-table-view-cell>.mui-slider-left>.mui-btn.mui-icon,\n.mui-table-view-cell>.mui-slider-right>.mui-btn.mui-icon {\n    font-size: 30px;\n}\n\n.mui-table-view-cell>.mui-slider-right {\n    right: 0;\n    transition: -webkit-transform 0ms ease;\n    transition: transform 0ms ease;\n    transition: transform 0ms ease, -webkit-transform 0ms ease;\n    -webkit-transform: translateX(100%);\n    transform: translateX(100%);\n}\n\n.mui-table-view-cell>.mui-slider-left {\n    left: 0;\n    transition: -webkit-transform 0ms ease;\n    transition: transform 0ms ease;\n    transition: transform 0ms ease, -webkit-transform 0ms ease;\n    -webkit-transform: translateX(-100%);\n    transform: translateX(-100%);\n}\n\n.mui-table-view-cell>.mui-slider-left>.mui-btn:after {\n    right: 100%;\n    margin-right: -1px;\n}\n\n.mui-table-view-divider {\n    font-weight: 500;\n    position: relative;\n    margin-top: -1px;\n    margin-left: 0;\n    padding-top: 6px;\n    padding-bottom: 6px;\n    padding-left: 15px;\n    color: #999;\n    background-color: #fafafa;\n}\n\n.mui-table-view-divider:after {\n    position: absolute;\n    right: 0;\n    bottom: 0;\n    left: 0;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #c8c7cc;\n}\n\n.mui-table-view-divider:before {\n    position: absolute;\n    top: 0;\n    right: 0;\n    left: 0;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #c8c7cc;\n}\n\n.mui-table-view .mui-media,\n.mui-table-view .mui-media-body {\n    overflow: hidden;\n}\n\n.mui-table-view .mui-media-large .mui-media-object {\n    line-height: 80px;\n    max-width: 80px;\n    height: 80px;\n}\n\n.mui-table-view .mui-media .mui-subtitle {\n    color: #000;\n}\n\n.mui-table-view .mui-media-object {\n    line-height: 42px;\n    max-width: 42px;\n    height: 42px;\n}\n\n.mui-table-view .mui-media-object.mui-pull-left {\n    margin-right: 10px;\n}\n\n.mui-table-view .mui-media-object.mui-pull-right {\n    margin-left: 10px;\n}\n\n.mui-table-view .mui-table-view-cell.mui-media-icon .mui-media-object {\n    line-height: 29px;\n    max-width: 29px;\n    height: 29px;\n    margin: -4px 0;\n}\n\n.mui-table-view .mui-table-view-cell.mui-media-icon .mui-media-object img {\n    line-height: 29px;\n    max-width: 29px;\n    height: 29px;\n}\n\n.mui-table-view .mui-table-view-cell.mui-media-icon .mui-media-object.mui-pull-left {\n    margin-right: 10px;\n}\n\n.mui-table-view .mui-table-view-cell.mui-media-icon .mui-media-object .mui-icon {\n    font-size: 29px;\n}\n\n.mui-table-view .mui-table-view-cell.mui-media-icon .mui-media-body:after {\n    position: absolute;\n    right: 0;\n    bottom: 0;\n    left: 55px;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #c8c7cc;\n}\n\n.mui-table-view .mui-table-view-cell.mui-media-icon:after {\n    height: 0 !important;\n}\n\n.mui-table-view.mui-unfold .mui-table-view-cell.mui-collapse .mui-table-view {\n    display: block;\n}\n\n.mui-table-view.mui-unfold .mui-table-view-cell.mui-collapse .mui-table-view:before,\n.mui-table-view.mui-unfold .mui-table-view-cell.mui-collapse .mui-table-view:after {\n    height: 0 !important;\n}\n\n.mui-table-view.mui-unfold .mui-table-view-cell.mui-media-icon.mui-collapse .mui-media-body:after {\n    position: absolute;\n    right: 0;\n    bottom: 0;\n    left: 70px;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #c8c7cc;\n}\n\n.mui-table-view-cell>.mui-btn,\n.mui-table-view-cell>.mui-badge,\n.mui-table-view-cell>.mui-switch,\n.mui-table-view-cell>a>.mui-btn,\n.mui-table-view-cell>a>.mui-badge,\n.mui-table-view-cell>a>.mui-switch {\n    position: absolute;\n    top: 50%;\n    right: 15px;\n    -webkit-transform: translateY(-50%);\n    transform: translateY(-50%);\n}\n\n.mui-table-view-cell .mui-navigate-right>.mui-btn,\n.mui-table-view-cell .mui-navigate-right>.mui-badge,\n.mui-table-view-cell .mui-navigate-right>.mui-switch,\n.mui-table-view-cell .mui-push-left>.mui-btn,\n.mui-table-view-cell .mui-push-left>.mui-badge,\n.mui-table-view-cell .mui-push-left>.mui-switch,\n.mui-table-view-cell .mui-push-right>.mui-btn,\n.mui-table-view-cell .mui-push-right>.mui-badge,\n.mui-table-view-cell .mui-push-right>.mui-switch,\n.mui-table-view-cell>a .mui-navigate-right>.mui-btn,\n.mui-table-view-cell>a .mui-navigate-right>.mui-badge,\n.mui-table-view-cell>a .mui-navigate-right>.mui-switch,\n.mui-table-view-cell>a .mui-push-left>.mui-btn,\n.mui-table-view-cell>a .mui-push-left>.mui-badge,\n.mui-table-view-cell>a .mui-push-left>.mui-switch,\n.mui-table-view-cell>a .mui-push-right>.mui-btn,\n.mui-table-view-cell>a .mui-push-right>.mui-badge,\n.mui-table-view-cell>a .mui-push-right>.mui-switch {\n    right: 35px;\n}\n\n.mui-content>.mui-table-view:first-child {\n    margin-top: 15px;\n}\n\n.mui-table-view-cell.mui-collapse .mui-table-view:before,\n.mui-table-view-cell.mui-collapse .mui-table-view:after {\n    height: 0;\n}\n\n.mui-table-view-cell.mui-collapse .mui-table-view .mui-table-view-cell:last-child:after {\n    height: 0;\n}\n\n.mui-table-view-cell.mui-collapse>.mui-navigate-right:after,\n.mui-table-view-cell.mui-collapse>.mui-push-right:after {\n    content: '\\E581';\n}\n\n.mui-table-view-cell.mui-collapse.mui-active {\n    margin-top: -1px;\n}\n\n.mui-table-view-cell.mui-collapse.mui-active .mui-table-view,\n.mui-table-view-cell.mui-collapse.mui-active .mui-collapse-content {\n    display: block;\n}\n\n.mui-table-view-cell.mui-collapse.mui-active>.mui-navigate-right:after,\n.mui-table-view-cell.mui-collapse.mui-active>.mui-push-right:after {\n    content: '\\E580';\n}\n\n.mui-table-view-cell.mui-collapse.mui-active .mui-table-view-cell>a:not(.mui-btn).mui-active {\n    margin-left: -31px;\n    padding-left: 47px;\n}\n\n.mui-table-view-cell.mui-collapse .mui-collapse-content {\n    position: relative;\n    display: none;\n    overflow: hidden;\n    margin: 11px -15px -11px;\n    padding: 8px 15px;\n    transition: height .35s ease;\n    background: white;\n}\n\n.mui-table-view-cell.mui-collapse .mui-collapse-content>.mui-input-group,\n.mui-table-view-cell.mui-collapse .mui-collapse-content>.mui-slider {\n    width: auto;\n    height: auto;\n    margin: -8px -15px;\n}\n\n.mui-table-view-cell.mui-collapse .mui-collapse-content>.mui-slider {\n    margin: -8px -16px;\n}\n\n.mui-table-view-cell.mui-collapse .mui-table-view {\n    display: none;\n    margin-top: 11px;\n    margin-right: -15px;\n    margin-bottom: -11px;\n    margin-left: -15px;\n    border: 0;\n}\n\n.mui-table-view-cell.mui-collapse .mui-table-view.mui-table-view-chevron {\n    margin-right: -65px;\n}\n\n.mui-table-view-cell.mui-collapse .mui-table-view .mui-table-view-cell {\n    padding-left: 31px;\n    background-position: 31px 100%;\n}\n\n.mui-table-view-cell.mui-collapse .mui-table-view .mui-table-view-cell:after {\n    position: absolute;\n    right: 0;\n    bottom: 0;\n    left: 30px;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #c8c7cc;\n}\n\n.mui-table-view.mui-grid-view {\n    font-size: 0;\n    display: block;\n    width: 100%;\n    padding: 0 10px 10px 0;\n    white-space: normal;\n}\n\n.mui-table-view.mui-grid-view .mui-table-view-cell {\n    font-size: 17px;\n    display: inline-block;\n    margin-right: -4px;\n    padding: 10px 0 0 14px;\n    text-align: center;\n    vertical-align: middle;\n    background: none;\n}\n\n.mui-table-view.mui-grid-view .mui-table-view-cell .mui-media-object {\n    width: 100%;\n    max-width: 100%;\n    height: auto;\n}\n\n.mui-table-view.mui-grid-view .mui-table-view-cell>a:not(.mui-btn) {\n    margin: -10px 0 0 -14px;\n}\n\n.mui-table-view.mui-grid-view .mui-table-view-cell>a:not(.mui-btn):active,\n.mui-table-view.mui-grid-view .mui-table-view-cell>a:not(.mui-btn).mui-active {\n    background: none;\n}\n\n.mui-table-view.mui-grid-view .mui-table-view-cell .mui-media-body {\n    font-size: 15px;\n    line-height: 15px;\n    display: block;\n    width: 100%;\n    height: 15px;\n    margin-top: 8px;\n    text-overflow: ellipsis;\n    color: #333;\n}\n\n.mui-table-view.mui-grid-view .mui-table-view-cell:before,\n.mui-table-view.mui-grid-view .mui-table-view-cell:after {\n    height: 0;\n}\n\n.mui-grid-view.mui-grid-9 {\n    margin: 0;\n    padding: 0;\n    border-top: 1px solid #eee;\n    border-left: 1px solid #eee;\n    background-color: #f2f2f2;\n}\n\n.mui-grid-view.mui-grid-9:before,\n.mui-grid-view.mui-grid-9:after {\n    display: table;\n    content: ' ';\n}\n\n.mui-grid-view.mui-grid-9:after {\n    clear: both;\n}\n\n.mui-grid-view.mui-grid-9:after {\n    position: static;\n}\n\n.mui-grid-view.mui-grid-9 .mui-table-view-cell {\n    margin: 0;\n    padding: 11px 15px;\n    vertical-align: top;\n    border-right: 1px solid #eee;\n    border-bottom: 1px solid #eee;\n}\n\n.mui-grid-view.mui-grid-9 .mui-table-view-cell.mui-active {\n    background-color: #eee;\n}\n\n.mui-grid-view.mui-grid-9 .mui-table-view-cell>a:not(.mui-btn) {\n    margin: 0;\n    padding: 10px 0;\n}\n\n.mui-grid-view.mui-grid-9:before {\n    height: 0;\n}\n\n.mui-grid-view.mui-grid-9 .mui-media {\n    color: #797979;\n}\n\n.mui-grid-view.mui-grid-9 .mui-media .mui-icon {\n    font-size: 2.4em;\n    position: relative;\n}\n\n.mui-slider-cell {\n    position: relative;\n}\n\n.mui-slider-cell>.mui-slider-handle {\n    z-index: 1;\n}\n\n.mui-slider-cell>.mui-slider-left,\n.mui-slider-cell>.mui-slider-right {\n    position: absolute;\n    z-index: 0;\n    top: 0;\n    bottom: 0;\n}\n\n.mui-slider-cell>.mui-slider-left {\n    left: 0;\n}\n\n.mui-slider-cell>.mui-slider-right {\n    right: 0;\n}\n\ninput,\ntextarea,\nselect {\n    font-family: 'Helvetica Neue', Helvetica, sans-serif;\n    font-size: 17px;\n    -webkit-tap-highlight-color: transparent;\n    -webkit-tap-highlight-color: transparent;\n}\n\ninput:focus,\ntextarea:focus,\nselect:focus {\n    -webkit-tap-highlight-color: transparent;\n    -webkit-tap-highlight-color: transparent;\n    -webkit-user-modify: read-write-plaintext-only;\n}\n\nselect,\ntextarea,\ninput[type='text'],\ninput[type='search'],\ninput[type='password'],\ninput[type='datetime'],\ninput[type='datetime-local'],\ninput[type='date'],\ninput[type='month'],\ninput[type='time'],\ninput[type='week'],\ninput[type='number'],\ninput[type='email'],\ninput[type='url'],\ninput[type='tel'],\ninput[type='color'] {\n    line-height: 21px;\n    width: 100%;\n    height: 40px;\n    margin-bottom: 15px;\n    padding: 10px 15px;\n    -webkit-user-select: text;\n    border: 1px solid rgba(0, 0, 0, .2);\n    border-radius: 3px;\n    outline: none;\n    background-color: #fff;\n    -webkit-appearance: none;\n}\n\ninput[type=number]::-webkit-inner-spin-button,\ninput[type=number]::-webkit-outer-spin-button {\n    margin: 0;\n    -webkit-appearance: none;\n}\n\ninput[type='search'] {\n    font-size: 16px;\n    box-sizing: border-box;\n    height: 34px;\n    text-align: center;\n    border: 0;\n    border-radius: 6px;\n    background-color: rgba(0, 0, 0, .1);\n}\n\ninput[type='search']:focus {\n    text-align: left;\n}\n\ntextarea {\n    height: auto;\n    resize: none;\n}\n\nselect {\n    font-size: 14px;\n    height: auto;\n    margin-top: 1px;\n    border: 0 !important;\n    background-color: #fff;\n}\n\nselect:focus {\n    -webkit-user-modify: read-only;\n}\n\n.mui-input-group {\n    position: relative;\n    padding: 0;\n    border: 0;\n    background-color: #fff;\n}\n\n.mui-input-group:after {\n    position: absolute;\n    right: 0;\n    bottom: 0;\n    left: 0;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #c8c7cc;\n}\n\n.mui-input-group:before {\n    position: absolute;\n    top: 0;\n    right: 0;\n    left: 0;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #c8c7cc;\n}\n\n.mui-input-group input,\n.mui-input-group textarea {\n    margin-bottom: 0;\n    border: 0;\n    border-radius: 0;\n    background-color: transparent;\n    box-shadow: none;\n}\n\n.mui-input-group input[type='search'] {\n    background: none;\n}\n\n.mui-input-group input:last-child {\n    background-image: none;\n}\n\n.mui-input-row {\n    clear: left;\n    overflow: hidden;\n}\n\n.mui-input-row select {\n    font-size: 17px;\n    height: 37px;\n    padding: 0;\n}\n\n.mui-input-row:last-child,\n.mui-input-row label+input,\n.mui-input-row .mui-btn+input {\n    background: none;\n}\n\n.mui-input-group .mui-input-row {\n    height: 40px;\n}\n\n.mui-input-group .mui-input-row:after {\n    position: absolute;\n    right: 0;\n    bottom: 0;\n    left: 15px;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #c8c7cc;\n}\n\n.mui-input-row label {\n    font-family: 'Helvetica Neue', Helvetica, sans-serif;\n    line-height: 1.1;\n    float: left;\n    width: 35%;\n    padding: 11px 15px;\n}\n\n.mui-input-row label~input,\n.mui-input-row label~select,\n.mui-input-row label~textarea {\n    float: right;\n    width: 65%;\n    margin-bottom: 0;\n    padding-left: 0;\n    border: 0;\n}\n\n.mui-input-row .mui-btn {\n    line-height: 1.1;\n    float: right;\n    width: 15%;\n    padding: 10px 15px;\n}\n\n.mui-input-row .mui-btn~input,\n.mui-input-row .mui-btn~select,\n.mui-input-row .mui-btn~textarea {\n    float: left;\n    width: 85%;\n    margin-bottom: 0;\n    padding-left: 0;\n    border: 0;\n}\n\n.mui-button-row {\n    position: relative;\n    padding-top: 5px;\n    text-align: center;\n}\n\n.mui-input-group .mui-button-row {\n    height: 45px;\n}\n\n.mui-input-row {\n    position: relative;\n}\n\n.mui-input-row.mui-input-range {\n    overflow: visible;\n    padding-right: 20px;\n}\n\n.mui-input-row .mui-inline {\n    padding: 8px 0;\n}\n\n.mui-input-row .mui-input-clear~.mui-icon-clear,\n.mui-input-row .mui-input-speech~.mui-icon-speech,\n.mui-input-row .mui-input-password~.mui-icon-eye {\n    font-size: 20px;\n    position: absolute;\n    z-index: 1;\n    top: 10px;\n    right: 0;\n    width: 38px;\n    height: 38px;\n    text-align: center;\n    color: #999;\n}\n\n.mui-input-row .mui-input-clear~.mui-icon-clear.mui-active,\n.mui-input-row .mui-input-speech~.mui-icon-speech.mui-active,\n.mui-input-row .mui-input-password~.mui-icon-eye.mui-active {\n    color: #007aff;\n}\n\n.mui-input-row .mui-input-speech~.mui-icon-speech {\n    font-size: 24px;\n    top: 8px;\n}\n\n.mui-input-row .mui-input-clear~.mui-icon-clear~.mui-icon-speech {\n    display: none;\n}\n\n.mui-input-row .mui-input-clear~.mui-icon-clear.mui-hidden~.mui-icon-speech {\n    display: inline-block;\n}\n\n.mui-input-row .mui-icon-speech~.mui-placeholder {\n    right: 38px;\n}\n\n.mui-input-row.mui-search .mui-icon-clear {\n    top: 7px;\n}\n\n.mui-input-row.mui-search .mui-icon-speech {\n    top: 5px;\n}\n\n.mui-radio,\n.mui-checkbox {\n    position: relative;\n}\n\n.mui-radio label,\n.mui-checkbox label {\n    display: inline-block;\n    float: none;\n    width: 100%;\n    padding-right: 58px;\n}\n\n.mui-radio.mui-left input[type='radio'],\n.mui-checkbox.mui-left input[type='checkbox'] {\n    left: 20px;\n}\n\n.mui-radio.mui-left label,\n.mui-checkbox.mui-left label {\n    padding-right: 15px;\n    padding-left: 58px;\n}\n\n.mui-radio input[type='radio'],\n.mui-checkbox input[type='checkbox'] {\n    position: absolute;\n    top: 4px;\n    right: 20px;\n    display: inline-block;\n    width: 28px;\n    height: 26px;\n    border: 0;\n    outline: 0 !important;\n    background-color: transparent;\n    -webkit-appearance: none;\n}\n\n.mui-radio input[type='radio'][disabled]:before,\n.mui-checkbox input[type='checkbox'][disabled]:before {\n    opacity: .3;\n}\n\n.mui-radio input[type='radio']:before,\n.mui-checkbox input[type='checkbox']:before {\n    font-family: Muiicons;\n    font-size: 28px;\n    font-weight: normal;\n    line-height: 1;\n    text-decoration: none;\n    color: #aaa;\n    border-radius: 0;\n    background: none;\n    -webkit-font-smoothing: antialiased;\n}\n\n.mui-radio input[type='radio']:checked:before,\n.mui-checkbox input[type='checkbox']:checked:before {\n    color: #007aff;\n}\n\n.mui-radio.mui-disabled label,\n.mui-radio label.mui-disabled,\n.mui-checkbox.mui-disabled label,\n.mui-checkbox label.mui-disabled {\n    opacity: .4;\n}\n\n.mui-radio input[type='radio']:before {\n    content: '\\E411';\n}\n\n.mui-radio input[type='radio']:checked:before {\n    content: '\\E441';\n}\n\n.mui-checkbox input[type='checkbox']:before {\n    content: '\\E411';\n}\n\n.mui-checkbox input[type='checkbox']:checked:before {\n    content: '\\E442';\n}\n\n.mui-select {\n    position: relative;\n}\n\n.mui-select:before {\n    font-family: Muiicons;\n    position: absolute;\n    top: 8px;\n    right: 21px;\n    content: '\\E581';\n    color: rgba(170, 170, 170, .6);\n}\n\n.mui-input-row .mui-switch {\n    float: right;\n    margin-top: 5px;\n    margin-right: 20px;\n}\n\n.mui-input-range {\n    /*input[type=\"range\"] {\n      -webkit-appearance: none;\n      background: #999;\n      height: 36px;\n      border-radius: 1px;\n      overflow: hidden;\n      margin-top: 2px;\n      margin-bottom: 2px;\n      outline:none;\n      position:relative;\n      width:100%;\n  }*/\n    /*input[type='range']::-webkit-slider-thumb {\n      -webkit-appearance: none!important;\n      opacity: 0.5;\n      height:28px;\n      width:28px;\n      border-radius: 50%;\n      background:#00b7fb;\n      position: relative;\n      pointer-events: none;\n      -webkit-box-sizing: border-box;\n      box-sizing: border-box;\n      &:before{\n          position: absolute;\n          top: 13px;\n          left: -2000px;\n          width: 2000px;\n          height: 2px;\n          background: #00b7fb;\n          content:' ';\n      }\n  }*/\n}\n\n.mui-input-range input[type='range'] {\n    position: relative;\n    width: 100%;\n    height: 2px;\n    margin: 17px 0;\n    padding: 0;\n    cursor: pointer;\n    border: 0;\n    border-radius: 3px;\n    outline: none;\n    background-color: #999;\n    -webkit-appearance: none !important;\n}\n\n.mui-input-range input[type='range']::-webkit-slider-thumb {\n    width: 28px;\n    height: 28px;\n    border-color: #0062cc;\n    border-radius: 50%;\n    background-color: #007aff;\n    background-clip: padding-box;\n    -webkit-appearance: none !important;\n}\n\n.mui-input-range label~input[type='range'] {\n    width: 65%;\n}\n\n.mui-input-range .mui-tooltip {\n    font-size: 36px;\n    line-height: 64px;\n    position: absolute;\n    z-index: 1;\n    top: -70px;\n    width: 64px;\n    height: 64px;\n    text-align: center;\n    opacity: .8;\n    color: #333;\n    border: 1px solid #ddd;\n    border-radius: 6px;\n    background-color: #fff;\n    text-shadow: 0 1px 0 #f3f3f3;\n}\n\n.mui-search {\n    position: relative;\n}\n\n.mui-search input[type='search'] {\n    padding-left: 30px;\n}\n\n.mui-search .mui-placeholder {\n    font-size: 16px;\n    line-height: 34px;\n    position: absolute;\n    z-index: 1;\n    top: 0;\n    right: 0;\n    bottom: 0;\n    left: 0;\n    display: inline-block;\n    height: 34px;\n    text-align: center;\n    color: #999;\n    border: 0;\n    border-radius: 6px;\n    background: none;\n}\n\n.mui-search .mui-placeholder .mui-icon {\n    font-size: 20px;\n    color: #333;\n}\n\n.mui-search:before {\n    font-family: Muiicons;\n    font-size: 20px;\n    font-weight: normal;\n    position: absolute;\n    top: 50%;\n    right: 50%;\n    display: none;\n    margin-top: -18px;\n    margin-right: 31px;\n    content: '\\E466';\n}\n\n.mui-search.mui-active:before {\n    font-size: 20px;\n    right: auto;\n    left: 5px;\n    display: block;\n    margin-right: 0;\n}\n\n.mui-search.mui-active input[type='search'] {\n    text-align: left;\n}\n\n.mui-search.mui-active .mui-placeholder {\n    display: none;\n}\n\n.mui-segmented-control {\n    font-size: 15px;\n    font-weight: 400;\n    position: relative;\n    display: table;\n    overflow: hidden;\n    width: 100%;\n    table-layout: fixed;\n    border: 1px solid #007aff;\n    border-radius: 3px;\n    background-color: transparent;\n    -webkit-touch-callout: none;\n}\n\n.mui-segmented-control.mui-segmented-control-vertical {\n    border-collapse: collapse;\n    border-width: 0;\n    border-radius: 0;\n}\n\n.mui-segmented-control.mui-segmented-control-vertical .mui-control-item {\n    display: block;\n    border-bottom: 1px solid #c8c7cc;\n    border-left-width: 0;\n}\n\n.mui-segmented-control.mui-scroll-wrapper {\n    height: 38px;\n}\n\n.mui-segmented-control.mui-scroll-wrapper .mui-scroll {\n    width: auto;\n    height: 40px;\n    white-space: nowrap;\n}\n\n.mui-segmented-control.mui-scroll-wrapper .mui-control-item {\n    display: inline-block;\n    width: auto;\n    padding: 0 20px;\n    border: 0;\n}\n\n.mui-segmented-control .mui-control-item {\n    line-height: 38px;\n    display: table-cell;\n    overflow: hidden;\n    width: 1%;\n    transition: background-color .1s linear;\n    text-align: center;\n    white-space: nowrap;\n    text-overflow: ellipsis;\n    color: #007aff;\n    border-color: #007aff;\n    border-left: 1px solid #007aff;\n}\n\n.mui-segmented-control .mui-control-item:first-child {\n    border-left-width: 0;\n}\n\n.mui-segmented-control .mui-control-item.mui-active {\n    color: #fff;\n    background-color: #007aff;\n}\n\n.mui-segmented-control.mui-segmented-control-inverted {\n    width: 100%;\n    border: 0;\n    border-radius: 0;\n}\n\n.mui-segmented-control.mui-segmented-control-inverted.mui-segmented-control-vertical .mui-control-item {\n    border-bottom: 1px solid #c8c7cc;\n}\n\n.mui-segmented-control.mui-segmented-control-inverted.mui-segmented-control-vertical .mui-control-item.mui-active {\n    border-bottom: 1px solid #c8c7cc;\n}\n\n.mui-segmented-control.mui-segmented-control-inverted .mui-control-item {\n    color: inherit;\n    border: 0;\n}\n\n.mui-segmented-control.mui-segmented-control-inverted .mui-control-item.mui-active {\n    color: #007aff;\n    border-bottom: 2px solid #007aff;\n    background: none;\n}\n\n.mui-segmented-control.mui-segmented-control-inverted~.mui-slider-progress-bar {\n    background-color: #007aff;\n}\n\n.mui-segmented-control-positive {\n    border: 1px solid #4cd964;\n}\n\n.mui-segmented-control-positive .mui-control-item {\n    color: #4cd964;\n    border-color: inherit;\n}\n\n.mui-segmented-control-positive .mui-control-item.mui-active {\n    color: #fff;\n    background-color: #4cd964;\n}\n\n.mui-segmented-control-positive.mui-segmented-control-inverted .mui-control-item.mui-active {\n    color: #4cd964;\n    border-bottom: 2px solid #4cd964;\n    background: none;\n}\n\n.mui-segmented-control-positive.mui-segmented-control-inverted~.mui-slider-progress-bar {\n    background-color: #4cd964;\n}\n\n.mui-segmented-control-negative {\n    border: 1px solid #dd524d;\n}\n\n.mui-segmented-control-negative .mui-control-item {\n    color: #dd524d;\n    border-color: inherit;\n}\n\n.mui-segmented-control-negative .mui-control-item.mui-active {\n    color: #fff;\n    background-color: #dd524d;\n}\n\n.mui-segmented-control-negative.mui-segmented-control-inverted .mui-control-item.mui-active {\n    color: #dd524d;\n    border-bottom: 2px solid #dd524d;\n    background: none;\n}\n\n.mui-segmented-control-negative.mui-segmented-control-inverted~.mui-slider-progress-bar {\n    background-color: #dd524d;\n}\n\n.mui-control-content {\n    position: relative;\n    display: none;\n}\n\n.mui-control-content.mui-active {\n    display: block;\n}\n\n.mui-popover {\n    position: absolute;\n    z-index: 999;\n    display: none;\n    width: 280px;\n    transition: opacity .3s;\n    transition-property: opacity;\n    -webkit-transform: none;\n    transform: none;\n    opacity: 0;\n    border-radius: 7px;\n    background-color: #f7f7f7;\n    box-shadow: 0 0 15px rgba(0, 0, 0, .1);\n}\n\n.mui-popover .mui-popover-arrow {\n    position: absolute;\n    z-index: 1000;\n    top: -25px;\n    left: 0;\n    overflow: hidden;\n    width: 26px;\n    height: 26px;\n}\n\n.mui-popover .mui-popover-arrow:after {\n    position: absolute;\n    top: 19px;\n    left: 0;\n    width: 26px;\n    height: 26px;\n    content: ' ';\n    -webkit-transform: rotate(45deg);\n    transform: rotate(45deg);\n    border-radius: 3px;\n    background: #f7f7f7;\n}\n\n.mui-popover .mui-popover-arrow.mui-bottom {\n    top: 100%;\n    left: -26px;\n    margin-top: -1px;\n}\n\n.mui-popover .mui-popover-arrow.mui-bottom:after {\n    top: -19px;\n    left: 0;\n}\n\n.mui-popover.mui-popover-action {\n    bottom: 0;\n    width: 100%;\n    transition: opacity .3s, -webkit-transform .3s;\n    transition: transform .3s, opacity .3s;\n    transition: transform .3s, opacity .3s, -webkit-transform .3s;\n    -webkit-transform: translate3d(0, 100%, 0);\n    transform: translate3d(0, 100%, 0);\n    border-radius: 0;\n    background: none;\n    box-shadow: none;\n}\n\n.mui-popover.mui-popover-action .mui-popover-arrow {\n    display: none;\n}\n\n.mui-popover.mui-popover-action.mui-popover-bottom {\n    position: fixed;\n}\n\n.mui-popover.mui-popover-action.mui-active {\n    -webkit-transform: translate3d(0, 0, 0);\n    transform: translate3d(0, 0, 0);\n}\n\n.mui-popover.mui-popover-action .mui-table-view {\n    margin: 8px;\n    text-align: center;\n    color: #007aff;\n    border-radius: 4px;\n}\n\n.mui-popover.mui-popover-action .mui-table-view .mui-table-view-cell:after {\n    position: absolute;\n    right: 0;\n    bottom: 0;\n    left: 0;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    background-color: #c8c7cc;\n}\n\n.mui-popover.mui-popover-action .mui-table-view small {\n    font-weight: 400;\n    line-height: 1.3;\n    display: block;\n}\n\n.mui-popover.mui-active {\n    display: block;\n    opacity: 1;\n}\n\n.mui-popover .mui-bar~.mui-table-view {\n    padding-top: 44px;\n}\n\n.mui-backdrop {\n    position: fixed;\n    z-index: 998;\n    top: 0;\n    right: 0;\n    bottom: 0;\n    left: 0;\n    background-color: rgba(0, 0, 0, .3);\n}\n\n.mui-bar-backdrop.mui-backdrop {\n    bottom: 50px;\n    background: none;\n}\n\n.mui-backdrop-action.mui-backdrop {\n    background-color: rgba(0, 0, 0, .3);\n}\n\n.mui-bar-backdrop.mui-backdrop,\n.mui-backdrop-action.mui-backdrop {\n    opacity: 0;\n}\n\n.mui-bar-backdrop.mui-backdrop.mui-active,\n.mui-backdrop-action.mui-backdrop.mui-active {\n    transition: all .4s ease;\n    opacity: 1;\n}\n\n.mui-popover .mui-btn-block {\n    margin-bottom: 5px;\n}\n\n.mui-popover .mui-btn-block:last-child {\n    margin-bottom: 0;\n}\n\n.mui-popover .mui-bar {\n    box-shadow: none;\n}\n\n.mui-popover .mui-bar-nav {\n    border-bottom: 1px solid rgba(0, 0, 0, .15);\n    border-top-left-radius: 12px;\n    border-top-right-radius: 12px;\n    box-shadow: none;\n}\n\n.mui-popover .mui-scroll-wrapper {\n    margin: 7px 0;\n    border-radius: 7px;\n    background-clip: padding-box;\n}\n\n.mui-popover .mui-scroll .mui-table-view {\n    max-height: none;\n}\n\n.mui-popover .mui-table-view {\n    overflow: auto;\n    max-height: 300px;\n    margin-bottom: 0;\n    border-radius: 7px;\n    background-color: #f7f7f7;\n    background-image: none;\n    -webkit-overflow-scrolling: touch;\n}\n\n.mui-popover .mui-table-view:before,\n.mui-popover .mui-table-view:after {\n    height: 0;\n}\n\n.mui-popover .mui-table-view .mui-table-view-cell:first-child,\n.mui-popover .mui-table-view .mui-table-view-cell:first-child>a:not(.mui-btn) {\n    border-top-left-radius: 12px;\n    border-top-right-radius: 12px;\n}\n\n.mui-popover .mui-table-view .mui-table-view-cell:last-child,\n.mui-popover .mui-table-view .mui-table-view-cell:last-child>a:not(.mui-btn) {\n    border-bottom-right-radius: 12px;\n    border-bottom-left-radius: 12px;\n}\n\n.mui-popover.mui-bar-popover .mui-table-view {\n    width: 106px;\n}\n\n.mui-popover.mui-bar-popover .mui-table-view .mui-table-view-cell {\n    padding: 11px 15px 11px 15px;\n    background-position: 0 100%;\n}\n\n.mui-popover.mui-bar-popover .mui-table-view .mui-table-view-cell>a:not(.mui-btn) {\n    margin: -11px -15px -11px -15px;\n}\n\n.mui-popup-backdrop {\n    position: fixed;\n    z-index: 998;\n    top: 0;\n    right: 0;\n    bottom: 0;\n    left: 0;\n    transition-duration: 400ms;\n    opacity: 0;\n    background: rgba(0, 0, 0, .4);\n}\n\n.mui-popup-backdrop.mui-active {\n    opacity: 1;\n}\n\n.mui-popup {\n    position: fixed;\n    z-index: 10000;\n    top: 50%;\n    left: 50%;\n    display: none;\n    overflow: hidden;\n    width: 270px;\n    transition-property: opacity, -webkit-transform;\n    transition-property: transform, opacity;\n    transition-property: transform, opacity, -webkit-transform;\n    -webkit-transform: translate3d(-50%, -50%, 0) scale(1.185);\n    transform: translate3d(-50%, -50%, 0) scale(1.185);\n    text-align: center;\n    opacity: 0;\n    color: #000;\n    border-radius: 13px;\n}\n\n.mui-popup.mui-popup-in {\n    display: block;\n    transition-duration: 400ms;\n    -webkit-transform: translate3d(-50%, -50%, 0) scale(1);\n    transform: translate3d(-50%, -50%, 0) scale(1);\n    opacity: 1;\n}\n\n.mui-popup.mui-popup-out {\n    transition-duration: 400ms;\n    -webkit-transform: translate3d(-50%, -50%, 0) scale(1);\n    transform: translate3d(-50%, -50%, 0) scale(1);\n    opacity: 0;\n}\n\n.mui-popup-inner {\n    position: relative;\n    padding: 15px;\n    border-radius: 13px 13px 0 0;\n    background: rgba(255, 255, 255, .95);\n}\n\n.mui-popup-inner:after {\n    position: absolute;\n    z-index: 15;\n    top: auto;\n    right: auto;\n    bottom: 0;\n    left: 0;\n    display: block;\n    width: 100%;\n    height: 1px;\n    content: '';\n    -webkit-transform: scaleY(.5);\n    transform: scaleY(.5);\n    -webkit-transform-origin: 50% 100%;\n    transform-origin: 50% 100%;\n    background-color: rgba(0, 0, 0, .2);\n}\n\n.mui-popup-title {\n    font-size: 18px;\n    font-weight: 500;\n    text-align: center;\n}\n\n.mui-popup-title+.mui-popup-text {\n    font-family: inherit;\n    font-size: 14px;\n    margin: 5px 0 0;\n}\n\n.mui-popup-buttons {\n    position: relative;\n    display: -webkit-box;\n    display: -ms-flexbox;\n    display: flex;\n    height: 44px;\n    -webkit-box-pack: center;\n    -ms-flex-pack: center;\n        justify-content: center;\n}\n\n.mui-popup-button {\n    font-size: 17px;\n    line-height: 44px;\n    position: relative;\n    display: block;\n    overflow: hidden;\n    box-sizing: border-box;\n    width: 100%;\n    height: 44px;\n    padding: 0 5px;\n    cursor: pointer;\n    text-align: center;\n    white-space: nowrap;\n    text-overflow: ellipsis;\n    color: #007aff;\n    background: rgba(255, 255, 255, .95);\n    -webkit-box-flex: 1;\n}\n\n.mui-popup-button:after {\n    position: absolute;\n    z-index: 15;\n    top: 0;\n    right: 0;\n    bottom: auto;\n    left: auto;\n    display: block;\n    width: 1px;\n    height: 100%;\n    content: '';\n    -webkit-transform: scaleX(.5);\n    transform: scaleX(.5);\n    -webkit-transform-origin: 100% 50%;\n    transform-origin: 100% 50%;\n    background-color: rgba(0, 0, 0, .2);\n}\n\n.mui-popup-button:first-child {\n    border-radius: 0 0 0 13px;\n}\n\n.mui-popup-button:first-child:last-child {\n    border-radius: 0 0 13px 13px;\n}\n\n.mui-popup-button:last-child {\n    border-radius: 0 0 13px 0;\n}\n\n.mui-popup-button:last-child:after {\n    display: none;\n}\n\n.mui-popup-button.mui-popup-button-bold {\n    font-weight: 600;\n}\n\n.mui-popup-input input {\n    font-size: 14px;\n    width: 100%;\n    height: 26px;\n    margin: 15px 0 0;\n    padding: 0 5px;\n    border: 1px solid rgba(0, 0, 0, .3);\n    border-radius: 0;\n    background: #fff;\n}\n\n.mui-plus.mui-android .mui-popup-backdrop {\n    transition-duration: 1ms;\n}\n\n.mui-plus.mui-android .mui-popup {\n    transition-duration: 1ms;\n    -webkit-transform: translate3d(-50%, -50%, 0) scale(1);\n    transform: translate3d(-50%, -50%, 0) scale(1);\n}\n\n\n\n\n\n\n\n\n\n\n/* === Progress Bar === */\n\n.mui-progressbar {\n    position: relative;\n    display: block;\n    overflow: hidden;\n    width: 100%;\n    height: 2px;\n    -webkit-transform-origin: center top;\n    transform-origin: center top;\n    vertical-align: middle;\n    border-radius: 2px;\n    background: #b6b6b6;\n    -webkit-transform-style: preserve-3d;\n    transform-style: preserve-3d;\n}\n\n.mui-progressbar span {\n    position: absolute;\n    top: 0;\n    left: 0;\n    width: 100%;\n    height: 100%;\n    transition: 150ms;\n    -webkit-transform: translate3d(-100%, 0, 0);\n    transform: translate3d(-100%, 0, 0);\n    background: #007aff;\n}\n\n.mui-progressbar.mui-progressbar-infinite:before {\n    position: absolute;\n    top: 0;\n    left: 0;\n    width: 100%;\n    height: 100%;\n    content: '';\n    -webkit-transform: translate3d(0, 0, 0);\n    transform: translate3d(0, 0, 0);\n    -webkit-transform-origin: left center;\n    transform-origin: left center;\n    -webkit-animation: mui-progressbar-infinite 1s linear infinite;\n    animation: mui-progressbar-infinite 1s linear infinite;\n    background: #007aff;\n}\n\nbody>.mui-progressbar {\n    position: absolute;\n    z-index: 10000;\n    top: 44px;\n    left: 0;\n    border-radius: 0;\n}\n\n.mui-progressbar-in {\n    -webkit-animation: mui-progressbar-in 300ms forwards;\n    animation: mui-progressbar-in 300ms forwards;\n}\n\n.mui-progressbar-out {\n    -webkit-animation: mui-progressbar-out 300ms forwards;\n    animation: mui-progressbar-out 300ms forwards;\n}\n\n@-webkit-keyframes mui-progressbar-in {\n    from {\n        -webkit-transform: scaleY(0);\n        opacity: 0;\n    }\n    to {\n        -webkit-transform: scaleY(1);\n        opacity: 1;\n    }\n}\n\n@keyframes mui-progressbar-in {\n    from {\n        -webkit-transform: scaleY(0);\n                transform: scaleY(0);\n        opacity: 0;\n    }\n    to {\n        -webkit-transform: scaleY(1);\n                transform: scaleY(1);\n        opacity: 1;\n    }\n}\n\n@-webkit-keyframes mui-progressbar-out {\n    from {\n        -webkit-transform: scaleY(1);\n        opacity: 1;\n    }\n    to {\n        -webkit-transform: scaleY(0);\n        opacity: 0;\n    }\n}\n\n@keyframes mui-progressbar-out {\n    from {\n        -webkit-transform: scaleY(1);\n                transform: scaleY(1);\n        opacity: 1;\n    }\n    to {\n        -webkit-transform: scaleY(0);\n                transform: scaleY(0);\n        opacity: 0;\n    }\n}\n\n@-webkit-keyframes mui-progressbar-infinite {\n    0% {\n        -webkit-transform: translate3d(-50%, 0, 0) scaleX(.5);\n    }\n    100% {\n        -webkit-transform: translate3d(100%, 0, 0) scaleX(.5);\n    }\n}\n\n@keyframes mui-progressbar-infinite {\n    0% {\n        -webkit-transform: translate3d(-50%, 0, 0) scaleX(.5);\n                transform: translate3d(-50%, 0, 0) scaleX(.5);\n    }\n    100% {\n        -webkit-transform: translate3d(100%, 0, 0) scaleX(.5);\n                transform: translate3d(100%, 0, 0) scaleX(.5);\n    }\n}\n\n.mui-pagination {\n    display: inline-block;\n    margin: 0 auto;\n    padding-left: 0;\n    border-radius: 6px;\n}\n\n.mui-pagination>li {\n    display: inline;\n}\n\n.mui-pagination>li>a,\n.mui-pagination>li>span {\n    line-height: 1.428571429;\n    position: relative;\n    float: left;\n    margin-left: -1px;\n    padding: 6px 12px;\n    text-decoration: none;\n    color: #007aff;\n    border: 1px solid #ddd;\n    background-color: #fff;\n}\n\n.mui-pagination>li:first-child>a,\n.mui-pagination>li:first-child>span {\n    margin-left: 0;\n    border-top-left-radius: 6px;\n    border-bottom-left-radius: 6px;\n    background-clip: padding-box;\n}\n\n.mui-pagination>li:last-child>a,\n.mui-pagination>li:last-child>span {\n    border-top-right-radius: 6px;\n    border-bottom-right-radius: 6px;\n    background-clip: padding-box;\n}\n\n.mui-pagination>li:active>a,\n.mui-pagination>li:active>a:active,\n.mui-pagination>li:active>span,\n.mui-pagination>li:active>span:active,\n.mui-pagination>li.mui-active>a,\n.mui-pagination>li.mui-active>a:active,\n.mui-pagination>li.mui-active>span,\n.mui-pagination>li.mui-active>span:active {\n    z-index: 2;\n    cursor: default;\n    color: #fff;\n    border-color: #007aff;\n    background-color: #007aff;\n}\n\n.mui-pagination>li.mui-disabled>span,\n.mui-pagination>li.mui-disabled>span:active,\n.mui-pagination>li.mui-disabled>a,\n.mui-pagination>li.mui-disabled>a:active {\n    opacity: .6;\n    color: #777;\n    border: 1px solid #ddd;\n    background-color: #fff;\n}\n\n.mui-pagination-lg>li>a,\n.mui-pagination-lg>li>span {\n    font-size: 18px;\n    padding: 10px 16px;\n}\n\n.mui-pagination-sm>li>a,\n.mui-pagination-sm>li>span {\n    font-size: 12px;\n    padding: 5px 10px;\n}\n\n.mui-pager {\n    padding-left: 0;\n    list-style: none;\n    text-align: center;\n}\n\n.mui-pager:before,\n.mui-pager:after {\n    display: table;\n    content: ' ';\n}\n\n.mui-pager:after {\n    clear: both;\n}\n\n.mui-pager li {\n    display: inline;\n}\n\n.mui-pager li>a,\n.mui-pager li>span {\n    display: inline-block;\n    padding: 5px 14px;\n    border: 1px solid #ddd;\n    border-radius: 6px;\n    background-color: #fff;\n    background-clip: padding-box;\n}\n\n.mui-pager li:active>a,\n.mui-pager li:active>span,\n.mui-pager li.mui-active>a,\n.mui-pager li.mui-active>span {\n    cursor: default;\n    text-decoration: none;\n    color: #fff;\n    border-color: #007aff;\n    background-color: #007aff;\n}\n\n.mui-pager .mui-next>a,\n.mui-pager .mui-next>span {\n    float: right;\n}\n\n.mui-pager .mui-previous>a,\n.mui-pager .mui-previous>span {\n    float: left;\n}\n\n.mui-pager .mui-disabled>a,\n.mui-pager .mui-disabled>a:active,\n.mui-pager .mui-disabled>span,\n.mui-pager .mui-disabled>span:active {\n    opacity: .6;\n    color: #777;\n    border: 1px solid #ddd;\n    background-color: #fff;\n}\n\n.mui-modal {\n    position: fixed;\n    z-index: 999;\n    top: 0;\n    overflow: hidden;\n    width: 100%;\n    min-height: 100%;\n    transition: opacity 1ms .25s, -webkit-transform .25s;\n    transition: transform .25s, opacity 1ms .25s;\n    transition: transform .25s, opacity 1ms .25s, -webkit-transform .25s;\n    transition-timing-function: cubic-bezier(.1, .5, .1, 1);\n    -webkit-transform: translate3d(0, 100%, 0);\n    transform: translate3d(0, 100%, 0);\n    opacity: 0;\n    background-color: #fff;\n}\n\n.mui-modal.mui-active {\n    height: 100%;\n    transition: -webkit-transform .25s;\n    transition: transform .25s;\n    transition: transform .25s, -webkit-transform .25s;\n    transition-timing-function: cubic-bezier(.1, .5, .1, 1);\n    -webkit-transform: translate3d(0, 0, 0);\n    transform: translate3d(0, 0, 0);\n    opacity: 1;\n}\n\n.mui-android .mui-modal .mui-bar {\n    position: static;\n}\n\n.mui-android .mui-modal .mui-bar-nav~.mui-content {\n    padding-top: 0;\n}\n\n.mui-slider {\n    position: relative;\n    z-index: 1;\n    overflow: hidden;\n    width: 100%;\n}\n\n.mui-slider .mui-segmented-control.mui-segmented-control-inverted .mui-control-item.mui-active {\n    border-bottom: 0;\n}\n\n.mui-slider .mui-segmented-control.mui-segmented-control-inverted~.mui-slider-group .mui-slider-item {\n    border-top: 1px solid #c8c7cc;\n    border-bottom: 1px solid #c8c7cc;\n}\n\n.mui-slider .mui-slider-group {\n    font-size: 0;\n    position: relative;\n    transition: all 0s linear;\n    white-space: nowrap;\n}\n\n.mui-slider .mui-slider-group .mui-slider-item {\n    font-size: 14px;\n    position: relative;\n    display: inline-block;\n    width: 100%;\n    height: 100%;\n    vertical-align: top;\n    white-space: normal;\n}\n\n.mui-slider .mui-slider-group .mui-slider-item>a:not(.mui-control-item) {\n    line-height: 0;\n    position: relative;\n    display: block;\n}\n\n.mui-slider .mui-slider-group .mui-slider-item img {\n    width: 100%;\n}\n\n.mui-slider .mui-slider-group .mui-slider-item .mui-table-view:before,\n.mui-slider .mui-slider-group .mui-slider-item .mui-table-view:after {\n    height: 0;\n}\n\n.mui-slider .mui-slider-group.mui-slider-loop {\n    -webkit-transform: translate(-100%, 0px);\n    transform: translate(-100%, 0px);\n}\n\n.mui-slider-title {\n    line-height: 30px;\n    position: absolute;\n    bottom: 0;\n    left: 0;\n    width: 100%;\n    height: 30px;\n    margin: 0;\n    text-align: left;\n    text-indent: 12px;\n    opacity: .8;\n    background-color: #000;\n}\n\n.mui-slider-indicator {\n    position: absolute;\n    bottom: 8px;\n    width: 100%;\n    text-align: center;\n    background: none;\n}\n\n.mui-slider-indicator.mui-segmented-control {\n    position: relative;\n    bottom: auto;\n}\n\n.mui-slider-indicator .mui-indicator {\n    display: inline-block;\n    width: 6px;\n    height: 6px;\n    margin: 1px 6px;\n    cursor: pointer;\n    border-radius: 50%;\n    background: #aaa;\n    box-shadow: 0 0 1px 1px rgba(130, 130, 130, .7);\n}\n\n.mui-slider-indicator .mui-active.mui-indicator {\n    background: #fff;\n}\n\n.mui-slider-indicator .mui-icon {\n    font-size: 20px;\n    line-height: 30px;\n    width: 40px;\n    height: 30px;\n    margin: 3px;\n    text-align: center;\n    border: 1px solid #ddd;\n}\n\n.mui-slider-indicator .mui-number {\n    line-height: 32px;\n    display: inline-block;\n    width: 58px;\n}\n\n.mui-slider-indicator .mui-number span {\n    color: #ff5053;\n}\n\n.mui-slider-progress-bar {\n    z-index: 1;\n    height: 2px;\n    -webkit-transform: translateZ(0);\n    transform: translateZ(0);\n}\n\n.mui-switch {\n    position: relative;\n    display: block;\n    width: 74px;\n    height: 30px;\n    transition-timing-function: ease-in-out;\n    transition-duration: .2s;\n    transition-property: background-color, border;\n    border: 2px solid #ddd;\n    border-radius: 20px;\n    background-color: #fff;\n    background-clip: padding-box;\n}\n\n.mui-switch.mui-disabled {\n    opacity: .3;\n}\n\n.mui-switch .mui-switch-handle {\n    position: absolute;\n    z-index: 1;\n    top: -1px;\n    left: -1px;\n    width: 28px;\n    height: 28px;\n    transition: .2s ease-in-out;\n    transition-property: width, left, -webkit-transform;\n    transition-property: transform, width, left;\n    transition-property: transform, width, left, -webkit-transform;\n    border-radius: 16px;\n    background-color: #fff;\n    background-clip: padding-box;\n    box-shadow: 0 2px 5px rgba(0, 0, 0, .4);\n}\n\n.mui-switch:before {\n    font-size: 13px;\n    position: absolute;\n    top: 3px;\n    right: 11px;\n    content: 'Off';\n    text-transform: uppercase;\n    color: #999;\n}\n\n.mui-switch.mui-dragging {\n    border-color: #f7f7f7;\n    background-color: #f7f7f7;\n}\n\n.mui-switch.mui-dragging .mui-switch-handle {\n    width: 38px;\n}\n\n.mui-switch.mui-dragging.mui-active .mui-switch-handle {\n    left: -11px;\n    width: 38px;\n}\n\n.mui-switch.mui-active {\n    border-color: #4cd964;\n    background-color: #4cd964;\n}\n\n.mui-switch.mui-active .mui-switch-handle {\n    -webkit-transform: translate(43px, 0);\n    transform: translate(43px, 0);\n}\n\n.mui-switch.mui-active:before {\n    right: auto;\n    left: 15px;\n    content: 'On';\n    color: #fff;\n}\n\n.mui-switch input[type='checkbox'] {\n    display: none;\n}\n\n.mui-switch-mini {\n    width: 47px;\n}\n\n.mui-switch-mini:before {\n    display: none;\n}\n\n.mui-switch-mini.mui-active .mui-switch-handle {\n    -webkit-transform: translate(16px, 0);\n    transform: translate(16px, 0);\n}\n\n.mui-switch-blue.mui-active {\n    border: 2px solid #007aff;\n    background-color: #007aff;\n}\n\n.mui-content.mui-fade {\n    left: 0;\n    opacity: 0;\n}\n\n.mui-content.mui-fade.mui-in {\n    opacity: 1;\n}\n\n.mui-content.mui-sliding {\n    z-index: 2;\n    transition: -webkit-transform .4s;\n    transition: transform .4s;\n    transition: transform .4s, -webkit-transform .4s;\n    -webkit-transform: translate3d(0, 0, 0);\n    transform: translate3d(0, 0, 0);\n}\n\n.mui-content.mui-sliding.mui-left {\n    z-index: 1;\n    -webkit-transform: translate3d(-100%, 0, 0);\n    transform: translate3d(-100%, 0, 0);\n}\n\n.mui-content.mui-sliding.mui-right {\n    z-index: 3;\n    -webkit-transform: translate3d(100%, 0, 0);\n    transform: translate3d(100%, 0, 0);\n}\n\n.mui-navigate-right:after,\n.mui-push-left:after,\n.mui-push-right:after {\n    font-family: Muiicons;\n    font-size: inherit;\n    line-height: 1;\n    position: absolute;\n    top: 50%;\n    display: inline-block;\n    -webkit-transform: translateY(-50%);\n    transform: translateY(-50%);\n    text-decoration: none;\n    color: #bbb;\n    -webkit-font-smoothing: antialiased;\n}\n\n.mui-push-left:after {\n    left: 15px;\n    content: '\\E582';\n}\n\n.mui-navigate-right:after,\n.mui-push-right:after {\n    right: 15px;\n    content: '\\E583';\n}\n\n.mui-pull-top-pocket,\n.mui-pull-bottom-pocket {\n    position: absolute;\n    left: 0;\n    display: block;\n    visibility: hidden;\n    overflow: hidden;\n    width: 100%;\n    height: 50px;\n}\n\n.mui-plus-pullrefresh .mui-pull-top-pocket,\n.mui-plus-pullrefresh .mui-pull-bottom-pocket {\n    display: none;\n    visibility: visible;\n}\n\n.mui-pull-top-pocket {\n    top: 0;\n}\n\n.mui-bar-nav~.mui-content .mui-pull-top-pocket {\n    top: 44px;\n}\n\n.mui-bar-nav~.mui-bar-header-secondary~.mui-content .mui-pull-top-pocket {\n    top: 88px;\n}\n\n.mui-pull-bottom-pocket {\n    position: relative;\n    bottom: 0;\n    height: 40px;\n}\n\n.mui-pull-bottom-pocket .mui-pull-loading {\n    visibility: hidden;\n}\n\n.mui-pull-bottom-pocket .mui-pull-loading.mui-in {\n    display: inline-block;\n}\n\n.mui-pull {\n    font-weight: bold;\n    position: absolute;\n    right: 0;\n    bottom: 10px;\n    left: 0;\n    text-align: center;\n    color: #777;\n}\n\n.mui-pull-loading {\n    margin-right: 10px;\n    transition: -webkit-transform .4s;\n    transition: transform .4s;\n    transition: transform .4s, -webkit-transform .4s;\n    transition-duration: 400ms;\n    vertical-align: middle;\n}\n\n.mui-pull-loading.mui-reverse {\n    -webkit-transform: rotate(180deg) translateZ(0);\n    transform: rotate(180deg) translateZ(0);\n}\n\n.mui-pull-caption {\n    font-size: 15px;\n    line-height: 24px;\n    position: relative;\n    display: inline-block;\n    overflow: visible;\n    margin-top: 0;\n    vertical-align: middle;\n}\n\n.mui-pull-caption span {\n    display: none;\n}\n\n.mui-pull-caption span.mui-in {\n    display: inline;\n}\n\n.mui-toast-container {\n    line-height: 17px;\n    position: fixed;\n    z-index: 9999;\n    bottom: 50px;\n    left: 50%;\n    transition: opacity .3s;\n    -webkit-transform: translate(-50%, 0);\n    transform: translate(-50%, 0);\n    opacity: 0;\n}\n\n.mui-toast-container.mui-active {\n    opacity: .9;\n}\n\n.mui-toast-message {\n    font-size: 14px;\n    padding: 10px 25px;\n    text-align: center;\n    color: #fff;\n    border-radius: 6px;\n    background-color: #323232;\n}\n\n.mui-numbox {\n    position: relative;\n    display: inline-block;\n    overflow: hidden;\n    width: 120px;\n    height: 35px;\n    padding: 0 40px 0 40px;\n    vertical-align: top;\n    vertical-align: middle;\n    border: solid 1px #bbb;\n    border-radius: 3px;\n    background-color: #efeff4;\n}\n\n.mui-numbox [class*=numbox-btn],\n.mui-numbox [class*=btn-numbox] {\n    font-size: 18px;\n    font-weight: normal;\n    line-height: 100%;\n    position: absolute;\n    top: 0;\n    overflow: hidden;\n    width: 40px;\n    height: 100%;\n    padding: 0;\n    color: #555;\n    border: none;\n    border-radius: 0;\n    background-color: #f9f9f9;\n}\n\n.mui-numbox [class*=numbox-btn]:active,\n.mui-numbox [class*=btn-numbox]:active {\n    background-color: #ccc;\n}\n\n.mui-numbox [class*=numbox-btn][disabled],\n.mui-numbox [class*=btn-numbox][disabled] {\n    color: #c0c0c0;\n}\n\n.mui-numbox .mui-numbox-btn-plus,\n.mui-numbox .mui-btn-numbox-plus {\n    right: 0;\n    border-top-right-radius: 3px;\n    border-bottom-right-radius: 3px;\n}\n\n.mui-numbox .mui-numbox-btn-minus,\n.mui-numbox .mui-btn-numbox-minus {\n    left: 0;\n    border-top-left-radius: 3px;\n    border-bottom-left-radius: 3px;\n}\n\n.mui-numbox .mui-numbox-input,\n.mui-numbox .mui-input-numbox {\n    display: inline-block;\n    overflow: hidden;\n    width: 100% !important;\n    height: 100%;\n    margin: 0;\n    padding: 0 3px !important;\n    text-align: center;\n    text-overflow: ellipsis;\n    word-break: normal;\n    border: none !important;\n    border-right: solid 1px #ccc !important;\n    border-left: solid 1px #ccc !important;\n    border-radius: 0 !important;\n}\n\n.mui-input-row .mui-numbox {\n    float: right;\n    margin: 2px 8px;\n}\n\n@font-face {\n    font-family: Muiicons;\n    font-weight: normal;\n    font-style: normal;\n    src: url(" + __webpack_require__(216) + ") format('truetype');\n}\n\n\n\n\n\n\n\n\n\n/*引入自定义的字体图标*/\n\n@font-face {\n    font-family: Muiicons;\n    font-weight: normal;\n    font-style: normal;\n    src: url(" + __webpack_require__(217) + ") format('truetype');\n}\n\n.mui-icon {\n    font-family: Muiicons;\n    font-size: 24px;\n    font-weight: normal;\n    font-style: normal;\n    line-height: 1;\n    display: inline-block;\n    text-decoration: none;\n    -webkit-font-smoothing: antialiased;\n}\n\n.mui-icon.mui-active {\n    color: #007aff;\n}\n\n.mui-icon.mui-right:before {\n    float: right;\n    padding-left: .2em;\n}\n\n.mui-icon-contact:before {\n    content: '\\E100';\n}\n\n.mui-icon-person:before {\n    content: '\\E101';\n}\n\n.mui-icon-personadd:before {\n    content: '\\E102';\n}\n\n.mui-icon-contact-filled:before {\n    content: '\\E130';\n}\n\n.mui-icon-person-filled:before {\n    content: '\\E131';\n}\n\n.mui-icon-personadd-filled:before {\n    content: '\\E132';\n}\n\n.mui-icon-phone:before {\n    content: '\\E200';\n}\n\n.mui-icon-email:before {\n    content: '\\E201';\n}\n\n.mui-icon-chatbubble:before {\n    content: '\\E202';\n}\n\n.mui-icon-chatboxes:before {\n    content: '\\E203';\n}\n\n.mui-icon-phone-filled:before {\n    content: '\\E230';\n}\n\n.mui-icon-email-filled:before {\n    content: '\\E231';\n}\n\n.mui-icon-chatbubble-filled:before {\n    content: '\\E232';\n}\n\n.mui-icon-chatboxes-filled:before {\n    content: '\\E233';\n}\n\n.mui-icon-weibo:before {\n    content: '\\E260';\n}\n\n.mui-icon-weixin:before {\n    content: '\\E261';\n}\n\n.mui-icon-pengyouquan:before {\n    content: '\\E262';\n}\n\n.mui-icon-chat:before {\n    content: '\\E263';\n}\n\n.mui-icon-qq:before {\n    content: '\\E264';\n}\n\n.mui-icon-videocam:before {\n    content: '\\E300';\n}\n\n.mui-icon-camera:before {\n    content: '\\E301';\n}\n\n.mui-icon-mic:before {\n    content: '\\E302';\n}\n\n.mui-icon-location:before {\n    content: '\\E303';\n}\n\n.mui-icon-mic-filled:before,\n.mui-icon-speech:before {\n    content: '\\E332';\n}\n\n.mui-icon-location-filled:before {\n    content: '\\E333';\n}\n\n.mui-icon-micoff:before {\n    content: '\\E360';\n}\n\n.mui-icon-image:before {\n    content: '\\E363';\n}\n\n.mui-icon-map:before {\n    content: '\\E364';\n}\n\n.mui-icon-compose:before {\n    content: '\\E400';\n}\n\n.mui-icon-trash:before {\n    content: '\\E401';\n}\n\n.mui-icon-upload:before {\n    content: '\\E402';\n}\n\n.mui-icon-download:before {\n    content: '\\E403';\n}\n\n.mui-icon-close:before {\n    content: '\\E404';\n}\n\n.mui-icon-redo:before {\n    content: '\\E405';\n}\n\n.mui-icon-undo:before {\n    content: '\\E406';\n}\n\n.mui-icon-refresh:before {\n    content: '\\E407';\n}\n\n.mui-icon-star:before {\n    content: '\\E408';\n}\n\n.mui-icon-plus:before {\n    content: '\\E409';\n}\n\n.mui-icon-minus:before {\n    content: '\\E410';\n}\n\n.mui-icon-circle:before,\n.mui-icon-checkbox:before {\n    content: '\\E411';\n}\n\n.mui-icon-close-filled:before,\n.mui-icon-clear:before {\n    content: '\\E434';\n}\n\n.mui-icon-refresh-filled:before {\n    content: '\\E437';\n}\n\n.mui-icon-star-filled:before {\n    content: '\\E438';\n}\n\n.mui-icon-plus-filled:before {\n    content: '\\E439';\n}\n\n.mui-icon-minus-filled:before {\n    content: '\\E440';\n}\n\n.mui-icon-circle-filled:before {\n    content: '\\E441';\n}\n\n.mui-icon-checkbox-filled:before {\n    content: '\\E442';\n}\n\n.mui-icon-closeempty:before {\n    content: '\\E460';\n}\n\n.mui-icon-refreshempty:before {\n    content: '\\E461';\n}\n\n.mui-icon-reload:before {\n    content: '\\E462';\n}\n\n.mui-icon-starhalf:before {\n    content: '\\E463';\n}\n\n.mui-icon-spinner:before {\n    content: '\\E464';\n}\n\n.mui-icon-spinner-cycle:before {\n    content: '\\E465';\n}\n\n.mui-icon-search:before {\n    content: '\\E466';\n}\n\n.mui-icon-plusempty:before {\n    content: '\\E468';\n}\n\n.mui-icon-forward:before {\n    content: '\\E470';\n}\n\n.mui-icon-back:before,\n.mui-icon-left-nav:before {\n    content: '\\E471';\n}\n\n.mui-icon-checkmarkempty:before {\n    content: '\\E472';\n}\n\n.mui-icon-home:before {\n    content: '\\E500';\n}\n\n.mui-icon-navigate:before {\n    content: '\\E501';\n}\n\n.mui-icon-gear:before {\n    content: '\\E502';\n}\n\n.mui-icon-paperplane:before {\n    content: '\\E503';\n}\n\n.mui-icon-info:before {\n    content: '\\E504';\n}\n\n.mui-icon-help:before {\n    content: '\\E505';\n}\n\n.mui-icon-locked:before {\n    content: '\\E506';\n}\n\n.mui-icon-more:before {\n    content: '\\E507';\n}\n\n.mui-icon-flag:before {\n    content: '\\E508';\n}\n\n.mui-icon-home-filled:before {\n    content: '\\E530';\n}\n\n.mui-icon-gear-filled:before {\n    content: '\\E532';\n}\n\n.mui-icon-info-filled:before {\n    content: '\\E534';\n}\n\n.mui-icon-help-filled:before {\n    content: '\\E535';\n}\n\n.mui-icon-more-filled:before {\n    content: '\\E537';\n}\n\n.mui-icon-settings:before {\n    content: '\\E560';\n}\n\n.mui-icon-list:before {\n    content: '\\E562';\n}\n\n.mui-icon-bars:before {\n    content: '\\E563';\n}\n\n.mui-icon-loop:before {\n    content: '\\E565';\n}\n\n.mui-icon-paperclip:before {\n    content: '\\E567';\n}\n\n.mui-icon-eye:before {\n    content: '\\E568';\n}\n\n.mui-icon-arrowup:before {\n    content: '\\E580';\n}\n\n.mui-icon-arrowdown:before {\n    content: '\\E581';\n}\n\n.mui-icon-arrowleft:before {\n    content: '\\E582';\n}\n\n.mui-icon-arrowright:before {\n    content: '\\E583';\n}\n\n.mui-icon-arrowthinup:before {\n    content: '\\E584';\n}\n\n.mui-icon-arrowthindown:before {\n    content: '\\E585';\n}\n\n.mui-icon-arrowthinleft:before {\n    content: '\\E586';\n}\n\n.mui-icon-arrowthinright:before {\n    content: '\\E587';\n}\n\n.mui-icon-pulldown:before {\n    content: '\\E588';\n}\n\n\n\n\n\n\n/*引入自定义的样式*/\n\n.icon-shouye1:before {\n    content: \"\\E6CC\";\n}\n\n.icon-diamond:before {\n    content: \"\\E653\";\n}\n\n.icon-huiyuan1:before {\n    content: \"\\E60F\";\n}\n\n.icon-gouwucheman:before {\n    content: \"\\E600\";\n}\n\n.icon-huiyuan:before {\n    content: \"\\E61F\";\n}\n\n.icon-huiyuan2:before {\n    content: \"\\E601\";\n}\n\n.icon-icon:before {\n    content: \"\\E602\";\n}\n\n\n\n\n\n\n.mui-fullscreen {\n    position: absolute;\n    top: 0;\n    right: 0;\n    bottom: 0;\n    left: 0;\n}\n\n.mui-fullscreen.mui-slider .mui-slider-group {\n    height: 100%;\n}\n\n.mui-fullscreen .mui-segmented-control~.mui-slider-group {\n    position: absolute;\n    top: 40px;\n    bottom: 0;\n    width: 100%;\n    height: auto;\n}\n\n.mui-fullscreen.mui-slider .mui-slider-item>a {\n    top: 50%;\n    -webkit-transform: translateY(-50%);\n    transform: translateY(-50%);\n}\n\n.mui-fullscreen .mui-off-canvas-wrap .mui-slider-item>a {\n    top: auto;\n    -webkit-transform: none;\n    transform: none;\n}\n\n.mui-bar-nav~.mui-content .mui-slider.mui-fullscreen {\n    top: 44px;\n}\n\n.mui-bar-tab~.mui-content .mui-slider.mui-fullscreen .mui-segmented-control~.mui-slider-group {\n    bottom: 50px;\n}\n\n.mui-android.mui-android-4-0 input:focus,\n.mui-android.mui-android-4-0 textarea:focus {\n    -webkit-user-modify: inherit;\n}\n\n.mui-android.mui-android-4-2 input,\n.mui-android.mui-android-4-2 textarea,\n.mui-android.mui-android-4-3 input,\n.mui-android.mui-android-4-3 textarea {\n    -webkit-user-select: text;\n}\n\n.mui-ios .mui-table-view-cell {\n    -webkit-transform-style: preserve-3d;\n    transform-style: preserve-3d;\n}\n\n.mui-plus-visible,\n.mui-wechat-visible {\n    display: none !important;\n}\n\n.mui-plus-hidden,\n.mui-wechat-hidden {\n    display: block !important;\n}\n\n.mui-tab-item.mui-plus-hidden,\n.mui-tab-item.mui-wechat-hidden {\n    display: table-cell !important;\n}\n\n.mui-plus .mui-plus-visible,\n.mui-wechat .mui-wechat-visible {\n    display: block !important;\n}\n\n.mui-plus .mui-tab-item.mui-plus-visible,\n.mui-wechat .mui-tab-item.mui-wechat-visible {\n    display: table-cell !important;\n}\n\n.mui-plus .mui-plus-hidden,\n.mui-wechat .mui-wechat-hidden {\n    display: none !important;\n}\n\n.mui-plus.mui-statusbar.mui-statusbar-offset .mui-bar-nav {\n    height: 64px;\n    padding-top: 20px;\n}\n\n.mui-plus.mui-statusbar.mui-statusbar-offset .mui-bar-nav~.mui-content {\n    padding-top: 64px;\n}\n\n.mui-plus.mui-statusbar.mui-statusbar-offset .mui-bar-nav~.mui-content .mui-pull-top-pocket {\n    top: 64px;\n}\n\n.mui-plus.mui-statusbar.mui-statusbar-offset .mui-bar-header-secondary {\n    top: 64px;\n}\n\n.mui-plus.mui-statusbar.mui-statusbar-offset .mui-bar-header-secondary~.mui-content {\n    padding-top: 94px;\n}\n\n.mui-iframe-wrapper {\n    position: absolute;\n    right: 0;\n    left: 0;\n    -webkit-overflow-scrolling: touch;\n}\n\n.mui-iframe-wrapper iframe {\n    width: 100%;\n    height: 100%;\n    border: 0;\n}", ""]);
+exports.push([module.i, "/*!\r\n * =====================================================\r\n * Mui v3.7.2 (http://dev.dcloud.net.cn/mui)\r\n * =====================================================\r\n */\r\n\r\n/*! normalize.css v3.0.1 | MIT License | git.io/normalize */\r\nhtml\r\n{\r\n    font-family: sans-serif;\r\n\r\n    -webkit-text-size-adjust: 100%;\r\n}\r\n\r\nbody\r\n{\r\n    margin: 0;\r\n}\r\n\r\narticle,\r\naside,\r\ndetails,\r\nfigcaption,\r\nfigure,\r\nfooter,\r\nheader,\r\nhgroup,\r\nmain,\r\nnav,\r\nsection,\r\nsummary\r\n{\r\n    display: block;\r\n}\r\n\r\naudio,\r\ncanvas,\r\nprogress,\r\nvideo\r\n{\r\n    display: inline-block;\r\n\r\n    vertical-align: baseline;\r\n}\r\n\r\naudio:not([controls])\r\n{\r\n    display: none;\r\n\r\n    height: 0;\r\n}\r\n\r\n[hidden],\r\ntemplate\r\n{\r\n    display: none;\r\n}\r\n\r\na\r\n{\r\n    background: transparent;\r\n}\r\n\r\na:active,\r\na:hover\r\n{\r\n    outline: 0;\r\n}\r\n\r\nabbr[title]\r\n{\r\n    border-bottom: 1px dotted;\r\n}\r\n\r\nb,\r\nstrong\r\n{\r\n    font-weight: bold;\r\n}\r\n\r\ndfn\r\n{\r\n    font-style: italic;\r\n}\r\n\r\nh1\r\n{\r\n    font-size: 2em;\r\n\r\n    margin: .67em 0;\r\n}\r\n\r\nmark\r\n{\r\n    color: #000;\r\n    background: #ff0;\r\n}\r\n\r\nsmall\r\n{\r\n    font-size: 80%;\r\n}\r\n\r\nsub,\r\nsup\r\n{\r\n    font-size: 75%;\r\n    line-height: 0;\r\n\r\n    position: relative;\r\n\r\n    vertical-align: baseline;\r\n}\r\n\r\nsup\r\n{\r\n    top: -.5em;\r\n}\r\n\r\nsub\r\n{\r\n    bottom: -.25em;\r\n}\r\n\r\nimg\r\n{\r\n    border: 0;\r\n}\r\n\r\nsvg:not(:root)\r\n{\r\n    overflow: hidden;\r\n}\r\n\r\nfigure\r\n{\r\n    margin: 1em 40px;\r\n}\r\n\r\nhr\r\n{\r\n    box-sizing: content-box;\r\n    height: 0;\r\n}\r\n\r\npre\r\n{\r\n    overflow: auto;\r\n}\r\n\r\ncode,\r\nkbd,\r\npre,\r\nsamp\r\n{\r\n    font-family: monospace, monospace;\r\n    font-size: 1em;\r\n}\r\n\r\nbutton,\r\ninput,\r\noptgroup,\r\nselect,\r\ntextarea\r\n{\r\n    font: inherit;\r\n\r\n    margin: 0;\r\n\r\n    color: inherit;\r\n}\r\n\r\nbutton\r\n{\r\n    overflow: visible;\r\n}\r\n\r\nbutton,\r\nselect\r\n{\r\n    text-transform: none;\r\n}\r\n\r\nbutton,\r\nhtml input[type='button'],\r\ninput[type='reset'],\r\ninput[type='submit']\r\n{\r\n    cursor: pointer;\r\n\r\n    -webkit-appearance: button;\r\n}\r\n\r\nbutton[disabled],\r\nhtml input[disabled]\r\n{\r\n    cursor: default;\r\n}\r\n\r\ninput\r\n{\r\n    line-height: normal;\r\n}\r\n\r\ninput[type='checkbox'],\r\ninput[type='radio']\r\n{\r\n    box-sizing: border-box;\r\n    padding: 0;\r\n}\r\n\r\ninput[type='number']::-webkit-inner-spin-button,\r\ninput[type='number']::-webkit-outer-spin-button\r\n{\r\n    height: auto;\r\n}\r\n\r\ninput[type='search']\r\n{\r\n    box-sizing: content-box;\r\n\r\n    -webkit-appearance: textfield;\r\n}\r\n\r\ninput[type='search']::-webkit-search-cancel-button,\r\ninput[type='search']::-webkit-search-decoration\r\n{\r\n    -webkit-appearance: none;\r\n}\r\n\r\nfieldset\r\n{\r\n    margin: 0 2px;\r\n    padding: .35em .625em .75em;\r\n\r\n    border: 1px solid #c0c0c0;\r\n}\r\n\r\nlegend\r\n{\r\n    padding: 0;\r\n\r\n    border: 0;\r\n}\r\n\r\ntextarea\r\n{\r\n    overflow: auto;\r\n}\r\n\r\noptgroup\r\n{\r\n    font-weight: bold;\r\n}\r\n\r\ntable\r\n{\r\n    border-spacing: 0;\r\n    border-collapse: collapse;\r\n}\r\n\r\ntd,\r\nth\r\n{\r\n    padding: 0;\r\n}\r\n\r\n*\r\n{\r\n    box-sizing: border-box;\r\n\r\n    -webkit-user-select: none;\r\n\r\n    outline: none;\r\n\r\n    -webkit-tap-highlight-color: transparent;\r\n    -webkit-tap-highlight-color: transparent;\r\n}\r\n\r\nbody\r\n{\r\n    font-family: 'Helvetica Neue', Helvetica, sans-serif;\r\n    font-size: 17px;\r\n    line-height: 21px;\r\n\r\n    color: #000;\r\n    background-color: #efeff4;\r\n\r\n    -webkit-overflow-scrolling: touch;\r\n}\r\n\r\na\r\n{\r\n    text-decoration: none;\r\n\r\n    color: #007aff;\r\n}\r\na:active\r\n{\r\n    color: #0062cc;\r\n}\r\n\r\n.mui-content\r\n{\r\n    background-color: #efeff4;\r\n\r\n    -webkit-overflow-scrolling: touch;\r\n}\r\n\r\n.mui-bar-nav ~ .mui-content\r\n{\r\n    padding-top: 44px;\r\n}\r\n.mui-bar-nav ~ .mui-content.mui-scroll-wrapper .mui-scrollbar-vertical\r\n{\r\n    top: 44px;\r\n}\r\n\r\n.mui-bar-header-secondary ~ .mui-content\r\n{\r\n    padding-top: 88px;\r\n}\r\n.mui-bar-header-secondary ~ .mui-content.mui-scroll-wrapper .mui-scrollbar-vertical\r\n{\r\n    top: 88px;\r\n}\r\n\r\n.mui-bar-footer ~ .mui-content\r\n{\r\n    padding-bottom: 44px;\r\n}\r\n.mui-bar-footer ~ .mui-content.mui-scroll-wrapper .mui-scrollbar-vertical\r\n{\r\n    bottom: 44px;\r\n}\r\n\r\n.mui-bar-footer-secondary ~ .mui-content\r\n{\r\n    padding-bottom: 88px;\r\n}\r\n.mui-bar-footer-secondary ~ .mui-content.mui-scroll-wrapper .mui-scrollbar-vertical\r\n{\r\n    bottom: 88px;\r\n}\r\n\r\n.mui-bar-tab ~ .mui-content\r\n{\r\n    padding-bottom: 50px;\r\n}\r\n.mui-bar-tab ~ .mui-content.mui-scroll-wrapper .mui-scrollbar-vertical\r\n{\r\n    bottom: 50px;\r\n}\r\n\r\n.mui-bar-footer-secondary-tab ~ .mui-content\r\n{\r\n    padding-bottom: 94px;\r\n}\r\n.mui-bar-footer-secondary-tab ~ .mui-content.mui-scroll-wrapper .mui-scrollbar-vertical\r\n{\r\n    bottom: 94px;\r\n}\r\n\r\n.mui-content-padded\r\n{\r\n    margin: 10px;\r\n}\r\n\r\n.mui-inline\r\n{\r\n    display: inline-block;\r\n\r\n    vertical-align: top;\r\n}\r\n\r\n.mui-block\r\n{\r\n    display: block !important;\r\n}\r\n\r\n.mui-visibility\r\n{\r\n    visibility: visible !important;\r\n}\r\n\r\n.mui-hidden\r\n{\r\n    display: none !important;\r\n}\r\n\r\n.mui-ellipsis\r\n{\r\n    overflow: hidden;\r\n\r\n    white-space: nowrap;\r\n    text-overflow: ellipsis;\r\n}\r\n\r\n.mui-ellipsis-2\r\n{\r\n    display: -webkit-box;\r\n    overflow: hidden;\r\n\r\n    white-space: normal !important;\r\n    text-overflow: ellipsis;\r\n    word-wrap: break-word;\r\n\r\n    -webkit-line-clamp: 2;\r\n    -webkit-box-orient: vertical;\r\n}\r\n\r\n.mui-table\r\n{\r\n    display: table;\r\n\r\n    width: 100%;\r\n\r\n    table-layout: fixed;\r\n}\r\n\r\n.mui-table-cell\r\n{\r\n    position: relative;\r\n\r\n    display: table-cell;\r\n}\r\n\r\n.mui-text-left\r\n{\r\n    text-align: left !important;\r\n}\r\n\r\n.mui-text-center\r\n{\r\n    text-align: center !important;\r\n}\r\n\r\n.mui-text-justify\r\n{\r\n    text-align: justify !important;\r\n}\r\n\r\n.mui-text-right\r\n{\r\n    text-align: right !important;\r\n}\r\n\r\n.mui-pull-left\r\n{\r\n    float: left;\r\n}\r\n\r\n.mui-pull-right\r\n{\r\n    float: right;\r\n}\r\n\r\n.mui-list-unstyled\r\n{\r\n    padding-left: 0;\r\n\r\n    list-style: none;\r\n}\r\n\r\n.mui-list-inline\r\n{\r\n    margin-left: -5px;\r\n    padding-left: 0;\r\n\r\n    list-style: none;\r\n}\r\n\r\n.mui-list-inline > li\r\n{\r\n    display: inline-block;\r\n\r\n    padding-right: 5px;\r\n    padding-left: 5px;\r\n}\r\n\r\n.mui-clearfix:before, .mui-clearfix:after\r\n{\r\n    display: table;\r\n\r\n    content: ' ';\r\n}\r\n.mui-clearfix:after\r\n{\r\n    clear: both;\r\n}\r\n\r\n.mui-bg-primary\r\n{\r\n    background-color: #007aff;\r\n}\r\n\r\n.mui-bg-positive\r\n{\r\n    background-color: #4cd964;\r\n}\r\n\r\n.mui-bg-negative\r\n{\r\n    background-color: #dd524d;\r\n}\r\n\r\n.mui-error\r\n{\r\n    margin: 88px 35px;\r\n    padding: 10px;\r\n\r\n    border-radius: 6px;\r\n    background-color: #bbb;\r\n}\r\n\r\n.mui-subtitle\r\n{\r\n    font-size: 15px;\r\n}\r\n\r\nh1, h2, h3, h4, h5, h6\r\n{\r\n    line-height: 1;\r\n\r\n    margin-top: 5px;\r\n    margin-bottom: 5px;\r\n}\r\n\r\nh1, .mui-h1\r\n{\r\n    font-size: 36px;\r\n}\r\n\r\nh2, .mui-h2\r\n{\r\n    font-size: 30px;\r\n}\r\n\r\nh3, .mui-h3\r\n{\r\n    font-size: 24px;\r\n}\r\n\r\nh4, .mui-h4\r\n{\r\n    font-size: 18px;\r\n}\r\n\r\nh5, .mui-h5\r\n{\r\n    font-size: 14px;\r\n    font-weight: normal;\r\n\r\n    color: #8f8f94;\r\n}\r\n\r\nh6, .mui-h6\r\n{\r\n    font-size: 12px;\r\n    font-weight: normal;\r\n\r\n    color: #8f8f94;\r\n}\r\n\r\np\r\n{\r\n    font-size: 14px;\r\n\r\n    margin-top: 0;\r\n    margin-bottom: 10px;\r\n\r\n    color: #8f8f94;\r\n}\r\n\r\n.mui-row:before, .mui-row:after\r\n{\r\n    display: table;\r\n\r\n    content: ' ';\r\n}\r\n.mui-row:after\r\n{\r\n    clear: both;\r\n}\r\n\r\n.mui-col-xs-1, .mui-col-sm-1, .mui-col-xs-2, .mui-col-sm-2, .mui-col-xs-3, .mui-col-sm-3, .mui-col-xs-4, .mui-col-sm-4, .mui-col-xs-5, .mui-col-sm-5, .mui-col-xs-6, .mui-col-sm-6, .mui-col-xs-7, .mui-col-sm-7, .mui-col-xs-8, .mui-col-sm-8, .mui-col-xs-9, .mui-col-sm-9, .mui-col-xs-10, .mui-col-sm-10, .mui-col-xs-11, .mui-col-sm-11, .mui-col-xs-12, .mui-col-sm-12\r\n{\r\n    position: relative;\r\n\r\n    min-height: 1px;\r\n}\r\n\r\n.mui-row > [class*='mui-col-']\r\n{\r\n    float: left;\r\n}\r\n\r\n.mui-col-xs-12\r\n{\r\n    width: 100%;\r\n}\r\n\r\n.mui-col-xs-11\r\n{\r\n    width: 91.66666667%;\r\n}\r\n\r\n.mui-col-xs-10\r\n{\r\n    width: 83.33333333%;\r\n}\r\n\r\n.mui-col-xs-9\r\n{\r\n    width: 75%;\r\n}\r\n\r\n.mui-col-xs-8\r\n{\r\n    width: 66.66666667%;\r\n}\r\n\r\n.mui-col-xs-7\r\n{\r\n    width: 58.33333333%;\r\n}\r\n\r\n.mui-col-xs-6\r\n{\r\n    width: 50%;\r\n}\r\n\r\n.mui-col-xs-5\r\n{\r\n    width: 41.66666667%;\r\n}\r\n\r\n.mui-col-xs-4\r\n{\r\n    width: 33.33333333%;\r\n}\r\n\r\n.mui-col-xs-3\r\n{\r\n    width: 25%;\r\n}\r\n\r\n.mui-col-xs-2\r\n{\r\n    width: 16.66666667%;\r\n}\r\n\r\n.mui-col-xs-1\r\n{\r\n    width: 8.33333333%;\r\n}\r\n\r\n@media (min-width: 400px)\r\n{\r\n    .mui-col-sm-12\r\n    {\r\n        width: 100%;\r\n    }\r\n\r\n    .mui-col-sm-11\r\n    {\r\n        width: 91.66666667%;\r\n    }\r\n\r\n    .mui-col-sm-10\r\n    {\r\n        width: 83.33333333%;\r\n    }\r\n\r\n    .mui-col-sm-9\r\n    {\r\n        width: 75%;\r\n    }\r\n\r\n    .mui-col-sm-8\r\n    {\r\n        width: 66.66666667%;\r\n    }\r\n\r\n    .mui-col-sm-7\r\n    {\r\n        width: 58.33333333%;\r\n    }\r\n\r\n    .mui-col-sm-6\r\n    {\r\n        width: 50%;\r\n    }\r\n\r\n    .mui-col-sm-5\r\n    {\r\n        width: 41.66666667%;\r\n    }\r\n\r\n    .mui-col-sm-4\r\n    {\r\n        width: 33.33333333%;\r\n    }\r\n\r\n    .mui-col-sm-3\r\n    {\r\n        width: 25%;\r\n    }\r\n\r\n    .mui-col-sm-2\r\n    {\r\n        width: 16.66666667%;\r\n    }\r\n\r\n    .mui-col-sm-1\r\n    {\r\n        width: 8.33333333%;\r\n    }\r\n}\r\n.mui-scroll-wrapper\r\n{\r\n    position: absolute;\r\n    z-index: 2;\r\n    top: 0;\r\n    bottom: 0;\r\n    left: 0;\r\n\r\n    overflow: hidden;\r\n\r\n    width: 100%;\r\n}\r\n\r\n.mui-scroll\r\n{\r\n    position: absolute;\r\n    z-index: 1;\r\n\r\n    width: 100%;\r\n\r\n    -webkit-transform: translateZ(0);\r\n            transform: translateZ(0);\r\n}\r\n\r\n.mui-scrollbar\r\n{\r\n    position: absolute;\r\n    z-index: 9998;\r\n\r\n    overflow: hidden;\r\n    transition: 500ms;\r\n    -webkit-transform: translateZ(0px);\r\n            transform: translateZ(0px);\r\n    pointer-events: none;\r\n\r\n    opacity: 0;\r\n}\r\n\r\n.mui-scrollbar-vertical\r\n{\r\n    top: 0;\r\n    right: 1px;\r\n    bottom: 2px;\r\n\r\n    width: 4px;\r\n}\r\n.mui-scrollbar-vertical .mui-scrollbar-indicator\r\n{\r\n    width: 100%;\r\n}\r\n\r\n.mui-scrollbar-horizontal\r\n{\r\n    right: 2px;\r\n    bottom: 0;\r\n    left: 2px;\r\n\r\n    height: 4px;\r\n}\r\n.mui-scrollbar-horizontal .mui-scrollbar-indicator\r\n{\r\n    height: 100%;\r\n}\r\n\r\n.mui-scrollbar-indicator\r\n{\r\n    position: absolute;\r\n\r\n    display: block;\r\n\r\n    box-sizing: border-box;\r\n    transition: .01s cubic-bezier(.1, .57, .1, 1);\r\n    -webkit-transform: translate(0px, 0px) translateZ(0px);\r\n            transform: translate(0px, 0px) translateZ(0px);\r\n\r\n    border: 1px solid rgba(255, 255, 255, .80196);\r\n    border-radius: 2px;\r\n    background: rgba(0, 0, 0, .39804);\r\n}\r\n\r\n.mui-plus-pullrefresh .mui-fullscreen .mui-scroll-wrapper .mui-scroll-wrapper, .mui-plus-pullrefresh .mui-fullscreen .mui-slider-group .mui-scroll-wrapper\r\n{\r\n    position: absolute;\r\n    top: 0;\r\n    bottom: 0;\r\n    left: 0;\r\n\r\n    overflow: hidden;\r\n\r\n    width: 100%;\r\n}\r\n.mui-plus-pullrefresh .mui-fullscreen .mui-scroll-wrapper .mui-scroll, .mui-plus-pullrefresh .mui-fullscreen .mui-slider-group .mui-scroll\r\n{\r\n    position: absolute;\r\n\r\n    width: 100%;\r\n}\r\n.mui-plus-pullrefresh .mui-scroll-wrapper, .mui-plus-pullrefresh .mui-slider-group\r\n{\r\n    position: static;\r\n    top: auto;\r\n    bottom: auto;\r\n    left: auto;\r\n\r\n    overflow: auto;\r\n\r\n    width: auto;\r\n}\r\n.mui-plus-pullrefresh .mui-slider-group\r\n{\r\n    overflow: visible;\r\n}\r\n.mui-plus-pullrefresh .mui-scroll\r\n{\r\n    position: static;\r\n\r\n    width: auto;\r\n}\r\n\r\n.mui-off-canvas-wrap .mui-bar\r\n{\r\n    position: absolute !important;\r\n\r\n    -webkit-transform: translate3d(0, 0, 0);\r\n            transform: translate3d(0, 0, 0);\r\n    box-shadow: none;\r\n}\r\n\r\n.mui-off-canvas-wrap\r\n{\r\n    position: relative;\r\n    z-index: 1;\r\n\r\n    overflow: hidden;\r\n\r\n    width: 100%;\r\n    height: 100%;\r\n}\r\n.mui-off-canvas-wrap .mui-inner-wrap\r\n{\r\n    position: relative;\r\n    z-index: 1;\r\n\r\n    width: 100%;\r\n    height: 100%;\r\n}\r\n.mui-off-canvas-wrap .mui-inner-wrap.mui-transitioning\r\n{\r\n    transition: -webkit-transform 350ms cubic-bezier(.165, .84, .44, 1);\r\n    transition: transform 350ms cubic-bezier(.165, .84, .44, 1);\r\n    transition:         transform 350ms cubic-bezier(.165, .84, .44, 1), -webkit-transform 350ms cubic-bezier(.165, .84, .44, 1);\r\n}\r\n.mui-off-canvas-wrap .mui-inner-wrap .mui-off-canvas-left\r\n{\r\n    -webkit-transform: translate3d(-100%, 0, 0);\r\n            transform: translate3d(-100%, 0, 0);\r\n}\r\n.mui-off-canvas-wrap .mui-inner-wrap .mui-off-canvas-right\r\n{\r\n    -webkit-transform: translate3d(100%, 0, 0);\r\n            transform: translate3d(100%, 0, 0);\r\n}\r\n.mui-off-canvas-wrap.mui-active\r\n{\r\n    overflow: hidden;\r\n\r\n    height: 100%;\r\n}\r\n.mui-off-canvas-wrap.mui-active .mui-off-canvas-backdrop\r\n{\r\n    position: absolute;\r\n    z-index: 998;\r\n    top: 0;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 0;\r\n\r\n    display: block;\r\n\r\n    transition: background 350ms cubic-bezier(.165, .84, .44, 1);\r\n\r\n    background: rgba(0, 0, 0, .4);\r\n    box-shadow: -4px 0 4px rgba(0, 0, 0, .5), 4px 0 4px rgba(0, 0, 0, .5);\r\n\r\n    -webkit-tap-highlight-color: transparent;\r\n}\r\n.mui-off-canvas-wrap.mui-slide-in .mui-off-canvas-right\r\n{\r\n    z-index: 10000 !important;\r\n\r\n    -webkit-transform: translate3d(100%, 0px, 0px);\r\n}\r\n.mui-off-canvas-wrap.mui-slide-in .mui-off-canvas-left\r\n{\r\n    z-index: 10000 !important;\r\n\r\n    -webkit-transform: translate3d(-100%, 0px, 0px);\r\n}\r\n\r\n.mui-off-canvas-left, .mui-off-canvas-right\r\n{\r\n    position: absolute;\r\n    z-index: -1;\r\n    top: 0;\r\n    bottom: 0;\r\n\r\n    visibility: hidden;\r\n\r\n    box-sizing: content-box;\r\n    width: 70%;\r\n    min-height: 100%;\r\n\r\n    background: #333;\r\n\r\n    -webkit-overflow-scrolling: touch;\r\n}\r\n.mui-off-canvas-left.mui-transitioning, .mui-off-canvas-right.mui-transitioning\r\n{\r\n    transition: -webkit-transform 350ms cubic-bezier(.165, .84, .44, 1);\r\n    transition: transform 350ms cubic-bezier(.165, .84, .44, 1);\r\n    transition:         transform 350ms cubic-bezier(.165, .84, .44, 1), -webkit-transform 350ms cubic-bezier(.165, .84, .44, 1);\r\n}\r\n\r\n.mui-off-canvas-left\r\n{\r\n    left: 0;\r\n}\r\n\r\n.mui-off-canvas-right\r\n{\r\n    right: 0;\r\n}\r\n\r\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable\r\n{\r\n    background-color: #333;\r\n}\r\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable > .mui-off-canvas-left, .mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable > .mui-off-canvas-right\r\n{\r\n    width: 80%;\r\n\r\n    -webkit-transform: scale(.8);\r\n            transform: scale(.8);\r\n\r\n    opacity: .1;\r\n}\r\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable > .mui-off-canvas-left.mui-transitioning, .mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable > .mui-off-canvas-right.mui-transitioning\r\n{\r\n    transition: opacity 350ms cubic-bezier(.165, .84, .44, 1), -webkit-transform 350ms cubic-bezier(.165, .84, .44, 1);\r\n    transition: transform 350ms cubic-bezier(.165, .84, .44, 1), opacity 350ms cubic-bezier(.165, .84, .44, 1);\r\n    transition:         transform 350ms cubic-bezier(.165, .84, .44, 1), opacity 350ms cubic-bezier(.165, .84, .44, 1), -webkit-transform 350ms cubic-bezier(.165, .84, .44, 1);\r\n}\r\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable > .mui-off-canvas-left\r\n{\r\n    -webkit-transform-origin: -100%;\r\n            transform-origin: -100%;\r\n}\r\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable > .mui-off-canvas-right\r\n{\r\n    -webkit-transform-origin: 200%;\r\n            transform-origin: 200%;\r\n}\r\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable.mui-active > .mui-inner-wrap\r\n{\r\n    -webkit-transform: scale(.8);\r\n            transform: scale(.8);\r\n}\r\n.mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable.mui-active > .mui-off-canvas-left, .mui-off-canvas-wrap:not(.mui-slide-in).mui-scalable.mui-active > .mui-off-canvas-right\r\n{\r\n    -webkit-transform: scale(1);\r\n            transform: scale(1);\r\n\r\n    opacity: 1;\r\n}\r\n\r\n.mui-loading .mui-spinner\r\n{\r\n    display: block;\r\n\r\n    margin: 0 auto;\r\n}\r\n\r\n.mui-spinner\r\n{\r\n    display: inline-block;\r\n\r\n    width: 24px;\r\n    height: 24px;\r\n\r\n    -webkit-transform-origin: 50%;\r\n            transform-origin: 50%;\r\n    -webkit-animation: spinner-spin 1s step-end infinite;\r\n            animation: spinner-spin 1s step-end infinite;\r\n}\r\n\r\n.mui-spinner:after\r\n{\r\n    display: block;\r\n\r\n    width: 100%;\r\n    height: 100%;\r\n\r\n    content: '';\r\n\r\n    background-image: url('data:image/svg+xml;charset=utf-8,<svg viewBox=\\'0 0 120 120\\' xmlns=\\'http://www.w3.org/2000/svg\\' xmlns:xlink=\\'http://www.w3.org/1999/xlink\\'><defs><line id=\\'l\\' x1=\\'60\\' x2=\\'60\\' y1=\\'7\\' y2=\\'27\\' stroke=\\'%236c6c6c\\' stroke-width=\\'11\\' stroke-linecap=\\'round\\'/></defs><g><use xlink:href=\\'%23l\\' opacity=\\'.27\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(30 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(60 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(90 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(120 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(150 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.37\\' transform=\\'rotate(180 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.46\\' transform=\\'rotate(210 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.56\\' transform=\\'rotate(240 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.66\\' transform=\\'rotate(270 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.75\\' transform=\\'rotate(300 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.85\\' transform=\\'rotate(330 60,60)\\'/></g></svg>');\r\n    background-repeat: no-repeat;\r\n    background-position: 50%;\r\n    background-size: 100%;\r\n}\r\n\r\n.mui-spinner-white:after\r\n{\r\n    background-image: url('data:image/svg+xml;charset=utf-8,<svg viewBox=\\'0 0 120 120\\' xmlns=\\'http://www.w3.org/2000/svg\\' xmlns:xlink=\\'http://www.w3.org/1999/xlink\\'><defs><line id=\\'l\\' x1=\\'60\\' x2=\\'60\\' y1=\\'7\\' y2=\\'27\\' stroke=\\'%23fff\\' stroke-width=\\'11\\' stroke-linecap=\\'round\\'/></defs><g><use xlink:href=\\'%23l\\' opacity=\\'.27\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(30 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(60 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(90 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(120 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.27\\' transform=\\'rotate(150 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.37\\' transform=\\'rotate(180 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.46\\' transform=\\'rotate(210 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.56\\' transform=\\'rotate(240 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.66\\' transform=\\'rotate(270 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.75\\' transform=\\'rotate(300 60,60)\\'/><use xlink:href=\\'%23l\\' opacity=\\'.85\\' transform=\\'rotate(330 60,60)\\'/></g></svg>');\r\n}\r\n\r\n@-webkit-keyframes spinner-spin\r\n{\r\n    0%\r\n    {\r\n        -webkit-transform: rotate(0deg);\r\n    }\r\n\r\n    8.33333333%\r\n    {\r\n        -webkit-transform: rotate(30deg);\r\n    }\r\n\r\n    16.66666667%\r\n    {\r\n        -webkit-transform: rotate(60deg);\r\n    }\r\n\r\n    25%\r\n    {\r\n        -webkit-transform: rotate(90deg);\r\n    }\r\n\r\n    33.33333333%\r\n    {\r\n        -webkit-transform: rotate(120deg);\r\n    }\r\n\r\n    41.66666667%\r\n    {\r\n        -webkit-transform: rotate(150deg);\r\n    }\r\n\r\n    50%\r\n    {\r\n        -webkit-transform: rotate(180deg);\r\n    }\r\n\r\n    58.33333333%\r\n    {\r\n        -webkit-transform: rotate(210deg);\r\n    }\r\n\r\n    66.66666667%\r\n    {\r\n        -webkit-transform: rotate(240deg);\r\n    }\r\n\r\n    75%\r\n    {\r\n        -webkit-transform: rotate(270deg);\r\n    }\r\n\r\n    83.33333333%\r\n    {\r\n        -webkit-transform: rotate(300deg);\r\n    }\r\n\r\n    91.66666667%\r\n    {\r\n        -webkit-transform: rotate(330deg);\r\n    }\r\n\r\n    100%\r\n    {\r\n        -webkit-transform: rotate(360deg);\r\n    }\r\n}\r\n@keyframes spinner-spin\r\n{\r\n    0%\r\n    {\r\n        -webkit-transform: rotate(0deg);\r\n                transform: rotate(0deg);\r\n    }\r\n\r\n    8.33333333%\r\n    {\r\n        -webkit-transform: rotate(30deg);\r\n                transform: rotate(30deg);\r\n    }\r\n\r\n    16.66666667%\r\n    {\r\n        -webkit-transform: rotate(60deg);\r\n                transform: rotate(60deg);\r\n    }\r\n\r\n    25%\r\n    {\r\n        -webkit-transform: rotate(90deg);\r\n                transform: rotate(90deg);\r\n    }\r\n\r\n    33.33333333%\r\n    {\r\n        -webkit-transform: rotate(120deg);\r\n                transform: rotate(120deg);\r\n    }\r\n\r\n    41.66666667%\r\n    {\r\n        -webkit-transform: rotate(150deg);\r\n                transform: rotate(150deg);\r\n    }\r\n\r\n    50%\r\n    {\r\n        -webkit-transform: rotate(180deg);\r\n                transform: rotate(180deg);\r\n    }\r\n\r\n    58.33333333%\r\n    {\r\n        -webkit-transform: rotate(210deg);\r\n                transform: rotate(210deg);\r\n    }\r\n\r\n    66.66666667%\r\n    {\r\n        -webkit-transform: rotate(240deg);\r\n                transform: rotate(240deg);\r\n    }\r\n\r\n    75%\r\n    {\r\n        -webkit-transform: rotate(270deg);\r\n                transform: rotate(270deg);\r\n    }\r\n\r\n    83.33333333%\r\n    {\r\n        -webkit-transform: rotate(300deg);\r\n                transform: rotate(300deg);\r\n    }\r\n\r\n    91.66666667%\r\n    {\r\n        -webkit-transform: rotate(330deg);\r\n                transform: rotate(330deg);\r\n    }\r\n\r\n    100%\r\n    {\r\n        -webkit-transform: rotate(360deg);\r\n                transform: rotate(360deg);\r\n    }\r\n}\r\ninput[type='button'],\r\ninput[type='submit'],\r\ninput[type='reset'],\r\nbutton,\r\n.mui-btn\r\n{\r\n    font-size: 14px;\r\n    font-weight: 400;\r\n    line-height: 1.42;\r\n\r\n    position: relative;\r\n\r\n    display: inline-block;\r\n\r\n    margin-bottom: 0;\r\n    padding: 6px 12px;\r\n\r\n    cursor: pointer;\r\n    transition: all;\r\n    transition-timing-function: linear;\r\n    transition-duration: .2s;\r\n    text-align: center;\r\n    vertical-align: top;\r\n    white-space: nowrap;\r\n\r\n    color: #333;\r\n    border: 1px solid #ccc;\r\n    border-radius: 3px;\r\n    border-top-left-radius: 3px;\r\n    border-top-right-radius: 3px;\r\n    border-bottom-right-radius: 3px;\r\n    border-bottom-left-radius: 3px;\r\n    background-color: #fff;\r\n    background-clip: padding-box;\r\n}\r\ninput[type='button']:enabled:active, input[type='button'].mui-active:enabled,\r\ninput[type='submit']:enabled:active,\r\ninput[type='submit'].mui-active:enabled,\r\ninput[type='reset']:enabled:active,\r\ninput[type='reset'].mui-active:enabled,\r\nbutton:enabled:active,\r\nbutton.mui-active:enabled,\r\n.mui-btn:enabled:active,\r\n.mui-btn.mui-active:enabled\r\n{\r\n    color: #fff;\r\n    background-color: #929292;\r\n}\r\ninput[type='button']:disabled, input[type='button'].mui-disabled,\r\ninput[type='submit']:disabled,\r\ninput[type='submit'].mui-disabled,\r\ninput[type='reset']:disabled,\r\ninput[type='reset'].mui-disabled,\r\nbutton:disabled,\r\nbutton.mui-disabled,\r\n.mui-btn:disabled,\r\n.mui-btn.mui-disabled\r\n{\r\n    opacity: .6;\r\n}\r\n\r\ninput[type='submit'],\r\n.mui-btn-primary,\r\n.mui-btn-blue\r\n{\r\n    color: #fff;\r\n    border: 1px solid #007aff;\r\n    background-color: #007aff;\r\n}\r\ninput[type='submit']:enabled:active, input[type='submit'].mui-active:enabled,\r\n.mui-btn-primary:enabled:active,\r\n.mui-btn-primary.mui-active:enabled,\r\n.mui-btn-blue:enabled:active,\r\n.mui-btn-blue.mui-active:enabled\r\n{\r\n    color: #fff;\r\n    border: 1px solid #0062cc;\r\n    background-color: #0062cc;\r\n}\r\n\r\n.mui-btn-positive,\r\n.mui-btn-success,\r\n.mui-btn-green\r\n{\r\n    color: #fff;\r\n    border: 1px solid #4cd964;\r\n    background-color: #4cd964;\r\n}\r\n.mui-btn-positive:enabled:active, .mui-btn-positive.mui-active:enabled,\r\n.mui-btn-success:enabled:active,\r\n.mui-btn-success.mui-active:enabled,\r\n.mui-btn-green:enabled:active,\r\n.mui-btn-green.mui-active:enabled\r\n{\r\n    color: #fff;\r\n    border: 1px solid #2ac845;\r\n    background-color: #2ac845;\r\n}\r\n\r\n.mui-btn-warning,\r\n.mui-btn-yellow\r\n{\r\n    color: #fff;\r\n    border: 1px solid #f0ad4e;\r\n    background-color: #f0ad4e;\r\n}\r\n.mui-btn-warning:enabled:active, .mui-btn-warning.mui-active:enabled,\r\n.mui-btn-yellow:enabled:active,\r\n.mui-btn-yellow.mui-active:enabled\r\n{\r\n    color: #fff;\r\n    border: 1px solid #ec971f;\r\n    background-color: #ec971f;\r\n}\r\n\r\n.mui-btn-negative,\r\n.mui-btn-danger,\r\n.mui-btn-red\r\n{\r\n    color: #fff;\r\n    border: 1px solid #dd524d;\r\n    background-color: #dd524d;\r\n}\r\n.mui-btn-negative:enabled:active, .mui-btn-negative.mui-active:enabled,\r\n.mui-btn-danger:enabled:active,\r\n.mui-btn-danger.mui-active:enabled,\r\n.mui-btn-red:enabled:active,\r\n.mui-btn-red.mui-active:enabled\r\n{\r\n    color: #fff;\r\n    border: 1px solid #cf2d28;\r\n    background-color: #cf2d28;\r\n}\r\n\r\n.mui-btn-royal,\r\n.mui-btn-purple\r\n{\r\n    color: #fff;\r\n    border: 1px solid #8a6de9;\r\n    background-color: #8a6de9;\r\n}\r\n.mui-btn-royal:enabled:active, .mui-btn-royal.mui-active:enabled,\r\n.mui-btn-purple:enabled:active,\r\n.mui-btn-purple.mui-active:enabled\r\n{\r\n    color: #fff;\r\n    border: 1px solid #6641e2;\r\n    background-color: #6641e2;\r\n}\r\n\r\n.mui-btn-grey\r\n{\r\n    color: #fff;\r\n    border: 1px solid #c7c7cc;\r\n    background-color: #c7c7cc;\r\n}\r\n.mui-btn-grey:enabled:active, .mui-btn-grey.mui-active:enabled\r\n{\r\n    color: #fff;\r\n    border: 1px solid #acacb4;\r\n    background-color: #acacb4;\r\n}\r\n\r\n.mui-btn-outlined\r\n{\r\n    background-color: transparent;\r\n}\r\n.mui-btn-outlined.mui-btn-primary, .mui-btn-outlined.mui-btn-blue\r\n{\r\n    color: #007aff;\r\n}\r\n.mui-btn-outlined.mui-btn-positive, .mui-btn-outlined.mui-btn-success, .mui-btn-outlined.mui-btn-green\r\n{\r\n    color: #4cd964;\r\n}\r\n.mui-btn-outlined.mui-btn-warning, .mui-btn-outlined.mui-btn-yellow\r\n{\r\n    color: #f0ad4e;\r\n}\r\n.mui-btn-outlined.mui-btn-negative, .mui-btn-outlined.mui-btn-danger, .mui-btn-outlined.mui-btn-red\r\n{\r\n    color: #dd524d;\r\n}\r\n.mui-btn-outlined.mui-btn-royal, .mui-btn-outlined.mui-btn-purple\r\n{\r\n    color: #8a6de9;\r\n}\r\n.mui-btn-outlined.mui-btn-primary:enabled:active, .mui-btn-outlined.mui-btn-blue:enabled:active, .mui-btn-outlined.mui-btn-positive:enabled:active, .mui-btn-outlined.mui-btn-success:enabled:active, .mui-btn-outlined.mui-btn-green:enabled:active, .mui-btn-outlined.mui-btn-warning:enabled:active, .mui-btn-outlined.mui-btn-yellow:enabled:active, .mui-btn-outlined.mui-btn-negative:enabled:active, .mui-btn-outlined.mui-btn-danger:enabled:active, .mui-btn-outlined.mui-btn-red:enabled:active, .mui-btn-outlined.mui-btn-royal:enabled:active, .mui-btn-outlined.mui-btn-purple:enabled:active\r\n{\r\n    color: #fff;\r\n}\r\n\r\n.mui-btn-link\r\n{\r\n    padding-top: 6px;\r\n    padding-bottom: 6px;\r\n\r\n    color: #007aff;\r\n    border: 0;\r\n    background-color: transparent;\r\n}\r\n.mui-btn-link:enabled:active, .mui-btn-link.mui-active:enabled\r\n{\r\n    color: #0062cc;\r\n    background-color: transparent;\r\n}\r\n\r\n.mui-btn-block\r\n{\r\n    font-size: 18px;\r\n\r\n    display: block;\r\n\r\n    width: 100%;\r\n    margin-bottom: 10px;\r\n    padding: 15px 0;\r\n}\r\n\r\n.mui-btn .mui-badge\r\n{\r\n    font-size: 14px;\r\n\r\n    margin: -2px -4px -2px 4px;\r\n\r\n    background-color: rgba(0, 0, 0, .15);\r\n}\r\n\r\n.mui-btn .mui-badge-inverted,\r\n.mui-btn:enabled:active .mui-badge-inverted\r\n{\r\n    background-color: transparent;\r\n}\r\n\r\n.mui-btn-primary:enabled:active .mui-badge-inverted,\r\n.mui-btn-positive:enabled:active .mui-badge-inverted,\r\n.mui-btn-negative:enabled:active .mui-badge-inverted\r\n{\r\n    color: #fff;\r\n}\r\n\r\n.mui-btn-block .mui-badge\r\n{\r\n    position: absolute;\r\n    right: 0;\r\n\r\n    margin-right: 10px;\r\n}\r\n\r\n.mui-btn .mui-icon\r\n{\r\n    font-size: inherit;\r\n}\r\n\r\n.mui-btn.mui-icon\r\n{\r\n    font-size: 14px;\r\n    line-height: 1.42;\r\n}\r\n\r\n.mui-btn.mui-fab\r\n{\r\n    width: 56px;\r\n    height: 56px;\r\n    padding: 16px;\r\n\r\n    border-radius: 50%;\r\n    outline: none;\r\n}\r\n.mui-btn.mui-fab.mui-btn-mini\r\n{\r\n    width: 40px;\r\n    height: 40px;\r\n    padding: 8px;\r\n}\r\n.mui-btn.mui-fab .mui-icon\r\n{\r\n    font-size: 24px;\r\n    line-height: 24px;\r\n\r\n    width: 24px;\r\n    height: 24px;\r\n}\r\n\r\n.mui-btn .mui-spinner\r\n{\r\n    width: 14px;\r\n    height: 14px;\r\n\r\n    vertical-align: text-bottom;\r\n}\r\n\r\n.mui-btn-block .mui-spinner\r\n{\r\n    width: 22px;\r\n    height: 22px;\r\n}\r\n\r\n.mui-bar\r\n{\r\n    position: fixed;\r\n    z-index: 10;\r\n    right: 0;\r\n    left: 0;\r\n\r\n    height: 44px;\r\n    padding-right: 10px;\r\n    padding-left: 10px;\r\n\r\n    border-bottom: 0;\r\n    background-color: #f7f7f7;\r\n    box-shadow: 0 0 1px rgba(0, 0, 0, .85);\r\n\r\n    -webkit-backface-visibility: hidden;\r\n            backface-visibility: hidden;\r\n}\r\n\r\n.mui-bar .mui-title\r\n{\r\n    right: 40px;\r\n    left: 40px;\r\n\r\n    display: inline-block;\r\n    overflow: hidden;\r\n\r\n    width: auto;\r\n    margin: 0;\r\n\r\n    text-overflow: ellipsis;\r\n}\r\n.mui-bar .mui-backdrop\r\n{\r\n    background: none;\r\n}\r\n\r\n.mui-bar-header-secondary\r\n{\r\n    top: 44px;\r\n}\r\n\r\n.mui-bar-footer\r\n{\r\n    bottom: 0;\r\n}\r\n\r\n.mui-bar-footer-secondary\r\n{\r\n    bottom: 44px;\r\n}\r\n\r\n.mui-bar-footer-secondary-tab\r\n{\r\n    bottom: 50px;\r\n}\r\n\r\n.mui-bar-footer,\r\n.mui-bar-footer-secondary,\r\n.mui-bar-footer-secondary-tab\r\n{\r\n    border-top: 0;\r\n}\r\n\r\n.mui-bar-transparent\r\n{\r\n    top: 0;\r\n\r\n    background-color: rgba(247, 247, 247, 0);\r\n    box-shadow: none;\r\n}\r\n\r\n.mui-bar-nav\r\n{\r\n    top: 0;\r\n    box-shadow: 0 1px 6px #ccc;\r\n}\r\n.mui-bar-nav ~ .mui-content .mui-anchor\r\n{\r\n    display: block;\r\n    visibility: hidden;\r\n\r\n    height: 45px;\r\n    margin-top: -45px;\r\n}\r\n.mui-bar-nav.mui-bar .mui-icon\r\n{\r\n    margin-right: -10px;\r\n    margin-left: -10px;\r\n    padding-right: 10px;\r\n    padding-left: 10px;\r\n}\r\n\r\n.mui-title\r\n{\r\n    font-size: 17px;\r\n    font-weight: 500;\r\n    line-height: 44px;\r\n\r\n    position: absolute;\r\n\r\n    display: block;\r\n\r\n    width: 100%;\r\n    margin: 0 -10px;\r\n    padding: 0;\r\n\r\n    text-align: center;\r\n    white-space: nowrap;\r\n\r\n    color: #000;\r\n}\r\n\r\n.mui-title a\r\n{\r\n    color: inherit;\r\n}\r\n\r\n.mui-bar-tab\r\n{\r\n    bottom: 0;\r\n\r\n    display: table;\r\n\r\n    width: 100%;\r\n    height: 50px;\r\n    padding: 0;\r\n\r\n    table-layout: fixed;\r\n\r\n    border-top: 0;\r\n    border-bottom: 0;\r\n\r\n    -webkit-touch-callout: none;\r\n}\r\n.mui-bar-tab .mui-tab-item\r\n{\r\n    display: table-cell;\r\n    overflow: hidden;\r\n\r\n    width: 1%;\r\n    height: 50px;\r\n\r\n    text-align: center;\r\n    vertical-align: middle;\r\n    white-space: nowrap;\r\n    text-overflow: ellipsis;\r\n\r\n    color: #929292;\r\n}\r\n.mui-bar-tab .mui-tab-item.mui-active\r\n{\r\n    color: #007aff;\r\n}\r\n.mui-bar-tab .mui-tab-item .mui-icon\r\n{\r\n    top: 3px;\r\n\r\n    width: 24px;\r\n    height: 24px;\r\n    padding-top: 0;\r\n    padding-bottom: 0;\r\n}\r\n.mui-bar-tab .mui-tab-item .mui-icon ~ .mui-tab-label\r\n{\r\n    font-size: 11px;\r\n\r\n    display: block;\r\n    overflow: hidden;\r\n\r\n    text-overflow: ellipsis;\r\n}\r\n.mui-bar-tab .mui-tab-item .mui-icon:active\r\n{\r\n    background: none;\r\n}\r\n\r\n.mui-focusin > .mui-bar-nav,\r\n.mui-focusin > .mui-bar-header-secondary\r\n{\r\n    position: absolute;\r\n}\r\n\r\n.mui-focusin > .mui-bar ~ .mui-content\r\n{\r\n    padding-bottom: 0;\r\n}\r\n\r\n.mui-bar .mui-btn\r\n{\r\n    font-weight: 400;\r\n\r\n    position: relative;\r\n    z-index: 20;\r\n    top: 7px;\r\n\r\n    margin-top: 0;\r\n    padding: 6px 12px 7px;\r\n}\r\n.mui-bar .mui-btn.mui-pull-right\r\n{\r\n    margin-left: 10px;\r\n}\r\n.mui-bar .mui-btn.mui-pull-left\r\n{\r\n    margin-right: 10px;\r\n}\r\n\r\n.mui-bar .mui-btn-link\r\n{\r\n    font-size: 16px;\r\n    line-height: 44px;\r\n\r\n    top: 0;\r\n\r\n    padding: 0;\r\n\r\n    color: #007aff;\r\n    border: 0;\r\n}\r\n.mui-bar .mui-btn-link:active, .mui-bar .mui-btn-link.mui-active\r\n{\r\n    color: #0062cc;\r\n}\r\n\r\n.mui-bar .mui-btn-block\r\n{\r\n    font-size: 16px;\r\n\r\n    top: 6px;\r\n\r\n    margin-bottom: 0;\r\n    padding: 5px 0;\r\n}\r\n\r\n.mui-bar .mui-btn-nav.mui-pull-left\r\n{\r\n    margin-left: -5px;\r\n}\r\n.mui-bar .mui-btn-nav.mui-pull-left .mui-icon-left-nav\r\n{\r\n    margin-right: -3px;\r\n}\r\n.mui-bar .mui-btn-nav.mui-pull-right\r\n{\r\n    margin-right: -5px;\r\n}\r\n.mui-bar .mui-btn-nav.mui-pull-right .mui-icon-right-nav\r\n{\r\n    margin-left: -3px;\r\n}\r\n.mui-bar .mui-btn-nav:active\r\n{\r\n    opacity: .3;\r\n}\r\n\r\n.mui-bar .mui-icon\r\n{\r\n    font-size: 24px;\r\n\r\n    position: relative;\r\n    z-index: 20;\r\n\r\n    padding-top: 10px;\r\n    padding-bottom: 10px;\r\n}\r\n.mui-bar .mui-icon:active\r\n{\r\n    opacity: .3;\r\n}\r\n.mui-bar .mui-btn .mui-icon\r\n{\r\n    top: 1px;\r\n\r\n    margin: 0;\r\n    padding: 0;\r\n}\r\n.mui-bar .mui-title .mui-icon\r\n{\r\n    margin: 0;\r\n    padding: 0;\r\n}\r\n.mui-bar .mui-title .mui-icon.mui-icon-caret\r\n{\r\n    top: 4px;\r\n\r\n    margin-left: -5px;\r\n}\r\n\r\n.mui-bar input[type='search']\r\n{\r\n    height: 29px;\r\n    margin: 6px 0;\r\n}\r\n\r\n.mui-bar .mui-input-row .mui-btn\r\n{\r\n    padding: 12px 10px;\r\n}\r\n\r\n.mui-bar .mui-search:before\r\n{\r\n    margin-top: -10px;\r\n}\r\n\r\n.mui-bar .mui-input-row .mui-input-clear ~ .mui-icon-clear,\r\n.mui-bar .mui-input-row .mui-input-speech ~ .mui-icon-speech\r\n{\r\n    top: 0;\r\n    right: 12px;\r\n}\r\n\r\n.mui-bar.mui-bar-header-secondary .mui-input-row .mui-input-clear ~ .mui-icon-clear,\r\n.mui-bar.mui-bar-header-secondary .mui-input-row .mui-input-speech ~ .mui-icon-speech\r\n{\r\n    top: 0;\r\n    right: 0;\r\n}\r\n\r\n.mui-bar .mui-segmented-control\r\n{\r\n    top: 7px;\r\n\r\n    width: auto;\r\n    margin: 0 auto;\r\n}\r\n\r\n.mui-bar.mui-bar-header-secondary .mui-segmented-control\r\n{\r\n    top: 0;\r\n}\r\n\r\n.mui-badge\r\n{\r\n    font-size: 12px;\r\n    line-height: 1;\r\n\r\n    display: inline-block;\r\n\r\n    padding: 3px 6px;\r\n\r\n    color: #333;\r\n    border-radius: 100px;\r\n    background-color: rgba(0, 0, 0, .15);\r\n}\r\n.mui-badge.mui-badge-inverted\r\n{\r\n    padding: 0 5px 0 0;\r\n\r\n    color: #929292;\r\n    background-color: transparent;\r\n}\r\n\r\n.mui-badge-primary, .mui-badge-blue\r\n{\r\n    color: #fff;\r\n    background-color: #007aff;\r\n}\r\n.mui-badge-primary.mui-badge-inverted, .mui-badge-blue.mui-badge-inverted\r\n{\r\n    color: #007aff;\r\n    background-color: transparent;\r\n}\r\n\r\n.mui-badge-success, .mui-badge-green\r\n{\r\n    color: #fff;\r\n    background-color: #4cd964;\r\n}\r\n.mui-badge-success.mui-badge-inverted, .mui-badge-green.mui-badge-inverted\r\n{\r\n    color: #4cd964;\r\n    background-color: transparent;\r\n}\r\n\r\n.mui-badge-warning, .mui-badge-yellow\r\n{\r\n    color: #fff;\r\n    background-color: #f0ad4e;\r\n}\r\n.mui-badge-warning.mui-badge-inverted, .mui-badge-yellow.mui-badge-inverted\r\n{\r\n    color: #f0ad4e;\r\n    background-color: transparent;\r\n}\r\n\r\n.mui-badge-danger, .mui-badge-red\r\n{\r\n    color: #fff;\r\n    background-color: #dd524d;\r\n}\r\n.mui-badge-danger.mui-badge-inverted, .mui-badge-red.mui-badge-inverted\r\n{\r\n    color: #dd524d;\r\n    background-color: transparent;\r\n}\r\n\r\n.mui-badge-royal, .mui-badge-purple\r\n{\r\n    color: #fff;\r\n    background-color: #8a6de9;\r\n}\r\n.mui-badge-royal.mui-badge-inverted, .mui-badge-purple.mui-badge-inverted\r\n{\r\n    color: #8a6de9;\r\n    background-color: transparent;\r\n}\r\n\r\n.mui-icon .mui-badge\r\n{\r\n    font-size: 10px;\r\n    line-height: 1.4;\r\n\r\n    position: absolute;\r\n    top: -2px;\r\n    left: 100%;\r\n\r\n    margin-left: -10px;\r\n    padding: 1px 5px;\r\n\r\n    color: white;\r\n    background: red;\r\n}\r\n\r\n.mui-card\r\n{\r\n    font-size: 14px;\r\n\r\n    position: relative;\r\n\r\n    overflow: hidden;\r\n\r\n    margin: 10px;\r\n\r\n    border-radius: 2px;\r\n    background-color: white;\r\n    background-clip: padding-box;\r\n    box-shadow: 0 1px 2px rgba(0, 0, 0, .3);\r\n}\r\n\r\n.mui-content > .mui-card:first-child\r\n{\r\n    margin-top: 15px;\r\n}\r\n\r\n.mui-card .mui-input-group:before, .mui-card .mui-input-group:after\r\n{\r\n    height: 0;\r\n}\r\n.mui-card .mui-input-group .mui-input-row:last-child:before, .mui-card .mui-input-group .mui-input-row:last-child:after\r\n{\r\n    height: 0;\r\n}\r\n\r\n.mui-card .mui-table-view\r\n{\r\n    margin-bottom: 0;\r\n\r\n    border-top: 0;\r\n    border-bottom: 0;\r\n    border-radius: 6px;\r\n}\r\n.mui-card .mui-table-view .mui-table-view-divider:first-child, .mui-card .mui-table-view .mui-table-view-cell:first-child\r\n{\r\n    top: 0;\r\n\r\n    border-top-left-radius: 6px;\r\n    border-top-right-radius: 6px;\r\n}\r\n.mui-card .mui-table-view .mui-table-view-divider:last-child, .mui-card .mui-table-view .mui-table-view-cell:last-child\r\n{\r\n    border-bottom-right-radius: 6px;\r\n    border-bottom-left-radius: 6px;\r\n}\r\n.mui-card .mui-table-view:before, .mui-card .mui-table-view:after\r\n{\r\n    height: 0;\r\n}\r\n\r\n.mui-card > .mui-table-view > .mui-table-view-cell:last-child:before, .mui-card > .mui-table-view > .mui-table-view-cell:last-child:after\r\n{\r\n    height: 0;\r\n}\r\n\r\n.mui-card-header,\r\n.mui-card-footer\r\n{\r\n    position: relative;\r\n\r\n    display: -webkit-box;\r\n    display:         -ms-flexbox;\r\n    display:         flex;\r\n\r\n    min-height: 44px;\r\n    padding: 10px 15px;\r\n\r\n    -webkit-box-pack: justify;\r\n            -ms-flex-pack: justify;\r\n        justify-content: space-between;\r\n    -webkit-box-align: center;\r\n            -ms-flex-align: center;\r\n        align-items: center;\r\n}\r\n.mui-card-header .mui-card-link,\r\n.mui-card-footer .mui-card-link\r\n{\r\n    line-height: 44px;\r\n\r\n    position: relative;\r\n\r\n    display: -webkit-box;\r\n    display:         -ms-flexbox;\r\n    display:         flex;\r\n\r\n    height: 44px;\r\n    margin-top: -10px;\r\n    margin-bottom: -10px;\r\n    transition-duration: .3s;\r\n    text-decoration: none;\r\n\r\n    -webkit-box-pack: start;\r\n            -ms-flex-pack: start;\r\n        justify-content: flex-start;\r\n    -webkit-box-align: center;\r\n            -ms-flex-align: center;\r\n        align-items: center;\r\n}\r\n\r\n.mui-card-header:after,\r\n.mui-card-footer:before\r\n{\r\n    position: absolute;\r\n    top: 0;\r\n    right: 0;\r\n    left: 0;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #c8c7cc;\r\n}\r\n\r\n.mui-card-header\r\n{\r\n    font-size: 17px;\r\n\r\n    border-radius: 2px 2px 0 0;\r\n}\r\n.mui-card-header:after\r\n{\r\n    top: auto;\r\n    bottom: 0;\r\n}\r\n.mui-card-header > img:first-child\r\n{\r\n    font-size: 0;\r\n    line-height: 0;\r\n\r\n    float: left;\r\n\r\n    width: 34px;\r\n    height: 34px;\r\n}\r\n\r\n.mui-card-footer\r\n{\r\n    color: #6d6d72;\r\n    border-radius: 0 0 2px 2px;\r\n}\r\n\r\n.mui-card-content\r\n{\r\n    font-size: 14px;\r\n\r\n    position: relative;\r\n}\r\n\r\n.mui-card-content-inner\r\n{\r\n    position: relative;\r\n\r\n    padding: 15px;\r\n}\r\n\r\n.mui-card-media\r\n{\r\n    vertical-align: bottom;\r\n\r\n    color: #fff;\r\n    background-position: center;\r\n    background-size: cover;\r\n}\r\n\r\n.mui-card-header.mui-card-media\r\n{\r\n    display: block;\r\n\r\n    padding: 10px;\r\n}\r\n.mui-card-header.mui-card-media .mui-media-body\r\n{\r\n    font-size: 14px;\r\n    font-weight: 500;\r\n    line-height: 17px;\r\n\r\n    margin-bottom: 0;\r\n    margin-left: 44px;\r\n\r\n    color: #333;\r\n}\r\n.mui-card-header.mui-card-media .mui-media-body p\r\n{\r\n    font-size: 13px;\r\n\r\n    margin-bottom: 0;\r\n}\r\n\r\n.mui-table-view\r\n{\r\n    position: relative;\r\n\r\n    margin-top: 0;\r\n    margin-bottom: 0;\r\n    padding-left: 0;\r\n\r\n    list-style: none;\r\n\r\n    background-color: #fff;\r\n}\r\n.mui-table-view:after\r\n{\r\n    position: absolute;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 0;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #c8c7cc;\r\n}\r\n.mui-table-view:before\r\n{\r\n    position: absolute;\r\n    top: 0;\r\n    right: 0;\r\n    left: 0;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #c8c7cc;\r\n}\r\n.mui-table-view:before\r\n{\r\n    top: -1px;\r\n}\r\n\r\n.mui-table-view-icon .mui-table-view-cell .mui-navigate-right .mui-icon\r\n{\r\n    font-size: 20px;\r\n\r\n    margin-top: -1px;\r\n    margin-right: 5px;\r\n    margin-left: -5px;\r\n}\r\n.mui-table-view-icon .mui-table-view-cell:after\r\n{\r\n    left: 40px;\r\n}\r\n\r\n.mui-table-view-chevron .mui-table-view-cell\r\n{\r\n    padding-right: 65px;\r\n}\r\n.mui-table-view-chevron .mui-table-view-cell > a:not(.mui-btn)\r\n{\r\n    margin-right: -65px;\r\n}\r\n\r\n.mui-table-view-radio .mui-table-view-cell\r\n{\r\n    padding-right: 65px;\r\n}\r\n.mui-table-view-radio .mui-table-view-cell > a:not(.mui-btn)\r\n{\r\n    margin-right: -65px;\r\n}\r\n.mui-table-view-radio .mui-table-view-cell .mui-navigate-right:after\r\n{\r\n    font-size: 30px;\r\n    font-weight: 600;\r\n\r\n    right: 9px;\r\n\r\n    content: '';\r\n\r\n    color: #007aff;\r\n}\r\n.mui-table-view-radio .mui-table-view-cell.mui-selected .mui-navigate-right:after\r\n{\r\n    content: '\\E472';\r\n}\r\n\r\n.mui-table-view-inverted\r\n{\r\n    color: #fff;\r\n    background: #333;\r\n}\r\n.mui-table-view-inverted:after\r\n{\r\n    position: absolute;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 0;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #222;\r\n}\r\n.mui-table-view-inverted:before\r\n{\r\n    position: absolute;\r\n    top: 0;\r\n    right: 0;\r\n    left: 0;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #222;\r\n}\r\n.mui-table-view-inverted .mui-table-view-cell:after\r\n{\r\n    position: absolute;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 15px;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #222;\r\n}\r\n.mui-table-view-inverted .mui-table-view-cell.mui-active\r\n{\r\n    background-color: #242424;\r\n}\r\n.mui-table-view-inverted .mui-table-view-cell > a:not(.mui-btn).mui-active\r\n{\r\n    background-color: #242424;\r\n}\r\n\r\n.mui-table-view-cell\r\n{\r\n    position: relative;\r\n\r\n    overflow: hidden;\r\n\r\n    padding: 11px 15px;\r\n\r\n    -webkit-touch-callout: none;\r\n}\r\n.mui-table-view-cell:after\r\n{\r\n    position: absolute;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 15px;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #c8c7cc;\r\n}\r\n.mui-table-view-cell.mui-radio input[type=radio], .mui-table-view-cell.mui-checkbox input[type=checkbox]\r\n{\r\n    top: 8px;\r\n}\r\n.mui-table-view-cell.mui-radio.mui-left, .mui-table-view-cell.mui-checkbox.mui-left\r\n{\r\n    padding-left: 58px;\r\n}\r\n.mui-table-view-cell.mui-active\r\n{\r\n    background-color: #eee;\r\n}\r\n.mui-table-view-cell:last-child:before, .mui-table-view-cell:last-child:after\r\n{\r\n    height: 0;\r\n}\r\n.mui-table-view-cell > a:not(.mui-btn)\r\n{\r\n    position: relative;\r\n\r\n    display: block;\r\n    overflow: hidden;\r\n\r\n    margin: -11px -15px;\r\n    padding: inherit;\r\n\r\n    white-space: nowrap;\r\n    text-overflow: ellipsis;\r\n\r\n    color: inherit;\r\n  /*&:active {\r\n      background-color: #eee;\r\n  }*/\r\n}\r\n.mui-table-view-cell > a:not(.mui-btn).mui-active\r\n{\r\n    background-color: #eee;\r\n}\r\n.mui-table-view-cell p\r\n{\r\n    margin-bottom: 0;\r\n}\r\n\r\n.mui-table-view-cell.mui-transitioning > .mui-slider-handle, .mui-table-view-cell.mui-transitioning > .mui-slider-left .mui-btn, .mui-table-view-cell.mui-transitioning > .mui-slider-right .mui-btn\r\n{\r\n    transition: -webkit-transform 300ms ease;\r\n    transition: transform 300ms ease;\r\n    transition:         transform 300ms ease, -webkit-transform 300ms ease;\r\n}\r\n.mui-table-view-cell.mui-active > .mui-slider-handle\r\n{\r\n    background-color: #eee;\r\n}\r\n.mui-table-view-cell > .mui-slider-handle\r\n{\r\n    position: relative;\r\n\r\n    background-color: #fff;\r\n}\r\n.mui-table-view-cell > .mui-slider-handle.mui-navigate-right:after, .mui-table-view-cell > .mui-slider-handle .mui-navigate-right:after\r\n{\r\n    right: 0;\r\n}\r\n.mui-table-view-cell > .mui-slider-handle, .mui-table-view-cell > .mui-slider-left .mui-btn, .mui-table-view-cell > .mui-slider-right .mui-btn\r\n{\r\n    transition: -webkit-transform 0ms ease;\r\n    transition: transform 0ms ease;\r\n    transition:         transform 0ms ease, -webkit-transform 0ms ease;\r\n}\r\n.mui-table-view-cell > .mui-slider-left, .mui-table-view-cell > .mui-slider-right\r\n{\r\n    position: absolute;\r\n    top: 0;\r\n\r\n    display: -webkit-box;\r\n    display:         -ms-flexbox;\r\n    display:         flex;\r\n\r\n    height: 100%;\r\n}\r\n.mui-table-view-cell > .mui-slider-left > .mui-btn, .mui-table-view-cell > .mui-slider-right > .mui-btn\r\n{\r\n    position: relative;\r\n    left: 0;\r\n\r\n    display: -webkit-box;\r\n    display:         -ms-flexbox;\r\n    display:         flex;\r\n\r\n    padding: 0 30px;\r\n\r\n    color: #fff;\r\n    border: 0;\r\n    border-radius: 0;\r\n\r\n    -webkit-box-align: center;\r\n            -ms-flex-align: center;\r\n        align-items: center;\r\n}\r\n.mui-table-view-cell > .mui-slider-left > .mui-btn:after, .mui-table-view-cell > .mui-slider-right > .mui-btn:after\r\n{\r\n    position: absolute;\r\n    z-index: -1;\r\n    top: 0;\r\n\r\n    width: 600%;\r\n    height: 100%;\r\n\r\n    content: '';\r\n\r\n    background: inherit;\r\n}\r\n.mui-table-view-cell > .mui-slider-left > .mui-btn.mui-icon, .mui-table-view-cell > .mui-slider-right > .mui-btn.mui-icon\r\n{\r\n    font-size: 30px;\r\n}\r\n.mui-table-view-cell > .mui-slider-right\r\n{\r\n    right: 0;\r\n    transition: -webkit-transform 0ms ease;\r\n    transition: transform 0ms ease;\r\n    transition:         transform 0ms ease, -webkit-transform 0ms ease;\r\n    -webkit-transform: translateX(100%);\r\n            transform: translateX(100%);\r\n}\r\n.mui-table-view-cell > .mui-slider-left\r\n{\r\n    left: 0;\r\n    transition: -webkit-transform 0ms ease;\r\n    transition: transform 0ms ease;\r\n    transition:         transform 0ms ease, -webkit-transform 0ms ease;\r\n    -webkit-transform: translateX(-100%);\r\n            transform: translateX(-100%);\r\n}\r\n.mui-table-view-cell > .mui-slider-left > .mui-btn:after\r\n{\r\n    right: 100%;\r\n\r\n    margin-right: -1px;\r\n}\r\n\r\n.mui-table-view-divider\r\n{\r\n    font-weight: 500;\r\n\r\n    position: relative;\r\n\r\n    margin-top: -1px;\r\n    margin-left: 0;\r\n    padding-top: 6px;\r\n    padding-bottom: 6px;\r\n    padding-left: 15px;\r\n\r\n    color: #999;\r\n    background-color: #fafafa;\r\n}\r\n.mui-table-view-divider:after\r\n{\r\n    position: absolute;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 0;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #c8c7cc;\r\n}\r\n.mui-table-view-divider:before\r\n{\r\n    position: absolute;\r\n    top: 0;\r\n    right: 0;\r\n    left: 0;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #c8c7cc;\r\n}\r\n\r\n.mui-table-view .mui-media,\r\n.mui-table-view .mui-media-body\r\n{\r\n    overflow: hidden;\r\n}\r\n\r\n.mui-table-view .mui-media-large .mui-media-object\r\n{\r\n    line-height: 80px;\r\n\r\n    max-width: 80px;\r\n    height: 80px;\r\n}\r\n.mui-table-view .mui-media .mui-subtitle\r\n{\r\n    color: #000;\r\n}\r\n.mui-table-view .mui-media-object\r\n{\r\n    line-height: 42px;\r\n\r\n    max-width: 42px;\r\n    height: 42px;\r\n}\r\n.mui-table-view .mui-media-object.mui-pull-left\r\n{\r\n    margin-right: 10px;\r\n}\r\n.mui-table-view .mui-media-object.mui-pull-right\r\n{\r\n    margin-left: 10px;\r\n}\r\n.mui-table-view .mui-table-view-cell.mui-media-icon .mui-media-object\r\n{\r\n    line-height: 29px;\r\n\r\n    max-width: 29px;\r\n    height: 29px;\r\n    margin: -4px 0;\r\n}\r\n.mui-table-view .mui-table-view-cell.mui-media-icon .mui-media-object img\r\n{\r\n    line-height: 29px;\r\n\r\n    max-width: 29px;\r\n    height: 29px;\r\n}\r\n.mui-table-view .mui-table-view-cell.mui-media-icon .mui-media-object.mui-pull-left\r\n{\r\n    margin-right: 10px;\r\n}\r\n.mui-table-view .mui-table-view-cell.mui-media-icon .mui-media-object .mui-icon\r\n{\r\n    font-size: 29px;\r\n}\r\n.mui-table-view .mui-table-view-cell.mui-media-icon .mui-media-body:after\r\n{\r\n    position: absolute;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 55px;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #c8c7cc;\r\n}\r\n.mui-table-view .mui-table-view-cell.mui-media-icon:after\r\n{\r\n    height: 0 !important;\r\n}\r\n\r\n.mui-table-view.mui-unfold .mui-table-view-cell.mui-collapse .mui-table-view\r\n{\r\n    display: block;\r\n}\r\n.mui-table-view.mui-unfold .mui-table-view-cell.mui-collapse .mui-table-view:before, .mui-table-view.mui-unfold .mui-table-view-cell.mui-collapse .mui-table-view:after\r\n{\r\n    height: 0 !important;\r\n}\r\n.mui-table-view.mui-unfold .mui-table-view-cell.mui-media-icon.mui-collapse .mui-media-body:after\r\n{\r\n    position: absolute;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 70px;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #c8c7cc;\r\n}\r\n\r\n.mui-table-view-cell > .mui-btn,\r\n.mui-table-view-cell > .mui-badge,\r\n.mui-table-view-cell > .mui-switch,\r\n.mui-table-view-cell > a > .mui-btn,\r\n.mui-table-view-cell > a > .mui-badge,\r\n.mui-table-view-cell > a > .mui-switch\r\n{\r\n    position: absolute;\r\n    top: 50%;\r\n    right: 15px;\r\n\r\n    -webkit-transform: translateY(-50%);\r\n            transform: translateY(-50%);\r\n}\r\n.mui-table-view-cell .mui-navigate-right > .mui-btn,\r\n.mui-table-view-cell .mui-navigate-right > .mui-badge,\r\n.mui-table-view-cell .mui-navigate-right > .mui-switch,\r\n.mui-table-view-cell .mui-push-left > .mui-btn,\r\n.mui-table-view-cell .mui-push-left > .mui-badge,\r\n.mui-table-view-cell .mui-push-left > .mui-switch,\r\n.mui-table-view-cell .mui-push-right > .mui-btn,\r\n.mui-table-view-cell .mui-push-right > .mui-badge,\r\n.mui-table-view-cell .mui-push-right > .mui-switch,\r\n.mui-table-view-cell > a .mui-navigate-right > .mui-btn,\r\n.mui-table-view-cell > a .mui-navigate-right > .mui-badge,\r\n.mui-table-view-cell > a .mui-navigate-right > .mui-switch,\r\n.mui-table-view-cell > a .mui-push-left > .mui-btn,\r\n.mui-table-view-cell > a .mui-push-left > .mui-badge,\r\n.mui-table-view-cell > a .mui-push-left > .mui-switch,\r\n.mui-table-view-cell > a .mui-push-right > .mui-btn,\r\n.mui-table-view-cell > a .mui-push-right > .mui-badge,\r\n.mui-table-view-cell > a .mui-push-right > .mui-switch\r\n{\r\n    right: 35px;\r\n}\r\n\r\n.mui-content > .mui-table-view:first-child\r\n{\r\n    margin-top: 15px;\r\n}\r\n\r\n.mui-table-view-cell.mui-collapse .mui-table-view:before, .mui-table-view-cell.mui-collapse .mui-table-view:after\r\n{\r\n    height: 0;\r\n}\r\n.mui-table-view-cell.mui-collapse .mui-table-view .mui-table-view-cell:last-child:after\r\n{\r\n    height: 0;\r\n}\r\n.mui-table-view-cell.mui-collapse > .mui-navigate-right:after, .mui-table-view-cell.mui-collapse > .mui-push-right:after\r\n{\r\n    content: '\\E581';\r\n}\r\n.mui-table-view-cell.mui-collapse.mui-active\r\n{\r\n    margin-top: -1px;\r\n}\r\n.mui-table-view-cell.mui-collapse.mui-active .mui-table-view, .mui-table-view-cell.mui-collapse.mui-active .mui-collapse-content\r\n{\r\n    display: block;\r\n}\r\n.mui-table-view-cell.mui-collapse.mui-active > .mui-navigate-right:after, .mui-table-view-cell.mui-collapse.mui-active > .mui-push-right:after\r\n{\r\n    content: '\\E580';\r\n}\r\n.mui-table-view-cell.mui-collapse.mui-active .mui-table-view-cell > a:not(.mui-btn).mui-active\r\n{\r\n    margin-left: -31px;\r\n    padding-left: 47px;\r\n}\r\n.mui-table-view-cell.mui-collapse .mui-collapse-content\r\n{\r\n    position: relative;\r\n\r\n    display: none;\r\n    overflow: hidden;\r\n\r\n    margin: 11px -15px -11px;\r\n    padding: 8px 15px;\r\n    transition: height .35s ease;\r\n\r\n    background: white;\r\n}\r\n.mui-table-view-cell.mui-collapse .mui-collapse-content > .mui-input-group, .mui-table-view-cell.mui-collapse .mui-collapse-content > .mui-slider\r\n{\r\n    width: auto;\r\n    height: auto;\r\n    margin: -8px -15px;\r\n}\r\n.mui-table-view-cell.mui-collapse .mui-collapse-content > .mui-slider\r\n{\r\n    margin: -8px -16px;\r\n}\r\n.mui-table-view-cell.mui-collapse .mui-table-view\r\n{\r\n    display: none;\r\n\r\n    margin-top: 11px;\r\n    margin-right: -15px;\r\n    margin-bottom: -11px;\r\n    margin-left: -15px;\r\n\r\n    border: 0;\r\n}\r\n.mui-table-view-cell.mui-collapse .mui-table-view.mui-table-view-chevron\r\n{\r\n    margin-right: -65px;\r\n}\r\n.mui-table-view-cell.mui-collapse .mui-table-view .mui-table-view-cell\r\n{\r\n    padding-left: 31px;\r\n\r\n    background-position: 31px 100%;\r\n}\r\n.mui-table-view-cell.mui-collapse .mui-table-view .mui-table-view-cell:after\r\n{\r\n    position: absolute;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 30px;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #c8c7cc;\r\n}\r\n\r\n.mui-table-view.mui-grid-view\r\n{\r\n    font-size: 0;\r\n\r\n    display: block;\r\n\r\n    width: 100%;\r\n    padding: 0 10px 10px 0;\r\n\r\n    white-space: normal;\r\n}\r\n.mui-table-view.mui-grid-view .mui-table-view-cell\r\n{\r\n    font-size: 17px;\r\n\r\n    display: inline-block;\r\n\r\n    margin-right: -4px;\r\n    padding: 10px 0 0 14px;\r\n\r\n    text-align: center;\r\n    vertical-align: middle;\r\n\r\n    background: none;\r\n}\r\n.mui-table-view.mui-grid-view .mui-table-view-cell .mui-media-object\r\n{\r\n    width: 100%;\r\n    max-width: 100%;\r\n    height: auto;\r\n}\r\n.mui-table-view.mui-grid-view .mui-table-view-cell > a:not(.mui-btn)\r\n{\r\n    margin: -10px 0 0 -14px;\r\n}\r\n.mui-table-view.mui-grid-view .mui-table-view-cell > a:not(.mui-btn):active, .mui-table-view.mui-grid-view .mui-table-view-cell > a:not(.mui-btn).mui-active\r\n{\r\n    background: none;\r\n}\r\n.mui-table-view.mui-grid-view .mui-table-view-cell .mui-media-body\r\n{\r\n    font-size: 15px;\r\n    line-height: 15px;\r\n\r\n    display: block;\r\n\r\n    width: 100%;\r\n    height: 15px;\r\n    margin-top: 8px;\r\n\r\n    text-overflow: ellipsis;\r\n\r\n    color: #333;\r\n}\r\n.mui-table-view.mui-grid-view .mui-table-view-cell:before, .mui-table-view.mui-grid-view .mui-table-view-cell:after\r\n{\r\n    height: 0;\r\n}\r\n\r\n.mui-grid-view.mui-grid-9\r\n{\r\n    margin: 0;\r\n    padding: 0;\r\n\r\n    border-top: 1px solid #eee;\r\n    border-left: 1px solid #eee;\r\n    background-color: #f2f2f2;\r\n}\r\n.mui-grid-view.mui-grid-9:before, .mui-grid-view.mui-grid-9:after\r\n{\r\n    display: table;\r\n\r\n    content: ' ';\r\n}\r\n.mui-grid-view.mui-grid-9:after\r\n{\r\n    clear: both;\r\n}\r\n.mui-grid-view.mui-grid-9:after\r\n{\r\n    position: static;\r\n}\r\n.mui-grid-view.mui-grid-9 .mui-table-view-cell\r\n{\r\n    margin: 0;\r\n    padding: 11px 15px;\r\n\r\n    vertical-align: top;\r\n\r\n    border-right: 1px solid #eee;\r\n    border-bottom: 1px solid #eee;\r\n}\r\n.mui-grid-view.mui-grid-9 .mui-table-view-cell.mui-active\r\n{\r\n    background-color: #eee;\r\n}\r\n.mui-grid-view.mui-grid-9 .mui-table-view-cell > a:not(.mui-btn)\r\n{\r\n    margin: 0;\r\n    padding: 10px 0;\r\n}\r\n.mui-grid-view.mui-grid-9:before\r\n{\r\n    height: 0;\r\n}\r\n.mui-grid-view.mui-grid-9 .mui-media\r\n{\r\n    color: #797979;\r\n}\r\n.mui-grid-view.mui-grid-9 .mui-media .mui-icon\r\n{\r\n    font-size: 2.4em;\r\n\r\n    position: relative;\r\n}\r\n\r\n.mui-slider-cell\r\n{\r\n    position: relative;\r\n}\r\n.mui-slider-cell > .mui-slider-handle\r\n{\r\n    z-index: 1;\r\n}\r\n.mui-slider-cell > .mui-slider-left, .mui-slider-cell > .mui-slider-right\r\n{\r\n    position: absolute;\r\n    z-index: 0;\r\n    top: 0;\r\n    bottom: 0;\r\n}\r\n.mui-slider-cell > .mui-slider-left\r\n{\r\n    left: 0;\r\n}\r\n.mui-slider-cell > .mui-slider-right\r\n{\r\n    right: 0;\r\n}\r\n\r\ninput,\r\ntextarea,\r\nselect\r\n{\r\n    font-family: 'Helvetica Neue', Helvetica, sans-serif;\r\n    font-size: 17px;\r\n\r\n    -webkit-tap-highlight-color: transparent;\r\n    -webkit-tap-highlight-color: transparent;\r\n}\r\ninput:focus,\r\ntextarea:focus,\r\nselect:focus\r\n{\r\n    -webkit-tap-highlight-color: transparent;\r\n    -webkit-tap-highlight-color: transparent;\r\n    -webkit-user-modify: read-write-plaintext-only;\r\n}\r\n\r\nselect,\r\ntextarea,\r\ninput[type='text'],\r\ninput[type='search'],\r\ninput[type='password'],\r\ninput[type='datetime'],\r\ninput[type='datetime-local'],\r\ninput[type='date'],\r\ninput[type='month'],\r\ninput[type='time'],\r\ninput[type='week'],\r\ninput[type='number'],\r\ninput[type='email'],\r\ninput[type='url'],\r\ninput[type='tel'],\r\ninput[type='color']\r\n{\r\n    line-height: 21px;\r\n\r\n    width: 100%;\r\n    height: 40px;\r\n    margin-bottom: 15px;\r\n    padding: 10px 15px;\r\n\r\n    -webkit-user-select: text;\r\n\r\n    border: 1px solid rgba(0, 0, 0, .2);\r\n    border-radius: 3px;\r\n    outline: none;\r\n    background-color: #fff;\r\n\r\n    -webkit-appearance: none;\r\n}\r\n\r\ninput[type=number]::-webkit-inner-spin-button,\r\ninput[type=number]::-webkit-outer-spin-button\r\n{\r\n    margin: 0;\r\n\r\n    -webkit-appearance: none;\r\n}\r\n\r\ninput[type='search']\r\n{\r\n    font-size: 16px;\r\n    box-sizing: border-box;\r\n    height: 34px;\r\n\r\n    text-align: center;\r\n\r\n    border: 0;\r\n    border-radius: 6px;\r\n    background-color: rgba(0, 0, 0, .1);\r\n}\r\n\r\ninput[type='search']:focus\r\n{\r\n    text-align: left;\r\n}\r\n\r\ntextarea\r\n{\r\n    height: auto;\r\n\r\n    resize: none;\r\n}\r\n\r\nselect\r\n{\r\n    font-size: 14px;\r\n\r\n    height: auto;\r\n    margin-top: 1px;\r\n\r\n    border: 0 !important;\r\n    background-color: #fff;\r\n}\r\nselect:focus\r\n{\r\n    -webkit-user-modify: read-only;\r\n}\r\n\r\n.mui-input-group\r\n{\r\n    position: relative;\r\n\r\n    padding: 0;\r\n\r\n    border: 0;\r\n    background-color: #fff;\r\n}\r\n.mui-input-group:after\r\n{\r\n    position: absolute;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 0;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #c8c7cc;\r\n}\r\n.mui-input-group:before\r\n{\r\n    position: absolute;\r\n    top: 0;\r\n    right: 0;\r\n    left: 0;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #c8c7cc;\r\n}\r\n\r\n.mui-input-group input,\r\n.mui-input-group textarea\r\n{\r\n    margin-bottom: 0;\r\n\r\n    border: 0;\r\n    border-radius: 0;\r\n    background-color: transparent;\r\n    box-shadow: none;\r\n}\r\n\r\n.mui-input-group input[type='search']\r\n{\r\n    background: none;\r\n}\r\n\r\n.mui-input-group input:last-child\r\n{\r\n    background-image: none;\r\n}\r\n\r\n.mui-input-row\r\n{\r\n    clear: left;\r\n    overflow: hidden;\r\n}\r\n.mui-input-row select\r\n{\r\n    font-size: 17px;\r\n\r\n    height: 37px;\r\n    padding: 0;\r\n}\r\n\r\n.mui-input-row:last-child,\r\n.mui-input-row label + input, .mui-input-row .mui-btn + input\r\n{\r\n    background: none;\r\n}\r\n\r\n.mui-input-group .mui-input-row\r\n{\r\n    height: 40px;\r\n}\r\n.mui-input-group .mui-input-row:after\r\n{\r\n    position: absolute;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 15px;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #c8c7cc;\r\n}\r\n\r\n.mui-input-row label\r\n{\r\n    font-family: 'Helvetica Neue', Helvetica, sans-serif;\r\n    line-height: 1.1;\r\n\r\n    float: left;\r\n\r\n    width: 35%;\r\n    padding: 11px 15px;\r\n}\r\n\r\n.mui-input-row label ~ input, .mui-input-row label ~ select, .mui-input-row label ~ textarea\r\n{\r\n    float: right;\r\n\r\n    width: 65%;\r\n    margin-bottom: 0;\r\n    padding-left: 0;\r\n\r\n    border: 0;\r\n}\r\n\r\n.mui-input-row .mui-btn\r\n{\r\n    line-height: 1.1;\r\n\r\n    float: right;\r\n\r\n    width: 15%;\r\n    padding: 10px 15px;\r\n}\r\n\r\n.mui-input-row .mui-btn ~ input, .mui-input-row .mui-btn ~ select, .mui-input-row .mui-btn ~ textarea\r\n{\r\n    float: left;\r\n\r\n    width: 85%;\r\n    margin-bottom: 0;\r\n    padding-left: 0;\r\n\r\n    border: 0;\r\n}\r\n\r\n.mui-button-row\r\n{\r\n    position: relative;\r\n\r\n    padding-top: 5px;\r\n\r\n    text-align: center;\r\n}\r\n\r\n.mui-input-group .mui-button-row\r\n{\r\n    height: 45px;\r\n}\r\n\r\n.mui-input-row\r\n{\r\n    position: relative;\r\n}\r\n.mui-input-row.mui-input-range\r\n{\r\n    overflow: visible;\r\n\r\n    padding-right: 20px;\r\n}\r\n.mui-input-row .mui-inline\r\n{\r\n    padding: 8px 0;\r\n}\r\n.mui-input-row .mui-input-clear ~ .mui-icon-clear, .mui-input-row .mui-input-speech ~ .mui-icon-speech, .mui-input-row .mui-input-password ~ .mui-icon-eye\r\n{\r\n    font-size: 20px;\r\n\r\n    position: absolute;\r\n    z-index: 1;\r\n    top: 10px;\r\n    right: 0;\r\n\r\n    width: 38px;\r\n    height: 38px;\r\n\r\n    text-align: center;\r\n\r\n    color: #999;\r\n}\r\n.mui-input-row .mui-input-clear ~ .mui-icon-clear.mui-active, .mui-input-row .mui-input-speech ~ .mui-icon-speech.mui-active, .mui-input-row .mui-input-password ~ .mui-icon-eye.mui-active\r\n{\r\n    color: #007aff;\r\n}\r\n.mui-input-row .mui-input-speech ~ .mui-icon-speech\r\n{\r\n    font-size: 24px;\r\n\r\n    top: 8px;\r\n}\r\n.mui-input-row .mui-input-clear ~ .mui-icon-clear ~ .mui-icon-speech\r\n{\r\n    display: none;\r\n}\r\n.mui-input-row .mui-input-clear ~ .mui-icon-clear.mui-hidden ~ .mui-icon-speech\r\n{\r\n    display: inline-block;\r\n}\r\n.mui-input-row .mui-icon-speech ~ .mui-placeholder\r\n{\r\n    right: 38px;\r\n}\r\n.mui-input-row.mui-search .mui-icon-clear\r\n{\r\n    top: 7px;\r\n}\r\n.mui-input-row.mui-search .mui-icon-speech\r\n{\r\n    top: 5px;\r\n}\r\n\r\n.mui-radio, .mui-checkbox\r\n{\r\n    position: relative;\r\n}\r\n.mui-radio label, .mui-checkbox label\r\n{\r\n    display: inline-block;\r\n    float: none;\r\n\r\n    width: 100%;\r\n    padding-right: 58px;\r\n}\r\n\r\n.mui-radio.mui-left input[type='radio'], .mui-checkbox.mui-left input[type='checkbox']\r\n{\r\n    left: 20px;\r\n}\r\n\r\n.mui-radio.mui-left label, .mui-checkbox.mui-left label\r\n{\r\n    padding-right: 15px;\r\n    padding-left: 58px;\r\n}\r\n\r\n.mui-radio input[type='radio'], .mui-checkbox input[type='checkbox']\r\n{\r\n    position: absolute;\r\n    top: 4px;\r\n    right: 20px;\r\n\r\n    display: inline-block;\r\n\r\n    width: 28px;\r\n    height: 26px;\r\n\r\n    border: 0;\r\n    outline: 0 !important;\r\n    background-color: transparent;\r\n\r\n    -webkit-appearance: none;\r\n}\r\n.mui-radio input[type='radio'][disabled]:before, .mui-checkbox input[type='checkbox'][disabled]:before\r\n{\r\n    opacity: .3;\r\n}\r\n.mui-radio input[type='radio']:before, .mui-checkbox input[type='checkbox']:before\r\n{\r\n    font-family: Muiicons;\r\n    font-size: 28px;\r\n    font-weight: normal;\r\n    line-height: 1;\r\n\r\n    text-decoration: none;\r\n\r\n    color: #aaa;\r\n    border-radius: 0;\r\n    background: none;\r\n\r\n    -webkit-font-smoothing: antialiased;\r\n}\r\n.mui-radio input[type='radio']:checked:before, .mui-checkbox input[type='checkbox']:checked:before\r\n{\r\n    color: #007aff;\r\n}\r\n\r\n.mui-radio.mui-disabled label, .mui-radio label.mui-disabled, .mui-checkbox.mui-disabled label, .mui-checkbox label.mui-disabled\r\n{\r\n    opacity: .4;\r\n}\r\n\r\n.mui-radio input[type='radio']:before\r\n{\r\n    content: '\\E411';\r\n}\r\n\r\n.mui-radio input[type='radio']:checked:before\r\n{\r\n    content: '\\E441';\r\n}\r\n\r\n.mui-checkbox input[type='checkbox']:before\r\n{\r\n    content: '\\E411';\r\n}\r\n\r\n.mui-checkbox input[type='checkbox']:checked:before\r\n{\r\n    content: '\\E442';\r\n}\r\n\r\n.mui-select\r\n{\r\n    position: relative;\r\n}\r\n\r\n.mui-select:before\r\n{\r\n    font-family: Muiicons;\r\n\r\n    position: absolute;\r\n    top: 8px;\r\n    right: 21px;\r\n\r\n    content: '\\E581';\r\n\r\n    color: rgba(170, 170, 170, .6);\r\n}\r\n\r\n.mui-input-row .mui-switch\r\n{\r\n    float: right;\r\n\r\n    margin-top: 5px;\r\n    margin-right: 20px;\r\n}\r\n\r\n.mui-input-range\r\n{\r\n  /*input[type=\"range\"] {\r\n      -webkit-appearance: none;\r\n      background: #999;\r\n      height: 36px;\r\n      border-radius: 1px;\r\n      overflow: hidden;\r\n      margin-top: 2px;\r\n      margin-bottom: 2px;\r\n      outline:none;\r\n      position:relative;\r\n      width:100%;\r\n  }*/\r\n  /*input[type='range']::-webkit-slider-thumb {\r\n      -webkit-appearance: none!important;\r\n      opacity: 0.5;\r\n      height:28px;\r\n      width:28px;\r\n      border-radius: 50%;\r\n      background:#00b7fb;\r\n      position: relative;\r\n      pointer-events: none;\r\n      -webkit-box-sizing: border-box;\r\n      box-sizing: border-box;\r\n      &:before{\r\n          position: absolute;\r\n          top: 13px;\r\n          left: -2000px;\r\n          width: 2000px;\r\n          height: 2px;\r\n          background: #00b7fb;\r\n          content:' ';\r\n      }\r\n  }*/\r\n}\r\n.mui-input-range input[type='range']\r\n{\r\n    position: relative;\r\n\r\n    width: 100%;\r\n    height: 2px;\r\n    margin: 17px 0;\r\n    padding: 0;\r\n\r\n    cursor: pointer;\r\n\r\n    border: 0;\r\n    border-radius: 3px;\r\n    outline: none;\r\n    background-color: #999;\r\n\r\n    -webkit-appearance: none !important;\r\n}\r\n.mui-input-range input[type='range']::-webkit-slider-thumb\r\n{\r\n    width: 28px;\r\n    height: 28px;\r\n\r\n    border-color: #0062cc;\r\n    border-radius: 50%;\r\n    background-color: #007aff;\r\n    background-clip: padding-box;\r\n\r\n    -webkit-appearance: none !important;\r\n}\r\n.mui-input-range label ~ input[type='range']\r\n{\r\n    width: 65%;\r\n}\r\n.mui-input-range .mui-tooltip\r\n{\r\n    font-size: 36px;\r\n    line-height: 64px;\r\n\r\n    position: absolute;\r\n    z-index: 1;\r\n    top: -70px;\r\n\r\n    width: 64px;\r\n    height: 64px;\r\n\r\n    text-align: center;\r\n\r\n    opacity: .8;\r\n    color: #333;\r\n    border: 1px solid #ddd;\r\n    border-radius: 6px;\r\n    background-color: #fff;\r\n    text-shadow: 0 1px 0 #f3f3f3;\r\n}\r\n\r\n.mui-search\r\n{\r\n    position: relative;\r\n}\r\n.mui-search input[type='search']\r\n{\r\n    padding-left: 30px;\r\n}\r\n.mui-search .mui-placeholder\r\n{\r\n    font-size: 16px;\r\n    line-height: 34px;\r\n\r\n    position: absolute;\r\n    z-index: 1;\r\n    top: 0;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 0;\r\n\r\n    display: inline-block;\r\n\r\n    height: 34px;\r\n\r\n    text-align: center;\r\n\r\n    color: #999;\r\n    border: 0;\r\n    border-radius: 6px;\r\n    background: none;\r\n}\r\n.mui-search .mui-placeholder .mui-icon\r\n{\r\n    font-size: 20px;\r\n\r\n    color: #333;\r\n}\r\n.mui-search:before\r\n{\r\n    font-family: Muiicons;\r\n    font-size: 20px;\r\n    font-weight: normal;\r\n\r\n    position: absolute;\r\n    top: 50%;\r\n    right: 50%;\r\n\r\n    display: none;\r\n\r\n    margin-top: -18px;\r\n    margin-right: 31px;\r\n\r\n    content: '\\E466';\r\n}\r\n.mui-search.mui-active:before\r\n{\r\n    font-size: 20px;\r\n\r\n    right: auto;\r\n    left: 5px;\r\n\r\n    display: block;\r\n\r\n    margin-right: 0;\r\n}\r\n.mui-search.mui-active input[type='search']\r\n{\r\n    text-align: left;\r\n}\r\n.mui-search.mui-active .mui-placeholder\r\n{\r\n    display: none;\r\n}\r\n\r\n.mui-segmented-control\r\n{\r\n    font-size: 15px;\r\n    font-weight: 400;\r\n\r\n    position: relative;\r\n\r\n    display: table;\r\n    overflow: hidden;\r\n\r\n    width: 100%;\r\n\r\n    table-layout: fixed;\r\n\r\n    border: 1px solid #007aff;\r\n    border-radius: 3px;\r\n    background-color: transparent;\r\n\r\n    -webkit-touch-callout: none;\r\n}\r\n.mui-segmented-control.mui-segmented-control-vertical\r\n{\r\n    border-collapse: collapse;\r\n\r\n    border-width: 0;\r\n    border-radius: 0;\r\n}\r\n.mui-segmented-control.mui-segmented-control-vertical .mui-control-item\r\n{\r\n    display: block;\r\n\r\n    border-bottom: 1px solid #c8c7cc;\r\n    border-left-width: 0;\r\n}\r\n.mui-segmented-control.mui-scroll-wrapper\r\n{\r\n    height: 38px;\r\n}\r\n.mui-segmented-control.mui-scroll-wrapper .mui-scroll\r\n{\r\n    width: auto;\r\n    height: 40px;\r\n\r\n    white-space: nowrap;\r\n}\r\n.mui-segmented-control.mui-scroll-wrapper .mui-control-item\r\n{\r\n    display: inline-block;\r\n\r\n    width: auto;\r\n    padding: 0 20px;\r\n\r\n    border: 0;\r\n}\r\n.mui-segmented-control .mui-control-item\r\n{\r\n    line-height: 38px;\r\n\r\n    display: table-cell;\r\n    overflow: hidden;\r\n\r\n    width: 1%;\r\n    transition: background-color .1s linear;\r\n    text-align: center;\r\n    white-space: nowrap;\r\n    text-overflow: ellipsis;\r\n\r\n    color: #007aff;\r\n    border-color: #007aff;\r\n    border-left: 1px solid #007aff;\r\n}\r\n.mui-segmented-control .mui-control-item:first-child\r\n{\r\n    border-left-width: 0;\r\n}\r\n.mui-segmented-control .mui-control-item.mui-active\r\n{\r\n    color: #fff;\r\n    background-color: #007aff;\r\n}\r\n.mui-segmented-control.mui-segmented-control-inverted\r\n{\r\n    width: 100%;\r\n\r\n    border: 0;\r\n    border-radius: 0;\r\n}\r\n.mui-segmented-control.mui-segmented-control-inverted.mui-segmented-control-vertical .mui-control-item\r\n{\r\n    border-bottom: 1px solid #c8c7cc;\r\n}\r\n.mui-segmented-control.mui-segmented-control-inverted.mui-segmented-control-vertical .mui-control-item.mui-active\r\n{\r\n    border-bottom: 1px solid #c8c7cc;\r\n}\r\n.mui-segmented-control.mui-segmented-control-inverted .mui-control-item\r\n{\r\n    color: inherit;\r\n    border: 0;\r\n}\r\n.mui-segmented-control.mui-segmented-control-inverted .mui-control-item.mui-active\r\n{\r\n    color: #007aff;\r\n    border-bottom: 2px solid #007aff;\r\n    background: none;\r\n}\r\n.mui-segmented-control.mui-segmented-control-inverted ~ .mui-slider-progress-bar\r\n{\r\n    background-color: #007aff;\r\n}\r\n\r\n.mui-segmented-control-positive\r\n{\r\n    border: 1px solid #4cd964;\r\n}\r\n.mui-segmented-control-positive .mui-control-item\r\n{\r\n    color: #4cd964;\r\n    border-color: inherit;\r\n}\r\n.mui-segmented-control-positive .mui-control-item.mui-active\r\n{\r\n    color: #fff;\r\n    background-color: #4cd964;\r\n}\r\n.mui-segmented-control-positive.mui-segmented-control-inverted .mui-control-item.mui-active\r\n{\r\n    color: #4cd964;\r\n    border-bottom: 2px solid #4cd964;\r\n    background: none;\r\n}\r\n.mui-segmented-control-positive.mui-segmented-control-inverted ~ .mui-slider-progress-bar\r\n{\r\n    background-color: #4cd964;\r\n}\r\n\r\n.mui-segmented-control-negative\r\n{\r\n    border: 1px solid #dd524d;\r\n}\r\n.mui-segmented-control-negative .mui-control-item\r\n{\r\n    color: #dd524d;\r\n    border-color: inherit;\r\n}\r\n.mui-segmented-control-negative .mui-control-item.mui-active\r\n{\r\n    color: #fff;\r\n    background-color: #dd524d;\r\n}\r\n.mui-segmented-control-negative.mui-segmented-control-inverted .mui-control-item.mui-active\r\n{\r\n    color: #dd524d;\r\n    border-bottom: 2px solid #dd524d;\r\n    background: none;\r\n}\r\n.mui-segmented-control-negative.mui-segmented-control-inverted ~ .mui-slider-progress-bar\r\n{\r\n    background-color: #dd524d;\r\n}\r\n\r\n.mui-control-content\r\n{\r\n    position: relative;\r\n\r\n    display: none;\r\n}\r\n.mui-control-content.mui-active\r\n{\r\n    display: block;\r\n}\r\n\r\n.mui-popover\r\n{\r\n    position: absolute;\r\n    z-index: 999;\r\n\r\n    display: none;\r\n\r\n    width: 280px;\r\n    transition: opacity .3s;\r\n    transition-property: opacity;\r\n    -webkit-transform: none;\r\n            transform: none;\r\n\r\n    opacity: 0;\r\n    border-radius: 7px;\r\n    background-color: #f7f7f7;\r\n    box-shadow: 0 0 15px rgba(0, 0, 0, .1);\r\n}\r\n.mui-popover .mui-popover-arrow\r\n{\r\n    position: absolute;\r\n    z-index: 1000;\r\n    top: -25px;\r\n    left: 0;\r\n\r\n    overflow: hidden;\r\n\r\n    width: 26px;\r\n    height: 26px;\r\n}\r\n.mui-popover .mui-popover-arrow:after\r\n{\r\n    position: absolute;\r\n    top: 19px;\r\n    left: 0;\r\n\r\n    width: 26px;\r\n    height: 26px;\r\n\r\n    content: ' ';\r\n    -webkit-transform: rotate(45deg);\r\n            transform: rotate(45deg);\r\n\r\n    border-radius: 3px;\r\n    background: #f7f7f7;\r\n}\r\n.mui-popover .mui-popover-arrow.mui-bottom\r\n{\r\n    top: 100%;\r\n    left: -26px;\r\n\r\n    margin-top: -1px;\r\n}\r\n.mui-popover .mui-popover-arrow.mui-bottom:after\r\n{\r\n    top: -19px;\r\n    left: 0;\r\n}\r\n.mui-popover.mui-popover-action\r\n{\r\n    bottom: 0;\r\n\r\n    width: 100%;\r\n    transition: opacity .3s, -webkit-transform .3s;\r\n    transition: transform .3s, opacity .3s;\r\n    transition:         transform .3s, opacity .3s, -webkit-transform .3s;\r\n    -webkit-transform: translate3d(0, 100%, 0);\r\n            transform: translate3d(0, 100%, 0);\r\n\r\n    border-radius: 0;\r\n    background: none;\r\n    box-shadow: none;\r\n}\r\n.mui-popover.mui-popover-action .mui-popover-arrow\r\n{\r\n    display: none;\r\n}\r\n.mui-popover.mui-popover-action.mui-popover-bottom\r\n{\r\n    position: fixed;\r\n}\r\n.mui-popover.mui-popover-action.mui-active\r\n{\r\n    -webkit-transform: translate3d(0, 0, 0);\r\n            transform: translate3d(0, 0, 0);\r\n}\r\n.mui-popover.mui-popover-action .mui-table-view\r\n{\r\n    margin: 8px;\r\n\r\n    text-align: center;\r\n\r\n    color: #007aff;\r\n    border-radius: 4px;\r\n}\r\n.mui-popover.mui-popover-action .mui-table-view .mui-table-view-cell:after\r\n{\r\n    position: absolute;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 0;\r\n\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n\r\n    background-color: #c8c7cc;\r\n}\r\n.mui-popover.mui-popover-action .mui-table-view small\r\n{\r\n    font-weight: 400;\r\n    line-height: 1.3;\r\n\r\n    display: block;\r\n}\r\n.mui-popover.mui-active\r\n{\r\n    display: block;\r\n\r\n    opacity: 1;\r\n}\r\n.mui-popover .mui-bar ~ .mui-table-view\r\n{\r\n    padding-top: 44px;\r\n}\r\n\r\n.mui-backdrop\r\n{\r\n    position: fixed;\r\n    z-index: 998;\r\n    top: 0;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 0;\r\n\r\n    background-color: rgba(0, 0, 0, .3);\r\n}\r\n\r\n.mui-bar-backdrop.mui-backdrop\r\n{\r\n    bottom: 50px;\r\n\r\n    background: none;\r\n}\r\n\r\n.mui-backdrop-action.mui-backdrop\r\n{\r\n    background-color: rgba(0, 0, 0, .3);\r\n}\r\n\r\n.mui-bar-backdrop.mui-backdrop, .mui-backdrop-action.mui-backdrop\r\n{\r\n    opacity: 0;\r\n}\r\n.mui-bar-backdrop.mui-backdrop.mui-active, .mui-backdrop-action.mui-backdrop.mui-active\r\n{\r\n    transition: all .4s ease;\r\n\r\n    opacity: 1;\r\n}\r\n\r\n.mui-popover .mui-btn-block\r\n{\r\n    margin-bottom: 5px;\r\n}\r\n.mui-popover .mui-btn-block:last-child\r\n{\r\n    margin-bottom: 0;\r\n}\r\n\r\n.mui-popover .mui-bar\r\n{\r\n    box-shadow: none;\r\n}\r\n\r\n.mui-popover .mui-bar-nav\r\n{\r\n    border-bottom: 1px solid rgba(0, 0, 0, .15);\r\n    border-top-left-radius: 12px;\r\n    border-top-right-radius: 12px;\r\n    box-shadow: none;\r\n}\r\n\r\n.mui-popover .mui-scroll-wrapper\r\n{\r\n    margin: 7px 0;\r\n\r\n    border-radius: 7px;\r\n    background-clip: padding-box;\r\n}\r\n\r\n.mui-popover .mui-scroll .mui-table-view\r\n{\r\n    max-height: none;\r\n}\r\n\r\n.mui-popover .mui-table-view\r\n{\r\n    overflow: auto;\r\n\r\n    max-height: 300px;\r\n    margin-bottom: 0;\r\n\r\n    border-radius: 7px;\r\n    background-color: #f7f7f7;\r\n    background-image: none;\r\n\r\n    -webkit-overflow-scrolling: touch;\r\n}\r\n.mui-popover .mui-table-view:before, .mui-popover .mui-table-view:after\r\n{\r\n    height: 0;\r\n}\r\n.mui-popover .mui-table-view .mui-table-view-cell:first-child,\r\n.mui-popover .mui-table-view .mui-table-view-cell:first-child > a:not(.mui-btn)\r\n{\r\n    border-top-left-radius: 12px;\r\n    border-top-right-radius: 12px;\r\n}\r\n.mui-popover .mui-table-view .mui-table-view-cell:last-child,\r\n.mui-popover .mui-table-view .mui-table-view-cell:last-child > a:not(.mui-btn)\r\n{\r\n    border-bottom-right-radius: 12px;\r\n    border-bottom-left-radius: 12px;\r\n}\r\n\r\n.mui-popover.mui-bar-popover .mui-table-view\r\n{\r\n    width: 106px;\r\n}\r\n.mui-popover.mui-bar-popover .mui-table-view .mui-table-view-cell\r\n{\r\n    padding: 11px 15px 11px 15px;\r\n\r\n    background-position: 0 100%;\r\n}\r\n.mui-popover.mui-bar-popover .mui-table-view .mui-table-view-cell > a:not(.mui-btn)\r\n{\r\n    margin: -11px -15px -11px -15px;\r\n}\r\n\r\n.mui-popup-backdrop\r\n{\r\n    position: fixed;\r\n    z-index: 998;\r\n    top: 0;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 0;\r\n    transition-duration: 400ms;\r\n\r\n    opacity: 0;\r\n    background: rgba(0, 0, 0, .4);\r\n}\r\n.mui-popup-backdrop.mui-active\r\n{\r\n    opacity: 1;\r\n}\r\n\r\n.mui-popup\r\n{\r\n    position: fixed;\r\n    z-index: 10000;\r\n    top: 50%;\r\n    left: 50%;\r\n\r\n    display: none;\r\n    overflow: hidden;\r\n\r\n    width: 270px;\r\n    transition-property: opacity,-webkit-transform;\r\n    transition-property: transform,opacity;\r\n    transition-property:         transform,opacity,-webkit-transform;\r\n    -webkit-transform: translate3d(-50%, -50%, 0) scale(1.185);\r\n            transform: translate3d(-50%, -50%, 0) scale(1.185);\r\n    text-align: center;\r\n\r\n    opacity: 0;\r\n    color: #000;\r\n    border-radius: 13px;\r\n}\r\n.mui-popup.mui-popup-in\r\n{\r\n    display: block;\r\n    transition-duration: 400ms;\r\n    -webkit-transform: translate3d(-50%, -50%, 0) scale(1);\r\n            transform: translate3d(-50%, -50%, 0) scale(1);\r\n\r\n    opacity: 1;\r\n}\r\n.mui-popup.mui-popup-out\r\n{\r\n    transition-duration: 400ms;\r\n    -webkit-transform: translate3d(-50%, -50%, 0) scale(1);\r\n            transform: translate3d(-50%, -50%, 0) scale(1);\r\n\r\n    opacity: 0;\r\n}\r\n\r\n.mui-popup-inner\r\n{\r\n    position: relative;\r\n\r\n    padding: 15px;\r\n\r\n    border-radius: 13px 13px 0 0;\r\n    background: rgba(255, 255, 255, .95);\r\n}\r\n.mui-popup-inner:after\r\n{\r\n    position: absolute;\r\n    z-index: 15;\r\n    top: auto;\r\n    right: auto;\r\n    bottom: 0;\r\n    left: 0;\r\n\r\n    display: block;\r\n\r\n    width: 100%;\r\n    height: 1px;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleY(.5);\r\n            transform: scaleY(.5);\r\n    -webkit-transform-origin: 50% 100%;\r\n            transform-origin: 50% 100%;\r\n\r\n    background-color: rgba(0, 0, 0, .2);\r\n}\r\n\r\n.mui-popup-title\r\n{\r\n    font-size: 18px;\r\n    font-weight: 500;\r\n\r\n    text-align: center;\r\n}\r\n\r\n.mui-popup-title + .mui-popup-text\r\n{\r\n    font-family: inherit;\r\n    font-size: 14px;\r\n\r\n    margin: 5px 0 0;\r\n}\r\n\r\n.mui-popup-buttons\r\n{\r\n    position: relative;\r\n\r\n    display: -webkit-box;\r\n    display:         -ms-flexbox;\r\n    display:         flex;\r\n\r\n    height: 44px;\r\n\r\n    -webkit-box-pack: center;\r\n            -ms-flex-pack: center;\r\n        justify-content: center;\r\n}\r\n\r\n.mui-popup-button\r\n{\r\n    font-size: 17px;\r\n    line-height: 44px;\r\n\r\n    position: relative;\r\n\r\n    display: block;\r\n    overflow: hidden;\r\n\r\n    box-sizing: border-box;\r\n    width: 100%;\r\n    height: 44px;\r\n    padding: 0 5px;\r\n\r\n    cursor: pointer;\r\n    text-align: center;\r\n    white-space: nowrap;\r\n    text-overflow: ellipsis;\r\n\r\n    color: #007aff;\r\n    background: rgba(255, 255, 255, .95);\r\n\r\n    -webkit-box-flex: 1;\r\n}\r\n.mui-popup-button:after\r\n{\r\n    position: absolute;\r\n    z-index: 15;\r\n    top: 0;\r\n    right: 0;\r\n    bottom: auto;\r\n    left: auto;\r\n\r\n    display: block;\r\n\r\n    width: 1px;\r\n    height: 100%;\r\n\r\n    content: '';\r\n    -webkit-transform: scaleX(.5);\r\n            transform: scaleX(.5);\r\n    -webkit-transform-origin: 100% 50%;\r\n            transform-origin: 100% 50%;\r\n\r\n    background-color: rgba(0, 0, 0, .2);\r\n}\r\n.mui-popup-button:first-child\r\n{\r\n    border-radius: 0 0 0 13px;\r\n}\r\n.mui-popup-button:first-child:last-child\r\n{\r\n    border-radius: 0 0 13px 13px;\r\n}\r\n.mui-popup-button:last-child\r\n{\r\n    border-radius: 0 0 13px 0;\r\n}\r\n.mui-popup-button:last-child:after\r\n{\r\n    display: none;\r\n}\r\n.mui-popup-button.mui-popup-button-bold\r\n{\r\n    font-weight: 600;\r\n}\r\n\r\n.mui-popup-input input\r\n{\r\n    font-size: 14px;\r\n\r\n    width: 100%;\r\n    height: 26px;\r\n    margin: 15px 0 0;\r\n    padding: 0 5px;\r\n\r\n    border: 1px solid rgba(0, 0, 0, .3);\r\n    border-radius: 0;\r\n    background: #fff;\r\n}\r\n\r\n.mui-plus.mui-android .mui-popup-backdrop\r\n{\r\n    transition-duration: 1ms;\r\n}\r\n\r\n.mui-plus.mui-android .mui-popup\r\n{\r\n    transition-duration: 1ms;\r\n    -webkit-transform: translate3d(-50%, -50%, 0) scale(1);\r\n            transform: translate3d(-50%, -50%, 0) scale(1);\r\n}\r\n\r\n/* === Progress Bar === */\r\n.mui-progressbar\r\n{\r\n    position: relative;\r\n\r\n    display: block;\r\n    overflow: hidden;\r\n\r\n    width: 100%;\r\n    height: 2px;\r\n\r\n    -webkit-transform-origin: center top;\r\n            transform-origin: center top;\r\n    vertical-align: middle;\r\n\r\n    border-radius: 2px;\r\n    background: #b6b6b6;\r\n\r\n    -webkit-transform-style: preserve-3d;\r\n            transform-style: preserve-3d;\r\n}\r\n.mui-progressbar span\r\n{\r\n    position: absolute;\r\n    top: 0;\r\n    left: 0;\r\n\r\n    width: 100%;\r\n    height: 100%;\r\n    transition: 150ms;\r\n    -webkit-transform: translate3d(-100%, 0, 0);\r\n            transform: translate3d(-100%, 0, 0);\r\n\r\n    background: #007aff;\r\n}\r\n.mui-progressbar.mui-progressbar-infinite:before\r\n{\r\n    position: absolute;\r\n    top: 0;\r\n    left: 0;\r\n\r\n    width: 100%;\r\n    height: 100%;\r\n\r\n    content: '';\r\n    -webkit-transform: translate3d(0, 0, 0);\r\n            transform: translate3d(0, 0, 0);\r\n    -webkit-transform-origin: left center;\r\n            transform-origin: left center;\r\n    -webkit-animation: mui-progressbar-infinite 1s linear infinite;\r\n            animation: mui-progressbar-infinite 1s linear infinite;\r\n\r\n    background: #007aff;\r\n}\r\n\r\nbody > .mui-progressbar\r\n{\r\n    position: absolute;\r\n    z-index: 10000;\r\n    top: 44px;\r\n    left: 0;\r\n\r\n    border-radius: 0;\r\n}\r\n\r\n.mui-progressbar-in\r\n{\r\n    -webkit-animation: mui-progressbar-in 300ms forwards;\r\n            animation: mui-progressbar-in 300ms forwards;\r\n}\r\n\r\n.mui-progressbar-out\r\n{\r\n    -webkit-animation: mui-progressbar-out 300ms forwards;\r\n            animation: mui-progressbar-out 300ms forwards;\r\n}\r\n\r\n@-webkit-keyframes mui-progressbar-in\r\n{\r\n    from\r\n    {\r\n        -webkit-transform: scaleY(0);\r\n\r\n        opacity: 0;\r\n    }\r\n\r\n    to\r\n    {\r\n        -webkit-transform: scaleY(1);\r\n\r\n        opacity: 1;\r\n    }\r\n}\r\n@keyframes mui-progressbar-in\r\n{\r\n    from\r\n    {\r\n        -webkit-transform: scaleY(0);\r\n                transform: scaleY(0);\r\n\r\n        opacity: 0;\r\n    }\r\n\r\n    to\r\n    {\r\n        -webkit-transform: scaleY(1);\r\n                transform: scaleY(1);\r\n\r\n        opacity: 1;\r\n    }\r\n}\r\n@-webkit-keyframes mui-progressbar-out\r\n{\r\n    from\r\n    {\r\n        -webkit-transform: scaleY(1);\r\n\r\n        opacity: 1;\r\n    }\r\n\r\n    to\r\n    {\r\n        -webkit-transform: scaleY(0);\r\n\r\n        opacity: 0;\r\n    }\r\n}\r\n@keyframes mui-progressbar-out\r\n{\r\n    from\r\n    {\r\n        -webkit-transform: scaleY(1);\r\n                transform: scaleY(1);\r\n\r\n        opacity: 1;\r\n    }\r\n\r\n    to\r\n    {\r\n        -webkit-transform: scaleY(0);\r\n                transform: scaleY(0);\r\n\r\n        opacity: 0;\r\n    }\r\n}\r\n@-webkit-keyframes mui-progressbar-infinite\r\n{\r\n    0%\r\n    {\r\n        -webkit-transform: translate3d(-50%, 0, 0) scaleX(.5);\r\n    }\r\n\r\n    100%\r\n    {\r\n        -webkit-transform: translate3d(100%, 0, 0) scaleX(.5);\r\n    }\r\n}\r\n@keyframes mui-progressbar-infinite\r\n{\r\n    0%\r\n    {\r\n        -webkit-transform: translate3d(-50%, 0, 0) scaleX(.5);\r\n                transform: translate3d(-50%, 0, 0) scaleX(.5);\r\n    }\r\n\r\n    100%\r\n    {\r\n        -webkit-transform: translate3d(100%, 0, 0) scaleX(.5);\r\n                transform: translate3d(100%, 0, 0) scaleX(.5);\r\n    }\r\n}\r\n.mui-pagination\r\n{\r\n    display: inline-block;\r\n\r\n    margin: 0 auto;\r\n    padding-left: 0;\r\n\r\n    border-radius: 6px;\r\n}\r\n.mui-pagination > li\r\n{\r\n    display: inline;\r\n}\r\n.mui-pagination > li > a,\r\n.mui-pagination > li > span\r\n{\r\n    line-height: 1.428571429;\r\n\r\n    position: relative;\r\n\r\n    float: left;\r\n\r\n    margin-left: -1px;\r\n    padding: 6px 12px;\r\n\r\n    text-decoration: none;\r\n\r\n    color: #007aff;\r\n    border: 1px solid #ddd;\r\n    background-color: #fff;\r\n}\r\n.mui-pagination > li:first-child > a,\r\n.mui-pagination > li:first-child > span\r\n{\r\n    margin-left: 0;\r\n\r\n    border-top-left-radius: 6px;\r\n    border-bottom-left-radius: 6px;\r\n    background-clip: padding-box;\r\n}\r\n.mui-pagination > li:last-child > a,\r\n.mui-pagination > li:last-child > span\r\n{\r\n    border-top-right-radius: 6px;\r\n    border-bottom-right-radius: 6px;\r\n    background-clip: padding-box;\r\n}\r\n.mui-pagination > li:active > a, .mui-pagination > li:active > a:active,\r\n.mui-pagination > li:active > span,\r\n.mui-pagination > li:active > span:active,\r\n.mui-pagination > li.mui-active > a,\r\n.mui-pagination > li.mui-active > a:active,\r\n.mui-pagination > li.mui-active > span,\r\n.mui-pagination > li.mui-active > span:active\r\n{\r\n    z-index: 2;\r\n\r\n    cursor: default;\r\n\r\n    color: #fff;\r\n    border-color: #007aff;\r\n    background-color: #007aff;\r\n}\r\n.mui-pagination > li.mui-disabled > span,\r\n.mui-pagination > li.mui-disabled > span:active,\r\n.mui-pagination > li.mui-disabled > a,\r\n.mui-pagination > li.mui-disabled > a:active\r\n{\r\n    opacity: .6;\r\n    color: #777;\r\n    border: 1px solid #ddd;\r\n    background-color: #fff;\r\n}\r\n\r\n.mui-pagination-lg > li > a,\r\n.mui-pagination-lg > li > span\r\n{\r\n    font-size: 18px;\r\n\r\n    padding: 10px 16px;\r\n}\r\n\r\n.mui-pagination-sm > li > a,\r\n.mui-pagination-sm > li > span\r\n{\r\n    font-size: 12px;\r\n\r\n    padding: 5px 10px;\r\n}\r\n\r\n.mui-pager\r\n{\r\n    padding-left: 0;\r\n\r\n    list-style: none;\r\n\r\n    text-align: center;\r\n}\r\n.mui-pager:before, .mui-pager:after\r\n{\r\n    display: table;\r\n\r\n    content: ' ';\r\n}\r\n.mui-pager:after\r\n{\r\n    clear: both;\r\n}\r\n.mui-pager li\r\n{\r\n    display: inline;\r\n}\r\n.mui-pager li > a,\r\n.mui-pager li > span\r\n{\r\n    display: inline-block;\r\n\r\n    padding: 5px 14px;\r\n\r\n    border: 1px solid #ddd;\r\n    border-radius: 6px;\r\n    background-color: #fff;\r\n    background-clip: padding-box;\r\n}\r\n.mui-pager li:active > a, .mui-pager li:active > span, .mui-pager li.mui-active > a, .mui-pager li.mui-active > span\r\n{\r\n    cursor: default;\r\n    text-decoration: none;\r\n\r\n    color: #fff;\r\n    border-color: #007aff;\r\n    background-color: #007aff;\r\n}\r\n.mui-pager .mui-next > a,\r\n.mui-pager .mui-next > span\r\n{\r\n    float: right;\r\n}\r\n.mui-pager .mui-previous > a,\r\n.mui-pager .mui-previous > span\r\n{\r\n    float: left;\r\n}\r\n.mui-pager .mui-disabled > a,\r\n.mui-pager .mui-disabled > a:active,\r\n.mui-pager .mui-disabled > span,\r\n.mui-pager .mui-disabled > span:active\r\n{\r\n    opacity: .6;\r\n    color: #777;\r\n    border: 1px solid #ddd;\r\n    background-color: #fff;\r\n}\r\n\r\n.mui-modal\r\n{\r\n    position: fixed;\r\n    z-index: 999;\r\n    top: 0;\r\n\r\n    overflow: hidden;\r\n\r\n    width: 100%;\r\n    min-height: 100%;\r\n    transition: opacity 1ms .25s, -webkit-transform .25s;\r\n    transition: transform .25s, opacity 1ms .25s;\r\n    transition:         transform .25s, opacity 1ms .25s, -webkit-transform .25s;\r\n    transition-timing-function: cubic-bezier(.1, .5, .1, 1);\r\n    -webkit-transform: translate3d(0, 100%, 0);\r\n            transform: translate3d(0, 100%, 0);\r\n\r\n    opacity: 0;\r\n    background-color: #fff;\r\n}\r\n.mui-modal.mui-active\r\n{\r\n    height: 100%;\r\n    transition: -webkit-transform .25s;\r\n    transition: transform .25s;\r\n    transition:         transform .25s, -webkit-transform .25s;\r\n    transition-timing-function: cubic-bezier(.1, .5, .1, 1);\r\n    -webkit-transform: translate3d(0, 0, 0);\r\n            transform: translate3d(0, 0, 0);\r\n\r\n    opacity: 1;\r\n}\r\n\r\n.mui-android .mui-modal .mui-bar\r\n{\r\n    position: static;\r\n}\r\n\r\n.mui-android .mui-modal .mui-bar-nav ~ .mui-content\r\n{\r\n    padding-top: 0;\r\n}\r\n\r\n.mui-slider\r\n{\r\n    position: relative;\r\n    z-index: 1;\r\n\r\n    overflow: hidden;\r\n\r\n    width: 100%;\r\n}\r\n.mui-slider .mui-segmented-control.mui-segmented-control-inverted .mui-control-item.mui-active\r\n{\r\n    border-bottom: 0;\r\n}\r\n.mui-slider .mui-segmented-control.mui-segmented-control-inverted ~ .mui-slider-group .mui-slider-item\r\n{\r\n    border-top: 1px solid #c8c7cc;\r\n    border-bottom: 1px solid #c8c7cc;\r\n}\r\n.mui-slider .mui-slider-group\r\n{\r\n    font-size: 0;\r\n\r\n    position: relative;\r\n    transition: all 0s linear;\r\n    white-space: nowrap;\r\n}\r\n.mui-slider .mui-slider-group .mui-slider-item\r\n{\r\n    font-size: 14px;\r\n\r\n    position: relative;\r\n\r\n    display: inline-block;\r\n\r\n    width: 100%;\r\n    height: 100%;\r\n\r\n    vertical-align: top;\r\n    white-space: normal;\r\n}\r\n.mui-slider .mui-slider-group .mui-slider-item > a:not(.mui-control-item)\r\n{\r\n    line-height: 0;\r\n\r\n    position: relative;\r\n\r\n    display: block;\r\n}\r\n.mui-slider .mui-slider-group .mui-slider-item img\r\n{\r\n    width: 100%;\r\n}\r\n.mui-slider .mui-slider-group .mui-slider-item .mui-table-view:before, .mui-slider .mui-slider-group .mui-slider-item .mui-table-view:after\r\n{\r\n    height: 0;\r\n}\r\n.mui-slider .mui-slider-group.mui-slider-loop\r\n{\r\n    -webkit-transform: translate(-100%, 0px);\r\n            transform: translate(-100%, 0px);\r\n}\r\n\r\n.mui-slider-title\r\n{\r\n    line-height: 30px;\r\n\r\n    position: absolute;\r\n    bottom: 0;\r\n    left: 0;\r\n\r\n    width: 100%;\r\n    height: 30px;\r\n    margin: 0;\r\n\r\n    text-align: left;\r\n    text-indent: 12px;\r\n\r\n    opacity: .8;\r\n    background-color: #000;\r\n}\r\n\r\n.mui-slider-indicator\r\n{\r\n    position: absolute;\r\n    bottom: 8px;\r\n\r\n    width: 100%;\r\n\r\n    text-align: center;\r\n\r\n    background: none;\r\n}\r\n.mui-slider-indicator.mui-segmented-control\r\n{\r\n    position: relative;\r\n    bottom: auto;\r\n}\r\n.mui-slider-indicator .mui-indicator\r\n{\r\n    display: inline-block;\r\n\r\n    width: 6px;\r\n    height: 6px;\r\n    margin: 1px 6px;\r\n\r\n    cursor: pointer;\r\n\r\n    border-radius: 50%;\r\n    background: #aaa;\r\n    box-shadow: 0 0 1px 1px rgba(130, 130, 130, .7);\r\n}\r\n.mui-slider-indicator .mui-active.mui-indicator\r\n{\r\n    background: #fff;\r\n}\r\n.mui-slider-indicator .mui-icon\r\n{\r\n    font-size: 20px;\r\n    line-height: 30px;\r\n\r\n    width: 40px;\r\n    height: 30px;\r\n    margin: 3px;\r\n\r\n    text-align: center;\r\n\r\n    border: 1px solid #ddd;\r\n}\r\n.mui-slider-indicator .mui-number\r\n{\r\n    line-height: 32px;\r\n\r\n    display: inline-block;\r\n\r\n    width: 58px;\r\n}\r\n.mui-slider-indicator .mui-number span\r\n{\r\n    color: #ff5053;\r\n}\r\n\r\n.mui-slider-progress-bar\r\n{\r\n    z-index: 1;\r\n\r\n    height: 2px;\r\n\r\n    -webkit-transform: translateZ(0);\r\n            transform: translateZ(0);\r\n}\r\n\r\n.mui-switch\r\n{\r\n    position: relative;\r\n\r\n    display: block;\r\n\r\n    width: 74px;\r\n    height: 30px;\r\n    transition-timing-function: ease-in-out;\r\n    transition-duration: .2s;\r\n    transition-property: background-color, border;\r\n\r\n    border: 2px solid #ddd;\r\n    border-radius: 20px;\r\n    background-color: #fff;\r\n    background-clip: padding-box;\r\n}\r\n.mui-switch.mui-disabled\r\n{\r\n    opacity: .3;\r\n}\r\n.mui-switch .mui-switch-handle\r\n{\r\n    position: absolute;\r\n    z-index: 1;\r\n    top: -1px;\r\n    left: -1px;\r\n\r\n    width: 28px;\r\n    height: 28px;\r\n    transition: .2s ease-in-out;\r\n    transition-property: width,left, -webkit-transform;\r\n    transition-property: transform, width,left;\r\n    transition-property:         transform, width,left, -webkit-transform;\r\n\r\n    border-radius: 16px;\r\n    background-color: #fff;\r\n    background-clip: padding-box;\r\n    box-shadow: 0 2px 5px rgba(0, 0, 0, .4);\r\n}\r\n.mui-switch:before\r\n{\r\n    font-size: 13px;\r\n\r\n    position: absolute;\r\n    top: 3px;\r\n    right: 11px;\r\n\r\n    content: 'Off';\r\n    text-transform: uppercase;\r\n\r\n    color: #999;\r\n}\r\n.mui-switch.mui-dragging\r\n{\r\n    border-color: #f7f7f7;\r\n    background-color: #f7f7f7;\r\n}\r\n.mui-switch.mui-dragging .mui-switch-handle\r\n{\r\n    width: 38px;\r\n}\r\n.mui-switch.mui-dragging.mui-active .mui-switch-handle\r\n{\r\n    left: -11px;\r\n\r\n    width: 38px;\r\n}\r\n.mui-switch.mui-active\r\n{\r\n    border-color: #4cd964;\r\n    background-color: #4cd964;\r\n}\r\n.mui-switch.mui-active .mui-switch-handle\r\n{\r\n    -webkit-transform: translate(43px, 0);\r\n            transform: translate(43px, 0);\r\n}\r\n.mui-switch.mui-active:before\r\n{\r\n    right: auto;\r\n    left: 15px;\r\n\r\n    content: 'On';\r\n\r\n    color: #fff;\r\n}\r\n.mui-switch input[type='checkbox']\r\n{\r\n    display: none;\r\n}\r\n\r\n.mui-switch-mini\r\n{\r\n    width: 47px;\r\n}\r\n.mui-switch-mini:before\r\n{\r\n    display: none;\r\n}\r\n.mui-switch-mini.mui-active .mui-switch-handle\r\n{\r\n    -webkit-transform: translate(16px, 0);\r\n            transform: translate(16px, 0);\r\n}\r\n\r\n.mui-switch-blue.mui-active\r\n{\r\n    border: 2px solid #007aff;\r\n    background-color: #007aff;\r\n}\r\n\r\n.mui-content.mui-fade\r\n{\r\n    left: 0;\r\n\r\n    opacity: 0;\r\n}\r\n.mui-content.mui-fade.mui-in\r\n{\r\n    opacity: 1;\r\n}\r\n.mui-content.mui-sliding\r\n{\r\n    z-index: 2;\r\n    transition: -webkit-transform .4s;\r\n    transition: transform .4s;\r\n    transition:         transform .4s, -webkit-transform .4s;\r\n    -webkit-transform: translate3d(0, 0, 0);\r\n            transform: translate3d(0, 0, 0);\r\n}\r\n.mui-content.mui-sliding.mui-left\r\n{\r\n    z-index: 1;\r\n\r\n    -webkit-transform: translate3d(-100%, 0, 0);\r\n            transform: translate3d(-100%, 0, 0);\r\n}\r\n.mui-content.mui-sliding.mui-right\r\n{\r\n    z-index: 3;\r\n\r\n    -webkit-transform: translate3d(100%, 0, 0);\r\n            transform: translate3d(100%, 0, 0);\r\n}\r\n\r\n.mui-navigate-right:after,\r\n.mui-push-left:after,\r\n.mui-push-right:after\r\n{\r\n    font-family: Muiicons;\r\n    font-size: inherit;\r\n    line-height: 1;\r\n\r\n    position: absolute;\r\n    top: 50%;\r\n\r\n    display: inline-block;\r\n\r\n    -webkit-transform: translateY(-50%);\r\n            transform: translateY(-50%);\r\n    text-decoration: none;\r\n\r\n    color: #bbb;\r\n\r\n    -webkit-font-smoothing: antialiased;\r\n}\r\n\r\n.mui-push-left:after\r\n{\r\n    left: 15px;\r\n\r\n    content: '\\E582';\r\n}\r\n\r\n.mui-navigate-right:after,\r\n.mui-push-right:after\r\n{\r\n    right: 15px;\r\n\r\n    content: '\\E583';\r\n}\r\n\r\n.mui-pull-top-pocket, .mui-pull-bottom-pocket\r\n{\r\n    position: absolute;\r\n    left: 0;\r\n\r\n    display: block;\r\n    visibility: hidden;\r\n    overflow: hidden;\r\n\r\n    width: 100%;\r\n    height: 50px;\r\n}\r\n\r\n.mui-plus-pullrefresh .mui-pull-top-pocket, .mui-plus-pullrefresh .mui-pull-bottom-pocket\r\n{\r\n    display: none;\r\n    visibility: visible;\r\n}\r\n\r\n.mui-pull-top-pocket\r\n{\r\n    top: 0;\r\n}\r\n\r\n.mui-bar-nav ~ .mui-content .mui-pull-top-pocket\r\n{\r\n    top: 44px;\r\n}\r\n\r\n.mui-bar-nav ~ .mui-bar-header-secondary ~ .mui-content .mui-pull-top-pocket\r\n{\r\n    top: 88px;\r\n}\r\n\r\n.mui-pull-bottom-pocket\r\n{\r\n    position: relative;\r\n    bottom: 0;\r\n\r\n    height: 40px;\r\n}\r\n.mui-pull-bottom-pocket .mui-pull-loading\r\n{\r\n    visibility: hidden;\r\n}\r\n.mui-pull-bottom-pocket .mui-pull-loading.mui-in\r\n{\r\n    display: inline-block;\r\n}\r\n\r\n.mui-pull\r\n{\r\n    font-weight: bold;\r\n\r\n    position: absolute;\r\n    right: 0;\r\n    bottom: 10px;\r\n    left: 0;\r\n\r\n    text-align: center;\r\n\r\n    color: #777;\r\n}\r\n\r\n.mui-pull-loading\r\n{\r\n    margin-right: 10px;\r\n    transition: -webkit-transform .4s;\r\n    transition: transform .4s;\r\n    transition:         transform .4s, -webkit-transform .4s;\r\n    transition-duration: 400ms;\r\n    vertical-align: middle;\r\n}\r\n\r\n.mui-pull-loading.mui-reverse\r\n{\r\n    -webkit-transform: rotate(180deg) translateZ(0);\r\n            transform: rotate(180deg) translateZ(0);\r\n}\r\n\r\n.mui-pull-caption\r\n{\r\n    font-size: 15px;\r\n    line-height: 24px;\r\n\r\n    position: relative;\r\n\r\n    display: inline-block;\r\n    overflow: visible;\r\n\r\n    margin-top: 0;\r\n\r\n    vertical-align: middle;\r\n}\r\n.mui-pull-caption span\r\n{\r\n    display: none;\r\n}\r\n.mui-pull-caption span.mui-in\r\n{\r\n    display: inline;\r\n}\r\n\r\n.mui-toast-container\r\n{\r\n    line-height: 17px;\r\n\r\n    position: fixed;\r\n    z-index: 9999;\r\n    bottom: 50px;\r\n    left: 50%;\r\n    transition: opacity .3s;\r\n    -webkit-transform: translate(-50%, 0);\r\n            transform: translate(-50%, 0);\r\n\r\n    opacity: 0;\r\n}\r\n.mui-toast-container.mui-active\r\n{\r\n    opacity: .9;\r\n}\r\n\r\n.mui-toast-message\r\n{\r\n    font-size: 14px;\r\n\r\n    padding: 10px 25px;\r\n\r\n    text-align: center;\r\n\r\n    color: #fff;\r\n    border-radius: 6px;\r\n    background-color: #323232;\r\n}\r\n\r\n.mui-numbox\r\n{\r\n    position: relative;\r\n\r\n    display: inline-block;\r\n    overflow: hidden;\r\n\r\n    width: 120px;\r\n    height: 35px;\r\n    padding: 0 40px 0 40px;\r\n\r\n    vertical-align: top;\r\n    vertical-align: middle;\r\n\r\n    border: solid 1px #bbb;\r\n    border-radius: 3px;\r\n    background-color: #efeff4;\r\n}\r\n.mui-numbox [class*=numbox-btn], .mui-numbox [class*=btn-numbox]\r\n{\r\n    font-size: 18px;\r\n    font-weight: normal;\r\n    line-height: 100%;\r\n\r\n    position: absolute;\r\n    top: 0;\r\n\r\n    overflow: hidden;\r\n\r\n    width: 40px;\r\n    height: 100%;\r\n    padding: 0;\r\n\r\n    color: #555;\r\n    border: none;\r\n    border-radius: 0;\r\n    background-color: #f9f9f9;\r\n}\r\n.mui-numbox [class*=numbox-btn]:active, .mui-numbox [class*=btn-numbox]:active\r\n{\r\n    background-color: #ccc;\r\n}\r\n.mui-numbox [class*=numbox-btn][disabled], .mui-numbox [class*=btn-numbox][disabled]\r\n{\r\n    color: #c0c0c0;\r\n}\r\n.mui-numbox .mui-numbox-btn-plus, .mui-numbox .mui-btn-numbox-plus\r\n{\r\n    right: 0;\r\n\r\n    border-top-right-radius: 3px;\r\n    border-bottom-right-radius: 3px;\r\n}\r\n.mui-numbox .mui-numbox-btn-minus, .mui-numbox .mui-btn-numbox-minus\r\n{\r\n    left: 0;\r\n\r\n    border-top-left-radius: 3px;\r\n    border-bottom-left-radius: 3px;\r\n}\r\n.mui-numbox .mui-numbox-input, .mui-numbox .mui-input-numbox\r\n{\r\n    display: inline-block;\r\n    overflow: hidden;\r\n\r\n    width: 100% !important;\r\n    height: 100%;\r\n    margin: 0;\r\n    padding: 0 3px !important;\r\n\r\n    text-align: center;\r\n    text-overflow: ellipsis;\r\n    word-break: normal;\r\n\r\n    border: none !important;\r\n    border-right: solid 1px #ccc !important;\r\n    border-left: solid 1px #ccc !important;\r\n    border-radius: 0 !important;\r\n}\r\n\r\n.mui-input-row .mui-numbox\r\n{\r\n    float: right;\r\n\r\n    margin: 2px 8px;\r\n}\r\n\r\n@font-face {\r\n    font-family: Muiicons;\r\n    font-weight: normal;\r\n    font-style: normal;\r\n\r\n    src: url(" + __webpack_require__(208) + ") format('truetype');\r\n}\r\n/*引入自定义图标*/\r\n@font-face {\r\n    font-family: Muiicons;\r\n    font-weight: normal;\r\n    font-style: normal;\r\n\r\n    src: url(" + __webpack_require__(209) + ") format('truetype');\r\n}\r\n.mui-icon\r\n{\r\n    font-family: Muiicons;\r\n    font-size: 24px;\r\n    font-weight: normal;\r\n    font-style: normal;\r\n    line-height: 1;\r\n\r\n    display: inline-block;\r\n\r\n    text-decoration: none;\r\n\r\n    -webkit-font-smoothing: antialiased;\r\n}\r\n.mui-icon.mui-active\r\n{\r\n    color: #007aff;\r\n}\r\n.mui-icon.mui-right:before\r\n{\r\n    float: right;\r\n\r\n    padding-left: .2em;\r\n}\r\n\r\n.mui-icon-contact:before\r\n{\r\n    content: '\\E100';\r\n}\r\n\r\n.mui-icon-person:before\r\n{\r\n    content: '\\E101';\r\n}\r\n\r\n.mui-icon-personadd:before\r\n{\r\n    content: '\\E102';\r\n}\r\n\r\n.mui-icon-contact-filled:before\r\n{\r\n    content: '\\E130';\r\n}\r\n\r\n.mui-icon-person-filled:before\r\n{\r\n    content: '\\E131';\r\n}\r\n\r\n.mui-icon-personadd-filled:before\r\n{\r\n    content: '\\E132';\r\n}\r\n\r\n.mui-icon-phone:before\r\n{\r\n    content: '\\E200';\r\n}\r\n\r\n.mui-icon-email:before\r\n{\r\n    content: '\\E201';\r\n}\r\n\r\n.mui-icon-chatbubble:before\r\n{\r\n    content: '\\E202';\r\n}\r\n\r\n.mui-icon-chatboxes:before\r\n{\r\n    content: '\\E203';\r\n}\r\n\r\n.mui-icon-phone-filled:before\r\n{\r\n    content: '\\E230';\r\n}\r\n\r\n.mui-icon-email-filled:before\r\n{\r\n    content: '\\E231';\r\n}\r\n\r\n.mui-icon-chatbubble-filled:before\r\n{\r\n    content: '\\E232';\r\n}\r\n\r\n.mui-icon-chatboxes-filled:before\r\n{\r\n    content: '\\E233';\r\n}\r\n\r\n.mui-icon-weibo:before\r\n{\r\n    content: '\\E260';\r\n}\r\n\r\n.mui-icon-weixin:before\r\n{\r\n    content: '\\E261';\r\n}\r\n\r\n.mui-icon-pengyouquan:before\r\n{\r\n    content: '\\E262';\r\n}\r\n\r\n.mui-icon-chat:before\r\n{\r\n    content: '\\E263';\r\n}\r\n\r\n.mui-icon-qq:before\r\n{\r\n    content: '\\E264';\r\n}\r\n\r\n.mui-icon-videocam:before\r\n{\r\n    content: '\\E300';\r\n}\r\n\r\n.mui-icon-camera:before\r\n{\r\n    content: '\\E301';\r\n}\r\n\r\n.mui-icon-mic:before\r\n{\r\n    content: '\\E302';\r\n}\r\n\r\n.mui-icon-location:before\r\n{\r\n    content: '\\E303';\r\n}\r\n\r\n.mui-icon-mic-filled:before, .mui-icon-speech:before\r\n{\r\n    content: '\\E332';\r\n}\r\n\r\n.mui-icon-location-filled:before\r\n{\r\n    content: '\\E333';\r\n}\r\n\r\n.mui-icon-micoff:before\r\n{\r\n    content: '\\E360';\r\n}\r\n\r\n.mui-icon-image:before\r\n{\r\n    content: '\\E363';\r\n}\r\n\r\n.mui-icon-map:before\r\n{\r\n    content: '\\E364';\r\n}\r\n\r\n.mui-icon-compose:before\r\n{\r\n    content: '\\E400';\r\n}\r\n\r\n.mui-icon-trash:before\r\n{\r\n    content: '\\E401';\r\n}\r\n\r\n.mui-icon-upload:before\r\n{\r\n    content: '\\E402';\r\n}\r\n\r\n.mui-icon-download:before\r\n{\r\n    content: '\\E403';\r\n}\r\n\r\n.mui-icon-close:before\r\n{\r\n    content: '\\E404';\r\n}\r\n\r\n.mui-icon-redo:before\r\n{\r\n    content: '\\E405';\r\n}\r\n\r\n.mui-icon-undo:before\r\n{\r\n    content: '\\E406';\r\n}\r\n\r\n.mui-icon-refresh:before\r\n{\r\n    content: '\\E407';\r\n}\r\n\r\n.mui-icon-star:before\r\n{\r\n    content: '\\E408';\r\n}\r\n\r\n.mui-icon-plus:before\r\n{\r\n    content: '\\E409';\r\n}\r\n\r\n.mui-icon-minus:before\r\n{\r\n    content: '\\E410';\r\n}\r\n\r\n.mui-icon-circle:before, .mui-icon-checkbox:before\r\n{\r\n    content: '\\E411';\r\n}\r\n\r\n.mui-icon-close-filled:before, .mui-icon-clear:before\r\n{\r\n    content: '\\E434';\r\n}\r\n\r\n.mui-icon-refresh-filled:before\r\n{\r\n    content: '\\E437';\r\n}\r\n\r\n.mui-icon-star-filled:before\r\n{\r\n    content: '\\E438';\r\n}\r\n\r\n.mui-icon-plus-filled:before\r\n{\r\n    content: '\\E439';\r\n}\r\n\r\n.mui-icon-minus-filled:before\r\n{\r\n    content: '\\E440';\r\n}\r\n\r\n.mui-icon-circle-filled:before\r\n{\r\n    content: '\\E441';\r\n}\r\n\r\n.mui-icon-checkbox-filled:before\r\n{\r\n    content: '\\E442';\r\n}\r\n\r\n.mui-icon-closeempty:before\r\n{\r\n    content: '\\E460';\r\n}\r\n\r\n.mui-icon-refreshempty:before\r\n{\r\n    content: '\\E461';\r\n}\r\n\r\n.mui-icon-reload:before\r\n{\r\n    content: '\\E462';\r\n}\r\n\r\n.mui-icon-starhalf:before\r\n{\r\n    content: '\\E463';\r\n}\r\n\r\n.mui-icon-spinner:before\r\n{\r\n    content: '\\E464';\r\n}\r\n\r\n.mui-icon-spinner-cycle:before\r\n{\r\n    content: '\\E465';\r\n}\r\n\r\n.mui-icon-search:before\r\n{\r\n    content: '\\E466';\r\n}\r\n\r\n.mui-icon-plusempty:before\r\n{\r\n    content: '\\E468';\r\n}\r\n\r\n.mui-icon-forward:before\r\n{\r\n    content: '\\E470';\r\n}\r\n\r\n.mui-icon-back:before, .mui-icon-left-nav:before\r\n{\r\n    content: '\\E471';\r\n}\r\n\r\n.mui-icon-checkmarkempty:before\r\n{\r\n    content: '\\E472';\r\n}\r\n\r\n.mui-icon-home:before\r\n{\r\n    content: '\\E500';\r\n}\r\n\r\n.mui-icon-navigate:before\r\n{\r\n    content: '\\E501';\r\n}\r\n\r\n.mui-icon-gear:before\r\n{\r\n    content: '\\E502';\r\n}\r\n\r\n.mui-icon-paperplane:before\r\n{\r\n    content: '\\E503';\r\n}\r\n\r\n.mui-icon-info:before\r\n{\r\n    content: '\\E504';\r\n}\r\n\r\n.mui-icon-help:before\r\n{\r\n    content: '\\E505';\r\n}\r\n\r\n.mui-icon-locked:before\r\n{\r\n    content: '\\E506';\r\n}\r\n\r\n.mui-icon-more:before\r\n{\r\n    content: '\\E507';\r\n}\r\n\r\n.mui-icon-flag:before\r\n{\r\n    content: '\\E508';\r\n}\r\n\r\n.mui-icon-home-filled:before\r\n{\r\n    content: '\\E530';\r\n}\r\n\r\n.mui-icon-gear-filled:before\r\n{\r\n    content: '\\E532';\r\n}\r\n\r\n.mui-icon-info-filled:before\r\n{\r\n    content: '\\E534';\r\n}\r\n\r\n.mui-icon-help-filled:before\r\n{\r\n    content: '\\E535';\r\n}\r\n\r\n.mui-icon-more-filled:before\r\n{\r\n    content: '\\E537';\r\n}\r\n\r\n.mui-icon-settings:before\r\n{\r\n    content: '\\E560';\r\n}\r\n\r\n.mui-icon-list:before\r\n{\r\n    content: '\\E562';\r\n}\r\n\r\n.mui-icon-bars:before\r\n{\r\n    content: '\\E563';\r\n}\r\n\r\n.mui-icon-loop:before\r\n{\r\n    content: '\\E565';\r\n}\r\n\r\n.mui-icon-paperclip:before\r\n{\r\n    content: '\\E567';\r\n}\r\n\r\n.mui-icon-eye:before\r\n{\r\n    content: '\\E568';\r\n}\r\n\r\n.mui-icon-arrowup:before\r\n{\r\n    content: '\\E580';\r\n}\r\n\r\n.mui-icon-arrowdown:before\r\n{\r\n    content: '\\E581';\r\n}\r\n\r\n.mui-icon-arrowleft:before\r\n{\r\n    content: '\\E582';\r\n}\r\n\r\n.mui-icon-arrowright:before\r\n{\r\n    content: '\\E583';\r\n}\r\n\r\n.mui-icon-arrowthinup:before\r\n{\r\n    content: '\\E584';\r\n}\r\n\r\n.mui-icon-arrowthindown:before\r\n{\r\n    content: '\\E585';\r\n}\r\n\r\n.mui-icon-arrowthinleft:before\r\n{\r\n    content: '\\E586';\r\n}\r\n\r\n.mui-icon-arrowthinright:before\r\n{\r\n    content: '\\E587';\r\n}\r\n\r\n.mui-icon-pulldown:before\r\n{\r\n    content: '\\E588';\r\n}\r\n/*自定义*/\r\n.icon-shouye:before { content: \"\\E621\"; }\r\n\r\n.icon-huiyuan:before { content: \"\\E68B\"; }\r\n\r\n.icon-gouwuche:before { content: \"\\E600\"; }\r\n\r\n.mui-fullscreen\r\n{\r\n    position: absolute;\r\n    top: 0;\r\n    right: 0;\r\n    bottom: 0;\r\n    left: 0;\r\n}\r\n.mui-fullscreen.mui-slider .mui-slider-group\r\n{\r\n    height: 100%;\r\n}\r\n.mui-fullscreen .mui-segmented-control ~ .mui-slider-group\r\n{\r\n    position: absolute;\r\n    top: 40px;\r\n    bottom: 0;\r\n\r\n    width: 100%;\r\n    height: auto;\r\n}\r\n.mui-fullscreen.mui-slider .mui-slider-item > a\r\n{\r\n    top: 50%;\r\n\r\n    -webkit-transform: translateY(-50%);\r\n            transform: translateY(-50%);\r\n}\r\n.mui-fullscreen .mui-off-canvas-wrap .mui-slider-item > a\r\n{\r\n    top: auto;\r\n\r\n    -webkit-transform: none;\r\n            transform: none;\r\n}\r\n\r\n.mui-bar-nav ~ .mui-content .mui-slider.mui-fullscreen\r\n{\r\n    top: 44px;\r\n}\r\n\r\n.mui-bar-tab ~ .mui-content .mui-slider.mui-fullscreen .mui-segmented-control ~ .mui-slider-group\r\n{\r\n    bottom: 50px;\r\n}\r\n\r\n.mui-android.mui-android-4-0 input:focus,\r\n.mui-android.mui-android-4-0 textarea:focus\r\n{\r\n    -webkit-user-modify: inherit;\r\n}\r\n\r\n.mui-android.mui-android-4-2 input,\r\n.mui-android.mui-android-4-2 textarea, .mui-android.mui-android-4-3 input,\r\n.mui-android.mui-android-4-3 textarea\r\n{\r\n    -webkit-user-select: text;\r\n}\r\n\r\n.mui-ios .mui-table-view-cell\r\n{\r\n    -webkit-transform-style: preserve-3d;\r\n            transform-style: preserve-3d;\r\n}\r\n\r\n.mui-plus-visible, .mui-wechat-visible\r\n{\r\n    display: none !important;\r\n}\r\n\r\n.mui-plus-hidden, .mui-wechat-hidden\r\n{\r\n    display: block !important;\r\n}\r\n\r\n.mui-tab-item.mui-plus-hidden, .mui-tab-item.mui-wechat-hidden\r\n{\r\n    display: table-cell !important;\r\n}\r\n\r\n.mui-plus .mui-plus-visible, .mui-wechat .mui-wechat-visible\r\n{\r\n    display: block !important;\r\n}\r\n\r\n.mui-plus .mui-tab-item.mui-plus-visible, .mui-wechat .mui-tab-item.mui-wechat-visible\r\n{\r\n    display: table-cell !important;\r\n}\r\n\r\n.mui-plus .mui-plus-hidden, .mui-wechat .mui-wechat-hidden\r\n{\r\n    display: none !important;\r\n}\r\n\r\n.mui-plus.mui-statusbar.mui-statusbar-offset .mui-bar-nav\r\n{\r\n    height: 64px;\r\n    padding-top: 20px;\r\n}\r\n.mui-plus.mui-statusbar.mui-statusbar-offset .mui-bar-nav ~ .mui-content\r\n{\r\n    padding-top: 64px;\r\n}\r\n.mui-plus.mui-statusbar.mui-statusbar-offset .mui-bar-nav ~ .mui-content .mui-pull-top-pocket\r\n{\r\n    top: 64px;\r\n}\r\n.mui-plus.mui-statusbar.mui-statusbar-offset .mui-bar-header-secondary\r\n{\r\n    top: 64px;\r\n}\r\n.mui-plus.mui-statusbar.mui-statusbar-offset .mui-bar-header-secondary ~ .mui-content\r\n{\r\n    padding-top: 94px;\r\n}\r\n\r\n.mui-iframe-wrapper\r\n{\r\n    position: absolute;\r\n    right: 0;\r\n    left: 0;\r\n\r\n    -webkit-overflow-scrolling: touch;\r\n}\r\n.mui-iframe-wrapper iframe\r\n{\r\n    width: 100%;\r\n    height: 100%;\r\n\r\n    border: 0;\r\n}\r\n", ""]);
 
 // exports
 
 
 /***/ }),
-/* 216 */
+/* 208 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__.p + "mui.ttf";
 
 /***/ }),
-/* 217 */
-/***/ (function(module, exports, __webpack_require__) {
+/* 209 */
+/***/ (function(module, exports) {
 
-module.exports = __webpack_require__.p + "iconfont.ttf";
+module.exports = "data:application/x-font-ttf;base64,AAEAAAALAIAAAwAwR1NVQrD+s+0AAAE4AAAAQk9TLzJW7kh4AAABfAAAAFZjbWFw/9zTaAAAAegAAAGyZ2x5Zms7VQgAAAOoAAAEJGhlYWQPwpknAAAA4AAAADZoaGVhB94DhgAAALwAAAAkaG10eBPpAAAAAAHUAAAAFGxvY2ECEgM6AAADnAAAAAxtYXhwARQAkAAAARgAAAAgbmFtZT5U/n0AAAfMAAACbXBvc3SYnVBAAAAKPAAAAEkAAQAAA4D/gABcBAAAAAAABAAAAQAAAAAAAAAAAAAAAAAAAAUAAQAAAAEAAGz16HFfDzz1AAsEAAAAAADWUaqXAAAAANZRqpcAAP+xBAADSwAAAAgAAgAAAAAAAAABAAAABQCEAAUAAAAAAAIAAAAKAAoAAAD/AAAAAAAAAAEAAAAKAB4ALAABREZMVAAIAAQAAAAAAAAAAQAAAAFsaWdhAAgAAAABAAAAAQAEAAQAAAABAAgAAQAGAAAAAQAAAAAAAQP7AZAABQAIAokCzAAAAI8CiQLMAAAB6wAyAQgAAAIABQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUGZFZABAAHjmiwOA/4AAXAOAAIAAAAABAAAAAAAABAAAAAPpAAAEAAAABAAAAAQAAAAAAAAFAAAAAwAAACwAAAAEAAABcgABAAAAAABsAAMAAQAAACwAAwAKAAABcgAEAEAAAAAKAAgAAgACAHjmAOYh5ov//wAAAHjmAOYh5ov//wAAAAAAAAAAAAEACgAKAAoACgAAAAEABAACAAMAAAEGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAEAAAAAAAAAABAAAAHgAAAB4AAAAAQAA5gAAAOYAAAAABAAA5iEAAOYhAAAAAgAA5osAAOaLAAAAAwAAAAAAAAB2ASgBnAISAAUAAP/hA7wDGAATACgAMQBEAFAAAAEGKwEiDgIdASEnNC4CKwEVIQUVFxQOAycjJyEHIyIuAz0BFyIGFBYyNjQmFwYHBg8BDgEeATMhMjYnLgInATU0PgI7ATIWHQEBGRsaUxIlHBIDkAEKGCcehf5KAqIBFR8jHA8+Lf5JLD8UMiATCHcMEhIZEhKMCAYFBQgCAgQPDgFtFxYJBQkKBv6kBQ8aFbwfKQIfAQwZJxpMWQ0gGxJhiDRuHSUXCQEBgIABExsgDqc/ERoRERoRfBoWExIZBxANCBgaDSMkFAF35AsYEwwdJuMAAAAAAwAAAAADpgMHAEEAYgCDAAABMDEnNTQmKwEiBh0BFCMnJiMmBwEOAR8BFjI/ATY0JzUmIg8BBi8BJjcBMjEXFj4BPQE2NzMWHQExFh8BFjY/ATYHJyYPAQYVERQWOwEyNjc1NDY7ATIWHQEUFjsBMjY1ETQHFAYrASImPQE0JisBIgYdARQGKwEiJj0BND8BNh8BFhUDn3UMCD8JCwG5AwMICP52BQEENAUNBBsFBAULBAwFBRQHBwFuAcQFDAkBCx8JAQR1BQsEAQad+woL+gYJB6kHCQEJB2IHCQkHqgcJHggGdAYICAagBggIBnIGCAXgCQneBQGiZZIICwsIOAGfAwUG/p0FDAU7BQQYBAwEAQUECgQFFwkIAUmpBAEKBj8LAQEIjAUEZQQBBAEJQ9QHB9QFB/7xBwkJB7AHCQkHsAcJCQcBDwf8BggIBrYGCAgGtgYICAbqBgS6Bwe9BAYAAAACAAAAAAONAuUAPgBHAAABLgE+ARYGBxc3NhceAQcDBiMhBi8BJjY3BTYXHgEOAQciIyEXIRY3EzUHBi8BBwYvARcWDgEmLwEmNz4BHwE3MjY0JiIGFBYB2R8GLj0uBSChmgsMCQkBSQQX/bUZBBICDg0B/AYGCAoCDAkSEf48CwIhBgE8exURr7ARFHwbAgwVDwIkAQEEFgybyQoODhUODgJcFkIwATBCF7FmBwMDDwr+NxcBGXYNEQEBAQIDDhIMAUoBBgF2BFEPFMHBEw5SqwoQAwwK3AkIDAgHZ9cOFQ4OFQ4AAAAAAwAA/7ED+wNLABAAIQBSAAAlMh4CFA4CIi4CND4CBTIeAhQOAiIuAjQ+AhMyHgEGDwIGBw4BIyEXITIVFAYjISIuAi8BJicjIi4CNTQ2OwEyHgEfARYfAgFbFCIbDg4bIigiGw4OGyIBvhQjGg8PGiMnIxoPDxojvx0gDQEDDS4MBg0pHv3mEAIEMRMd/ecUHBIMAzATGU0PFA4FHBdoFBkOAwUCAgUGcQ8ZIycjGRAQGSMnIxkPAg8ZIycjGRAQGSMnIxkPAkUPFxkJJoMiFCkfXSoUHhMdIxD/Z38PFhgLFBsNEgoSCA8eJwAAABIA3gABAAAAAAAAABUAAAABAAAAAAABAAgAFQABAAAAAAACAAcAHQABAAAAAAADAAgAJAABAAAAAAAEAAgALAABAAAAAAAFAAsANAABAAAAAAAGAAgAPwABAAAAAAAKACsARwABAAAAAAALABMAcgADAAEECQAAACoAhQADAAEECQABABAArwADAAEECQACAA4AvwADAAEECQADABAAzQADAAEECQAEABAA3QADAAEECQAFABYA7QADAAEECQAGABABAwADAAEECQAKAFYBEwADAAEECQALACYBaQpDcmVhdGVkIGJ5IGljb25mb250Cmljb25mb250UmVndWxhcmljb25mb250aWNvbmZvbnRWZXJzaW9uIDEuMGljb25mb250R2VuZXJhdGVkIGJ5IHN2ZzJ0dGYgZnJvbSBGb250ZWxsbyBwcm9qZWN0Lmh0dHA6Ly9mb250ZWxsby5jb20ACgBDAHIAZQBhAHQAZQBkACAAYgB5ACAAaQBjAG8AbgBmAG8AbgB0AAoAaQBjAG8AbgBmAG8AbgB0AFIAZQBnAHUAbABhAHIAaQBjAG8AbgBmAG8AbgB0AGkAYwBvAG4AZgBvAG4AdABWAGUAcgBzAGkAbwBuACAAMQAuADAAaQBjAG8AbgBmAG8AbgB0AEcAZQBuAGUAcgBhAHQAZQBkACAAYgB5ACAAcwB2AGcAMgB0AHQAZgAgAGYAcgBvAG0AIABGAG8AbgB0AGUAbABsAG8AIABwAHIAbwBqAGUAYwB0AC4AaAB0AHQAcAA6AC8ALwBmAG8AbgB0AGUAbABsAG8ALgBjAG8AbQAAAAACAAAAAAAAAAoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUBAgEDAQQBBQEGAAF4BnNob3V5ZQdodWl5dWFuCGdvdXd1Y2hlAAAAAAA="
 
 /***/ }),
-/* 218 */
+/* 210 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(219);
+var content = __webpack_require__(211);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // Prepare cssTransformation
 var transform;
@@ -34966,14 +33169,14 @@ var transform;
 var options = {}
 options.transform = transform
 // add the styles to the DOM
-var update = __webpack_require__(15)(content, options);
+var update = __webpack_require__(13)(content, options);
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
 	// When the styles change, update the <style> tags
 	if(!content.locals) {
-		module.hot.accept("!!../../../node_modules/_css-loader@0.28.7@css-loader/index.js!../../../node_modules/_autoprefixer-loader@3.2.0@autoprefixer-loader/index.js!./global.css", function() {
-			var newContent = require("!!../../../node_modules/_css-loader@0.28.7@css-loader/index.js!../../../node_modules/_autoprefixer-loader@3.2.0@autoprefixer-loader/index.js!./global.css");
+		module.hot.accept("!!../../../node_modules/css-loader/index.js!../../../node_modules/autoprefixer-loader/index.js!./global.css", function() {
+			var newContent = require("!!../../../node_modules/css-loader/index.js!../../../node_modules/autoprefixer-loader/index.js!./global.css");
 			if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
 			update(newContent);
 		});
@@ -34983,7 +33186,7 @@ if(false) {
 }
 
 /***/ }),
-/* 219 */
+/* 211 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(5)(undefined);
@@ -34991,27 +33194,27 @@ exports = module.exports = __webpack_require__(5)(undefined);
 
 
 // module
-exports.push([module.i, "body {\n    background-color: white;\n}\n.tmpl{\n    margin-bottom: 50px;\n}", ""]);
+exports.push([module.i, "body {\r\n    background-color: white;\r\n}\r\n.tmpl{\r\n    margin-bottom: 50px;\r\n}", ""]);
 
 // exports
 
 
 /***/ }),
-/* 220 */
+/* 212 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(221);
+module.exports = __webpack_require__(213);
 
 /***/ }),
-/* 221 */
+/* 213 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var utils = __webpack_require__(3);
-var bind = __webpack_require__(42);
-var Axios = __webpack_require__(223);
+var bind = __webpack_require__(41);
+var Axios = __webpack_require__(215);
 var defaults = __webpack_require__(29);
 
 /**
@@ -35045,15 +33248,15 @@ axios.create = function create(instanceConfig) {
 };
 
 // Expose Cancel & CancelToken
-axios.Cancel = __webpack_require__(46);
-axios.CancelToken = __webpack_require__(237);
-axios.isCancel = __webpack_require__(45);
+axios.Cancel = __webpack_require__(45);
+axios.CancelToken = __webpack_require__(229);
+axios.isCancel = __webpack_require__(44);
 
 // Expose all/spread
 axios.all = function all(promises) {
   return Promise.all(promises);
 };
-axios.spread = __webpack_require__(238);
+axios.spread = __webpack_require__(230);
 
 module.exports = axios;
 
@@ -35062,13 +33265,13 @@ module.exports.default = axios;
 
 
 /***/ }),
-/* 222 */
+/* 214 */
 /***/ (function(module, exports) {
 
 /*!
  * Determine if an object is a Buffer
  *
- * @author   Feross Aboukhadijeh <https://feross.org>
+ * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
  * @license  MIT
  */
 
@@ -35089,7 +33292,7 @@ function isSlowBuffer (obj) {
 
 
 /***/ }),
-/* 223 */
+/* 215 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35097,10 +33300,10 @@ function isSlowBuffer (obj) {
 
 var defaults = __webpack_require__(29);
 var utils = __webpack_require__(3);
-var InterceptorManager = __webpack_require__(232);
-var dispatchRequest = __webpack_require__(233);
-var isAbsoluteURL = __webpack_require__(235);
-var combineURLs = __webpack_require__(236);
+var InterceptorManager = __webpack_require__(224);
+var dispatchRequest = __webpack_require__(225);
+var isAbsoluteURL = __webpack_require__(227);
+var combineURLs = __webpack_require__(228);
 
 /**
  * Create a new instance of Axios
@@ -35182,7 +33385,7 @@ module.exports = Axios;
 
 
 /***/ }),
-/* 224 */
+/* 216 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35201,13 +33404,13 @@ module.exports = function normalizeHeaderName(headers, normalizedName) {
 
 
 /***/ }),
-/* 225 */
+/* 217 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var createError = __webpack_require__(44);
+var createError = __webpack_require__(43);
 
 /**
  * Resolve or reject a Promise based on response status.
@@ -35234,7 +33437,7 @@ module.exports = function settle(resolve, reject, response) {
 
 
 /***/ }),
-/* 226 */
+/* 218 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35262,7 +33465,7 @@ module.exports = function enhanceError(error, config, code, request, response) {
 
 
 /***/ }),
-/* 227 */
+/* 219 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35337,7 +33540,7 @@ module.exports = function buildURL(url, params, paramsSerializer) {
 
 
 /***/ }),
-/* 228 */
+/* 220 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35381,7 +33584,7 @@ module.exports = function parseHeaders(headers) {
 
 
 /***/ }),
-/* 229 */
+/* 221 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35456,7 +33659,7 @@ module.exports = (
 
 
 /***/ }),
-/* 230 */
+/* 222 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35499,7 +33702,7 @@ module.exports = btoa;
 
 
 /***/ }),
-/* 231 */
+/* 223 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35559,7 +33762,7 @@ module.exports = (
 
 
 /***/ }),
-/* 232 */
+/* 224 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35618,15 +33821,15 @@ module.exports = InterceptorManager;
 
 
 /***/ }),
-/* 233 */
+/* 225 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var utils = __webpack_require__(3);
-var transformData = __webpack_require__(234);
-var isCancel = __webpack_require__(45);
+var transformData = __webpack_require__(226);
+var isCancel = __webpack_require__(44);
 var defaults = __webpack_require__(29);
 
 /**
@@ -35704,7 +33907,7 @@ module.exports = function dispatchRequest(config) {
 
 
 /***/ }),
-/* 234 */
+/* 226 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35731,7 +33934,7 @@ module.exports = function transformData(data, headers, fns) {
 
 
 /***/ }),
-/* 235 */
+/* 227 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35752,7 +33955,7 @@ module.exports = function isAbsoluteURL(url) {
 
 
 /***/ }),
-/* 236 */
+/* 228 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35773,13 +33976,13 @@ module.exports = function combineURLs(baseURL, relativeURL) {
 
 
 /***/ }),
-/* 237 */
+/* 229 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var Cancel = __webpack_require__(46);
+var Cancel = __webpack_require__(45);
 
 /**
  * A `CancelToken` is an object that can be used to request cancellation of an operation.
@@ -35837,7 +34040,7 @@ module.exports = CancelToken;
 
 
 /***/ }),
-/* 238 */
+/* 230 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -35871,22 +34074,22 @@ module.exports = function spread(callback) {
 
 
 /***/ }),
-/* 239 */
+/* 231 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = { "default": __webpack_require__(240), __esModule: true };
+module.exports = { "default": __webpack_require__(232), __esModule: true };
 
 /***/ }),
-/* 240 */
+/* 232 */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(48);
-__webpack_require__(57);
+__webpack_require__(47);
+__webpack_require__(56);
 module.exports = __webpack_require__(37).f('iterator');
 
 
 /***/ }),
-/* 241 */
+/* 233 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var toInteger = __webpack_require__(30);
@@ -35909,18 +34112,18 @@ module.exports = function (TO_STRING) {
 
 
 /***/ }),
-/* 242 */
+/* 234 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
-var create = __webpack_require__(52);
-var descriptor = __webpack_require__(22);
+var create = __webpack_require__(51);
+var descriptor = __webpack_require__(23);
 var setToStringTag = __webpack_require__(25);
 var IteratorPrototype = {};
 
 // 25.1.2.1.1 %IteratorPrototype%[@@iterator]()
-__webpack_require__(7)(IteratorPrototype, __webpack_require__(2)('iterator'), function () { return this; });
+__webpack_require__(6)(IteratorPrototype, __webpack_require__(2)('iterator'), function () { return this; });
 
 module.exports = function (Constructor, NAME, next) {
   Constructor.prototype = create(IteratorPrototype, { next: descriptor(1, next) });
@@ -35929,14 +34132,14 @@ module.exports = function (Constructor, NAME, next) {
 
 
 /***/ }),
-/* 243 */
+/* 235 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var dP = __webpack_require__(8);
-var anObject = __webpack_require__(6);
-var getKeys = __webpack_require__(23);
+var dP = __webpack_require__(7);
+var anObject = __webpack_require__(8);
+var getKeys = __webpack_require__(17);
 
-module.exports = __webpack_require__(10) ? Object.defineProperties : function defineProperties(O, Properties) {
+module.exports = __webpack_require__(9) ? Object.defineProperties : function defineProperties(O, Properties) {
   anObject(O);
   var keys = getKeys(Properties);
   var length = keys.length;
@@ -35948,7 +34151,7 @@ module.exports = __webpack_require__(10) ? Object.defineProperties : function de
 
 
 /***/ }),
-/* 244 */
+/* 236 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // fallback for non-array-like ES3 and non-enumerable old V8 strings
@@ -35960,14 +34163,14 @@ module.exports = Object('z').propertyIsEnumerable(0) ? Object : function (it) {
 
 
 /***/ }),
-/* 245 */
+/* 237 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // false -> Array#indexOf
 // true  -> Array#includes
-var toIObject = __webpack_require__(13);
-var toLength = __webpack_require__(54);
-var toAbsoluteIndex = __webpack_require__(246);
+var toIObject = __webpack_require__(11);
+var toLength = __webpack_require__(53);
+var toAbsoluteIndex = __webpack_require__(238);
 module.exports = function (IS_INCLUDES) {
   return function ($this, el, fromIndex) {
     var O = toIObject($this);
@@ -35989,7 +34192,7 @@ module.exports = function (IS_INCLUDES) {
 
 
 /***/ }),
-/* 246 */
+/* 238 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var toInteger = __webpack_require__(30);
@@ -36002,12 +34205,12 @@ module.exports = function (index, length) {
 
 
 /***/ }),
-/* 247 */
+/* 239 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // 19.1.2.9 / 15.2.3.2 Object.getPrototypeOf(O)
-var has = __webpack_require__(11);
-var toObject = __webpack_require__(56);
+var has = __webpack_require__(10);
+var toObject = __webpack_require__(55);
 var IE_PROTO = __webpack_require__(34)('IE_PROTO');
 var ObjectProto = Object.prototype;
 
@@ -36021,21 +34224,21 @@ module.exports = Object.getPrototypeOf || function (O) {
 
 
 /***/ }),
-/* 248 */
+/* 240 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
-var addToUnscopables = __webpack_require__(249);
-var step = __webpack_require__(250);
-var Iterators = __webpack_require__(17);
-var toIObject = __webpack_require__(13);
+var addToUnscopables = __webpack_require__(241);
+var step = __webpack_require__(242);
+var Iterators = __webpack_require__(16);
+var toIObject = __webpack_require__(11);
 
 // 22.1.3.4 Array.prototype.entries()
 // 22.1.3.13 Array.prototype.keys()
 // 22.1.3.29 Array.prototype.values()
 // 22.1.3.30 Array.prototype[@@iterator]()
-module.exports = __webpack_require__(49)(Array, 'Array', function (iterated, kind) {
+module.exports = __webpack_require__(48)(Array, 'Array', function (iterated, kind) {
   this._t = toIObject(iterated); // target
   this._i = 0;                   // next index
   this._k = kind;                // kind
@@ -36062,14 +34265,14 @@ addToUnscopables('entries');
 
 
 /***/ }),
-/* 249 */
+/* 241 */
 /***/ (function(module, exports) {
 
 module.exports = function () { /* empty */ };
 
 
 /***/ }),
-/* 250 */
+/* 242 */
 /***/ (function(module, exports) {
 
 module.exports = function (done, value) {
@@ -36078,54 +34281,54 @@ module.exports = function (done, value) {
 
 
 /***/ }),
-/* 251 */
+/* 243 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = { "default": __webpack_require__(252), __esModule: true };
+module.exports = { "default": __webpack_require__(244), __esModule: true };
 
 /***/ }),
-/* 252 */
+/* 244 */
 /***/ (function(module, exports, __webpack_require__) {
 
+__webpack_require__(245);
+__webpack_require__(59);
+__webpack_require__(252);
 __webpack_require__(253);
-__webpack_require__(60);
-__webpack_require__(259);
-__webpack_require__(260);
 module.exports = __webpack_require__(4).Symbol;
 
 
 /***/ }),
-/* 253 */
+/* 245 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 // ECMAScript 6 symbols shim
 var global = __webpack_require__(1);
-var has = __webpack_require__(11);
-var DESCRIPTORS = __webpack_require__(10);
+var has = __webpack_require__(10);
+var DESCRIPTORS = __webpack_require__(9);
 var $export = __webpack_require__(12);
-var redefine = __webpack_require__(51);
-var META = __webpack_require__(254).KEY;
-var $fails = __webpack_require__(16);
+var redefine = __webpack_require__(50);
+var META = __webpack_require__(246).KEY;
+var $fails = __webpack_require__(15);
 var shared = __webpack_require__(35);
 var setToStringTag = __webpack_require__(25);
 var uid = __webpack_require__(24);
 var wks = __webpack_require__(2);
 var wksExt = __webpack_require__(37);
 var wksDefine = __webpack_require__(38);
-var enumKeys = __webpack_require__(255);
-var isArray = __webpack_require__(256);
-var anObject = __webpack_require__(6);
-var isObject = __webpack_require__(9);
-var toIObject = __webpack_require__(13);
+var keyOf = __webpack_require__(247);
+var enumKeys = __webpack_require__(248);
+var isArray = __webpack_require__(249);
+var anObject = __webpack_require__(8);
+var toIObject = __webpack_require__(11);
 var toPrimitive = __webpack_require__(33);
-var createDesc = __webpack_require__(22);
-var _create = __webpack_require__(52);
-var gOPNExt = __webpack_require__(257);
-var $GOPD = __webpack_require__(258);
-var $DP = __webpack_require__(8);
-var $keys = __webpack_require__(23);
+var createDesc = __webpack_require__(23);
+var _create = __webpack_require__(51);
+var gOPNExt = __webpack_require__(250);
+var $GOPD = __webpack_require__(251);
+var $DP = __webpack_require__(7);
+var $keys = __webpack_require__(17);
 var gOPD = $GOPD.f;
 var dP = $DP.f;
 var gOPN = gOPNExt.f;
@@ -36248,11 +34451,11 @@ if (!USE_NATIVE) {
 
   $GOPD.f = $getOwnPropertyDescriptor;
   $DP.f = $defineProperty;
-  __webpack_require__(59).f = gOPNExt.f = $getOwnPropertyNames;
+  __webpack_require__(58).f = gOPNExt.f = $getOwnPropertyNames;
   __webpack_require__(39).f = $propertyIsEnumerable;
-  __webpack_require__(58).f = $getOwnPropertySymbols;
+  __webpack_require__(57).f = $getOwnPropertySymbols;
 
-  if (DESCRIPTORS && !__webpack_require__(19)) {
+  if (DESCRIPTORS && !__webpack_require__(20)) {
     redefine(ObjectProto, 'propertyIsEnumerable', $propertyIsEnumerable, true);
   }
 
@@ -36278,9 +34481,9 @@ $export($export.S + $export.F * !USE_NATIVE, 'Symbol', {
       : SymbolRegistry[key] = $Symbol(key);
   },
   // 19.4.2.5 Symbol.keyFor(sym)
-  keyFor: function keyFor(sym) {
-    if (!isSymbol(sym)) throw TypeError(sym + ' is not a symbol!');
-    for (var key in SymbolRegistry) if (SymbolRegistry[key] === sym) return key;
+  keyFor: function keyFor(key) {
+    if (isSymbol(key)) return keyOf(SymbolRegistry, key);
+    throw TypeError(key + ' is not a symbol!');
   },
   useSetter: function () { setter = true; },
   useSimple: function () { setter = false; }
@@ -36310,14 +34513,15 @@ $JSON && $export($export.S + $export.F * (!USE_NATIVE || $fails(function () {
   return _stringify([S]) != '[null]' || _stringify({ a: S }) != '{}' || _stringify(Object(S)) != '{}';
 })), 'JSON', {
   stringify: function stringify(it) {
+    if (it === undefined || isSymbol(it)) return; // IE8 returns string on undefined
     var args = [it];
     var i = 1;
     var replacer, $replacer;
     while (arguments.length > i) args.push(arguments[i++]);
-    $replacer = replacer = args[1];
-    if (!isObject(replacer) && it === undefined || isSymbol(it)) return; // IE8 returns string on undefined
-    if (!isArray(replacer)) replacer = function (key, value) {
-      if (typeof $replacer == 'function') value = $replacer.call(this, key, value);
+    replacer = args[1];
+    if (typeof replacer == 'function') $replacer = replacer;
+    if ($replacer || !isArray(replacer)) replacer = function (key, value) {
+      if ($replacer) value = $replacer.call(this, key, value);
       if (!isSymbol(value)) return value;
     };
     args[1] = replacer;
@@ -36326,7 +34530,7 @@ $JSON && $export($export.S + $export.F * (!USE_NATIVE || $fails(function () {
 });
 
 // 19.4.3.4 Symbol.prototype[@@toPrimitive](hint)
-$Symbol[PROTOTYPE][TO_PRIMITIVE] || __webpack_require__(7)($Symbol[PROTOTYPE], TO_PRIMITIVE, $Symbol[PROTOTYPE].valueOf);
+$Symbol[PROTOTYPE][TO_PRIMITIVE] || __webpack_require__(6)($Symbol[PROTOTYPE], TO_PRIMITIVE, $Symbol[PROTOTYPE].valueOf);
 // 19.4.3.5 Symbol.prototype[@@toStringTag]
 setToStringTag($Symbol, 'Symbol');
 // 20.2.1.9 Math[@@toStringTag]
@@ -36336,18 +34540,18 @@ setToStringTag(global.JSON, 'JSON', true);
 
 
 /***/ }),
-/* 254 */
+/* 246 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var META = __webpack_require__(24)('meta');
-var isObject = __webpack_require__(9);
-var has = __webpack_require__(11);
-var setDesc = __webpack_require__(8).f;
+var isObject = __webpack_require__(14);
+var has = __webpack_require__(10);
+var setDesc = __webpack_require__(7).f;
 var id = 0;
 var isExtensible = Object.isExtensible || function () {
   return true;
 };
-var FREEZE = !__webpack_require__(16)(function () {
+var FREEZE = !__webpack_require__(15)(function () {
   return isExtensible(Object.preventExtensions({}));
 });
 var setMeta = function (it) {
@@ -36395,12 +34599,28 @@ var meta = module.exports = {
 
 
 /***/ }),
-/* 255 */
+/* 247 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var getKeys = __webpack_require__(17);
+var toIObject = __webpack_require__(11);
+module.exports = function (object, el) {
+  var O = toIObject(object);
+  var keys = getKeys(O);
+  var length = keys.length;
+  var index = 0;
+  var key;
+  while (length > index) if (O[key = keys[index++]] === el) return key;
+};
+
+
+/***/ }),
+/* 248 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // all enumerable object keys, includes symbols
-var getKeys = __webpack_require__(23);
-var gOPS = __webpack_require__(58);
+var getKeys = __webpack_require__(17);
+var gOPS = __webpack_require__(57);
 var pIE = __webpack_require__(39);
 module.exports = function (it) {
   var result = getKeys(it);
@@ -36416,7 +34636,7 @@ module.exports = function (it) {
 
 
 /***/ }),
-/* 256 */
+/* 249 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // 7.2.2 IsArray(argument)
@@ -36427,12 +34647,12 @@ module.exports = Array.isArray || function isArray(arg) {
 
 
 /***/ }),
-/* 257 */
+/* 250 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // fallback for IE11 buggy Object.getOwnPropertyNames with iframe and window
-var toIObject = __webpack_require__(13);
-var gOPN = __webpack_require__(59).f;
+var toIObject = __webpack_require__(11);
+var gOPN = __webpack_require__(58).f;
 var toString = {}.toString;
 
 var windowNames = typeof window == 'object' && window && Object.getOwnPropertyNames
@@ -36452,18 +34672,18 @@ module.exports.f = function getOwnPropertyNames(it) {
 
 
 /***/ }),
-/* 258 */
+/* 251 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var pIE = __webpack_require__(39);
-var createDesc = __webpack_require__(22);
-var toIObject = __webpack_require__(13);
+var createDesc = __webpack_require__(23);
+var toIObject = __webpack_require__(11);
 var toPrimitive = __webpack_require__(33);
-var has = __webpack_require__(11);
-var IE8_DOM_DEFINE = __webpack_require__(50);
+var has = __webpack_require__(10);
+var IE8_DOM_DEFINE = __webpack_require__(49);
 var gOPD = Object.getOwnPropertyDescriptor;
 
-exports.f = __webpack_require__(10) ? gOPD : function getOwnPropertyDescriptor(O, P) {
+exports.f = __webpack_require__(9) ? gOPD : function getOwnPropertyDescriptor(O, P) {
   O = toIObject(O);
   P = toPrimitive(P, true);
   if (IE8_DOM_DEFINE) try {
@@ -36474,21 +34694,21 @@ exports.f = __webpack_require__(10) ? gOPD : function getOwnPropertyDescriptor(O
 
 
 /***/ }),
-/* 259 */
+/* 252 */
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(38)('asyncIterator');
 
 
 /***/ }),
-/* 260 */
+/* 253 */
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(38)('observable');
 
 
 /***/ }),
-/* 261 */
+/* 254 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var core = __webpack_require__(4);
@@ -36499,22 +34719,22 @@ module.exports = function stringify(it) { // eslint-disable-line no-unused-vars
 
 
 /***/ }),
-/* 262 */
+/* 255 */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(263);
+__webpack_require__(256);
 module.exports = __webpack_require__(4).Object.keys;
 
 
 /***/ }),
-/* 263 */
+/* 256 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // 19.1.2.14 Object.keys(O)
-var toObject = __webpack_require__(56);
-var $keys = __webpack_require__(23);
+var toObject = __webpack_require__(55);
+var $keys = __webpack_require__(17);
 
-__webpack_require__(264)('keys', function () {
+__webpack_require__(257)('keys', function () {
   return function keys(it) {
     return $keys(toObject(it));
   };
@@ -36522,13 +34742,13 @@ __webpack_require__(264)('keys', function () {
 
 
 /***/ }),
-/* 264 */
+/* 257 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // most Object methods by ES6 should accept primitives
 var $export = __webpack_require__(12);
 var core = __webpack_require__(4);
-var fails = __webpack_require__(16);
+var fails = __webpack_require__(15);
 module.exports = function (KEY, exec) {
   var fn = (core.Object || {})[KEY] || Object[KEY];
   var exp = {};
@@ -36538,39 +34758,39 @@ module.exports = function (KEY, exec) {
 
 
 /***/ }),
-/* 265 */
+/* 258 */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(60);
-__webpack_require__(48);
-__webpack_require__(57);
-__webpack_require__(266);
-__webpack_require__(277);
-__webpack_require__(278);
+__webpack_require__(59);
+__webpack_require__(47);
+__webpack_require__(56);
+__webpack_require__(259);
+__webpack_require__(270);
+__webpack_require__(271);
 module.exports = __webpack_require__(4).Promise;
 
 
 /***/ }),
-/* 266 */
+/* 259 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
-var LIBRARY = __webpack_require__(19);
+var LIBRARY = __webpack_require__(20);
 var global = __webpack_require__(1);
-var ctx = __webpack_require__(20);
-var classof = __webpack_require__(64);
+var ctx = __webpack_require__(21);
+var classof = __webpack_require__(63);
 var $export = __webpack_require__(12);
-var isObject = __webpack_require__(9);
-var aFunction = __webpack_require__(21);
-var anInstance = __webpack_require__(267);
-var forOf = __webpack_require__(268);
-var speciesConstructor = __webpack_require__(65);
-var task = __webpack_require__(66).set;
-var microtask = __webpack_require__(273)();
+var isObject = __webpack_require__(14);
+var aFunction = __webpack_require__(22);
+var anInstance = __webpack_require__(260);
+var forOf = __webpack_require__(261);
+var speciesConstructor = __webpack_require__(64);
+var task = __webpack_require__(65).set;
+var microtask = __webpack_require__(266)();
 var newPromiseCapabilityModule = __webpack_require__(40);
-var perform = __webpack_require__(67);
-var promiseResolve = __webpack_require__(68);
+var perform = __webpack_require__(66);
+var promiseResolve = __webpack_require__(67);
 var PROMISE = 'Promise';
 var TypeError = global.TypeError;
 var process = global.process;
@@ -36593,6 +34813,12 @@ var USE_NATIVE = !!function () {
 }();
 
 // helpers
+var sameConstructor = LIBRARY ? function (a, b) {
+  // with library wrapper special case
+  return a === b || a === $Promise && b === Wrapper;
+} : function (a, b) {
+  return a === b;
+};
 var isThenable = function (it) {
   var then;
   return isObject(it) && typeof (then = it.then) == 'function' ? then : false;
@@ -36661,7 +34887,14 @@ var onUnhandled = function (promise) {
   });
 };
 var isUnhandled = function (promise) {
-  return promise._h !== 1 && (promise._a || promise._c).length === 0;
+  if (promise._h == 1) return false;
+  var chain = promise._a || promise._c;
+  var i = 0;
+  var reaction;
+  while (chain.length > i) {
+    reaction = chain[i++];
+    if (reaction.fail || !isUnhandled(reaction.promise)) return false;
+  } return true;
 };
 var onHandleUnhandled = function (promise) {
   task.call(global, function () {
@@ -36733,7 +34966,7 @@ if (!USE_NATIVE) {
     this._h = 0;              // <- rejection state, 0 - default, 1 - handled, 2 - unhandled
     this._n = false;          // <- notify
   };
-  Internal.prototype = __webpack_require__(274)($Promise.prototype, {
+  Internal.prototype = __webpack_require__(267)($Promise.prototype, {
     // 25.4.5.3 Promise.prototype.then(onFulfilled, onRejected)
     then: function then(onFulfilled, onRejected) {
       var reaction = newPromiseCapability(speciesConstructor(this, $Promise));
@@ -36757,7 +34990,7 @@ if (!USE_NATIVE) {
     this.reject = ctx($reject, promise, 1);
   };
   newPromiseCapabilityModule.f = newPromiseCapability = function (C) {
-    return C === $Promise || C === Wrapper
+    return sameConstructor($Promise, C)
       ? new OwnPromiseCapability(C)
       : newGenericPromiseCapability(C);
   };
@@ -36765,7 +34998,7 @@ if (!USE_NATIVE) {
 
 $export($export.G + $export.W + $export.F * !USE_NATIVE, { Promise: $Promise });
 __webpack_require__(25)($Promise, PROMISE);
-__webpack_require__(275)(PROMISE);
+__webpack_require__(268)(PROMISE);
 Wrapper = __webpack_require__(4)[PROMISE];
 
 // statics
@@ -36781,10 +35014,12 @@ $export($export.S + $export.F * !USE_NATIVE, PROMISE, {
 $export($export.S + $export.F * (LIBRARY || !USE_NATIVE), PROMISE, {
   // 25.4.4.6 Promise.resolve(x)
   resolve: function resolve(x) {
-    return promiseResolve(LIBRARY && this === Wrapper ? $Promise : this, x);
+    // instanceof instead of internal slot check because we should fix it without replacement native Promise core
+    if (x instanceof $Promise && sameConstructor(x.constructor, this)) return x;
+    return promiseResolve(this, x);
   }
 });
-$export($export.S + $export.F * !(USE_NATIVE && __webpack_require__(276)(function (iter) {
+$export($export.S + $export.F * !(USE_NATIVE && __webpack_require__(269)(function (iter) {
   $Promise.all(iter)['catch'](empty);
 })), PROMISE, {
   // 25.4.4.1 Promise.all(iterable)
@@ -36831,7 +35066,7 @@ $export($export.S + $export.F * !(USE_NATIVE && __webpack_require__(276)(functio
 
 
 /***/ }),
-/* 267 */
+/* 260 */
 /***/ (function(module, exports) {
 
 module.exports = function (it, Constructor, name, forbiddenField) {
@@ -36842,15 +35077,15 @@ module.exports = function (it, Constructor, name, forbiddenField) {
 
 
 /***/ }),
-/* 268 */
+/* 261 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var ctx = __webpack_require__(20);
-var call = __webpack_require__(269);
-var isArrayIter = __webpack_require__(270);
-var anObject = __webpack_require__(6);
-var toLength = __webpack_require__(54);
-var getIterFn = __webpack_require__(271);
+var ctx = __webpack_require__(21);
+var call = __webpack_require__(262);
+var isArrayIter = __webpack_require__(263);
+var anObject = __webpack_require__(8);
+var toLength = __webpack_require__(53);
+var getIterFn = __webpack_require__(264);
 var BREAK = {};
 var RETURN = {};
 var exports = module.exports = function (iterable, entries, fn, that, ITERATOR) {
@@ -36873,11 +35108,11 @@ exports.RETURN = RETURN;
 
 
 /***/ }),
-/* 269 */
+/* 262 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // call something on iterator step with safe closing on error
-var anObject = __webpack_require__(6);
+var anObject = __webpack_require__(8);
 module.exports = function (iterator, fn, value, entries) {
   try {
     return entries ? fn(anObject(value)[0], value[1]) : fn(value);
@@ -36891,11 +35126,11 @@ module.exports = function (iterator, fn, value, entries) {
 
 
 /***/ }),
-/* 270 */
+/* 263 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // check on default Array iterator
-var Iterators = __webpack_require__(17);
+var Iterators = __webpack_require__(16);
 var ITERATOR = __webpack_require__(2)('iterator');
 var ArrayProto = Array.prototype;
 
@@ -36905,12 +35140,12 @@ module.exports = function (it) {
 
 
 /***/ }),
-/* 271 */
+/* 264 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var classof = __webpack_require__(64);
+var classof = __webpack_require__(63);
 var ITERATOR = __webpack_require__(2)('iterator');
-var Iterators = __webpack_require__(17);
+var Iterators = __webpack_require__(16);
 module.exports = __webpack_require__(4).getIteratorMethod = function (it) {
   if (it != undefined) return it[ITERATOR]
     || it['@@iterator']
@@ -36919,7 +35154,7 @@ module.exports = __webpack_require__(4).getIteratorMethod = function (it) {
 
 
 /***/ }),
-/* 272 */
+/* 265 */
 /***/ (function(module, exports) {
 
 // fast apply, http://jsperf.lnkit.com/fast-apply/5
@@ -36941,11 +35176,11 @@ module.exports = function (fn, args, that) {
 
 
 /***/ }),
-/* 273 */
+/* 266 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var global = __webpack_require__(1);
-var macrotask = __webpack_require__(66).set;
+var macrotask = __webpack_require__(65).set;
 var Observer = global.MutationObserver || global.WebKitMutationObserver;
 var process = global.process;
 var Promise = global.Promise;
@@ -36976,8 +35211,8 @@ module.exports = function () {
     notify = function () {
       process.nextTick(flush);
     };
-  // browsers with MutationObserver, except iOS Safari - https://github.com/zloirock/core-js/issues/339
-  } else if (Observer && !(global.navigator && global.navigator.standalone)) {
+  // browsers with MutationObserver
+  } else if (Observer) {
     var toggle = true;
     var node = document.createTextNode('');
     new Observer(flush).observe(node, { characterData: true }); // eslint-disable-line no-new
@@ -37015,10 +35250,10 @@ module.exports = function () {
 
 
 /***/ }),
-/* 274 */
+/* 267 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var hide = __webpack_require__(7);
+var hide = __webpack_require__(6);
 module.exports = function (target, src, safe) {
   for (var key in src) {
     if (safe && target[key]) target[key] = src[key];
@@ -37028,15 +35263,15 @@ module.exports = function (target, src, safe) {
 
 
 /***/ }),
-/* 275 */
+/* 268 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 var global = __webpack_require__(1);
 var core = __webpack_require__(4);
-var dP = __webpack_require__(8);
-var DESCRIPTORS = __webpack_require__(10);
+var dP = __webpack_require__(7);
+var DESCRIPTORS = __webpack_require__(9);
 var SPECIES = __webpack_require__(2)('species');
 
 module.exports = function (KEY) {
@@ -37049,7 +35284,7 @@ module.exports = function (KEY) {
 
 
 /***/ }),
-/* 276 */
+/* 269 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var ITERATOR = __webpack_require__(2)('iterator');
@@ -37077,7 +35312,7 @@ module.exports = function (exec, skipClosing) {
 
 
 /***/ }),
-/* 277 */
+/* 270 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -37086,8 +35321,8 @@ module.exports = function (exec, skipClosing) {
 var $export = __webpack_require__(12);
 var core = __webpack_require__(4);
 var global = __webpack_require__(1);
-var speciesConstructor = __webpack_require__(65);
-var promiseResolve = __webpack_require__(68);
+var speciesConstructor = __webpack_require__(64);
+var promiseResolve = __webpack_require__(67);
 
 $export($export.P + $export.R, 'Promise', { 'finally': function (onFinally) {
   var C = speciesConstructor(this, core.Promise || global.Promise);
@@ -37104,7 +35339,7 @@ $export($export.P + $export.R, 'Promise', { 'finally': function (onFinally) {
 
 
 /***/ }),
-/* 278 */
+/* 271 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -37112,7 +35347,7 @@ $export($export.P + $export.R, 'Promise', { 'finally': function (onFinally) {
 // https://github.com/tc39/proposal-promise-try
 var $export = __webpack_require__(12);
 var newPromiseCapability = __webpack_require__(40);
-var perform = __webpack_require__(67);
+var perform = __webpack_require__(66);
 
 $export($export.S, 'Promise', { 'try': function (callbackfn) {
   var promiseCapability = newPromiseCapability.f(this);
@@ -37123,53 +35358,50 @@ $export($export.S, 'Promise', { 'try': function (callbackfn) {
 
 
 /***/ }),
-/* 279 */
+/* 272 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_script_index_0_bustCache_navBar_vue__ = __webpack_require__(69);
-/* empty harmony namespace reexport */
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_13_6_0_vue_loader_lib_template_compiler_index_id_data_v_edec7298_hasScoped_true_buble_transforms_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_template_index_0_bustCache_navBar_vue__ = __webpack_require__(283);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_lib_selector_type_script_index_0_navBar_vue__ = __webpack_require__(276);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_lib_template_compiler_index_id_data_v_283474c4_hasScoped_true_node_modules_vue_loader_lib_selector_type_template_index_0_navBar_vue__ = __webpack_require__(277);
 var disposed = false
 function injectStyle (ssrContext) {
   if (disposed) return
-  __webpack_require__(280)
+  __webpack_require__(273)
 }
-var normalizeComponent = __webpack_require__(27)
+var normalizeComponent = __webpack_require__(26)
 /* script */
-
 
 /* template */
 
-/* template functional */
-var __vue_template_functional__ = false
 /* styles */
 var __vue_styles__ = injectStyle
 /* scopeId */
-var __vue_scopeId__ = "data-v-edec7298"
+var __vue_scopeId__ = "data-v-283474c4"
 /* moduleIdentifier (server only) */
 var __vue_module_identifier__ = null
 var Component = normalizeComponent(
-  __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_script_index_0_bustCache_navBar_vue__["a" /* default */],
-  __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_13_6_0_vue_loader_lib_template_compiler_index_id_data_v_edec7298_hasScoped_true_buble_transforms_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_template_index_0_bustCache_navBar_vue__["a" /* default */],
-  __vue_template_functional__,
+  __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_lib_selector_type_script_index_0_navBar_vue__["a" /* default */],
+  __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_lib_template_compiler_index_id_data_v_283474c4_hasScoped_true_node_modules_vue_loader_lib_selector_type_template_index_0_navBar_vue__["a" /* default */],
   __vue_styles__,
   __vue_scopeId__,
   __vue_module_identifier__
 )
-Component.options.__file = "src/components/common/navBar.vue"
+Component.options.__file = "src\\components\\common\\navBar.vue"
+if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key.substr(0, 2) !== "__"})) {console.error("named exports are not supported in *.vue files.")}
+if (Component.options.functional) {console.error("[vue-loader] navBar.vue: functional components are not supported with templates, they should use render functions.")}
 
 /* hot reload */
 if (false) {(function () {
-  var hotAPI = require("vue-loader/node_modules/vue-hot-reload-api")
+  var hotAPI = require("vue-hot-reload-api")
   hotAPI.install(require("vue"), false)
   if (!hotAPI.compatible) return
   module.hot.accept()
   if (!module.hot.data) {
-    hotAPI.createRecord("data-v-edec7298", Component.options)
+    hotAPI.createRecord("data-v-283474c4", Component.options)
   } else {
-    hotAPI.reload("data-v-edec7298", Component.options)
+    hotAPI.reload("data-v-283474c4", Component.options)
   }
   module.hot.dispose(function (data) {
     disposed = true
@@ -37180,23 +35412,23 @@ if (false) {(function () {
 
 
 /***/ }),
-/* 280 */
+/* 273 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(281);
+var content = __webpack_require__(274);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(26)("3c0442ad", content, false);
+var update = __webpack_require__(27)("37379aa0", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
  if(!content.locals) {
-   module.hot.accept("!!../../../node_modules/_css-loader@0.28.7@css-loader/index.js!../../../node_modules/_vue-loader@13.6.0@vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-edec7298\",\"scoped\":true,\"hasInlineConfig\":false}!../../../node_modules/_vue-loader@13.6.0@vue-loader/lib/selector.js?type=styles&index=0&bustCache!./navBar.vue", function() {
-     var newContent = require("!!../../../node_modules/_css-loader@0.28.7@css-loader/index.js!../../../node_modules/_vue-loader@13.6.0@vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-edec7298\",\"scoped\":true,\"hasInlineConfig\":false}!../../../node_modules/_vue-loader@13.6.0@vue-loader/lib/selector.js?type=styles&index=0&bustCache!./navBar.vue");
+   module.hot.accept("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-283474c4\",\"scoped\":true,\"hasInlineConfig\":false}!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./navBar.vue", function() {
+     var newContent = require("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-283474c4\",\"scoped\":true,\"hasInlineConfig\":false}!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./navBar.vue");
      if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
      update(newContent);
    });
@@ -37206,7 +35438,7 @@ if(false) {
 }
 
 /***/ }),
-/* 281 */
+/* 274 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(5)(undefined);
@@ -37214,13 +35446,13 @@ exports = module.exports = __webpack_require__(5)(undefined);
 
 
 // module
-exports.push([module.i, "\n.mui-bar.mui-bar-nav[data-v-edec7298]{\n    position: relative;\n}\n", ""]);
+exports.push([module.i, "\n.mui-bar.mui-bar-nav[data-v-283474c4]{\r\n    position: relative;\n}\r\n", ""]);
 
 // exports
 
 
 /***/ }),
-/* 282 */
+/* 275 */
 /***/ (function(module, exports) {
 
 /**
@@ -37253,24 +35485,48 @@ module.exports = function listToStyles (parentId, list) {
 
 
 /***/ }),
-/* 283 */
+/* 276 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-var render = function() {
-  var _vm = this
-  var _h = _vm.$createElement
-  var _c = _vm._self._c || _h
-  return _c("div", [
-    _c("header", { staticClass: "mui-bar mui-bar-nav" }, [
-      _c("a", {
-        staticClass: "mui-action-back mui-icon mui-icon-left-nav mui-pull-left",
-        on: { click: _vm.goBack }
-      }),
-      _vm._v(" "),
-      _c("h1", { staticClass: "mui-title" }, [_vm._v(_vm._s(_vm.title))])
-    ])
-  ])
+//
+//
+//
+//
+//
+//
+//
+//
+
+/* harmony default export */ __webpack_exports__["a"] = ({
+    data() {
+        return {};
+    },
+    props: ['title'], //声明接收父组件参数
+    methods: {
+        goBack() {
+            this.$router.go(-1); //根据浏览器记录返回上一次
+        }
+    }
+
+});
+
+/***/ }),
+/* 277 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
+  return _c('div', [_c('header', {
+    staticClass: "mui-bar mui-bar-nav"
+  }, [_c('a', {
+    staticClass: "mui-action-back mui-icon mui-icon-left-nav mui-pull-left",
+    on: {
+      "click": _vm.goBack
+    }
+  }), _vm._v(" "), _c('h1', {
+    staticClass: "mui-title"
+  }, [_vm._v(_vm._s(_vm.title))])])])
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -37279,32 +35535,28 @@ var esExports = { render: render, staticRenderFns: staticRenderFns }
 if (false) {
   module.hot.accept()
   if (module.hot.data) {
-    require("vue-loader/node_modules/vue-hot-reload-api")      .rerender("data-v-edec7298", esExports)
+     require("vue-hot-reload-api").rerender("data-v-283474c4", esExports)
   }
 }
 
 /***/ }),
-/* 284 */
+/* 278 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_script_index_0_bustCache_Upload_vue__ = __webpack_require__(70);
-/* empty harmony namespace reexport */
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_13_6_0_vue_loader_lib_template_compiler_index_id_data_v_ca70c736_hasScoped_false_buble_transforms_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_template_index_0_bustCache_Upload_vue__ = __webpack_require__(288);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_lib_selector_type_script_index_0_Upload_vue__ = __webpack_require__(281);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_lib_template_compiler_index_id_data_v_39f24a75_hasScoped_false_node_modules_vue_loader_lib_selector_type_template_index_0_Upload_vue__ = __webpack_require__(282);
 var disposed = false
 function injectStyle (ssrContext) {
   if (disposed) return
-  __webpack_require__(285)
+  __webpack_require__(279)
 }
-var normalizeComponent = __webpack_require__(27)
+var normalizeComponent = __webpack_require__(26)
 /* script */
-
 
 /* template */
 
-/* template functional */
-var __vue_template_functional__ = false
 /* styles */
 var __vue_styles__ = injectStyle
 /* scopeId */
@@ -37312,25 +35564,26 @@ var __vue_scopeId__ = null
 /* moduleIdentifier (server only) */
 var __vue_module_identifier__ = null
 var Component = normalizeComponent(
-  __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_script_index_0_bustCache_Upload_vue__["a" /* default */],
-  __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_13_6_0_vue_loader_lib_template_compiler_index_id_data_v_ca70c736_hasScoped_false_buble_transforms_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_template_index_0_bustCache_Upload_vue__["a" /* default */],
-  __vue_template_functional__,
+  __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_lib_selector_type_script_index_0_Upload_vue__["a" /* default */],
+  __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_lib_template_compiler_index_id_data_v_39f24a75_hasScoped_false_node_modules_vue_loader_lib_selector_type_template_index_0_Upload_vue__["a" /* default */],
   __vue_styles__,
   __vue_scopeId__,
   __vue_module_identifier__
 )
-Component.options.__file = "src/components/common/Upload.vue"
+Component.options.__file = "src\\components\\common\\Upload.vue"
+if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key.substr(0, 2) !== "__"})) {console.error("named exports are not supported in *.vue files.")}
+if (Component.options.functional) {console.error("[vue-loader] Upload.vue: functional components are not supported with templates, they should use render functions.")}
 
 /* hot reload */
 if (false) {(function () {
-  var hotAPI = require("vue-loader/node_modules/vue-hot-reload-api")
+  var hotAPI = require("vue-hot-reload-api")
   hotAPI.install(require("vue"), false)
   if (!hotAPI.compatible) return
   module.hot.accept()
   if (!module.hot.data) {
-    hotAPI.createRecord("data-v-ca70c736", Component.options)
+    hotAPI.createRecord("data-v-39f24a75", Component.options)
   } else {
-    hotAPI.reload("data-v-ca70c736", Component.options)
+    hotAPI.reload("data-v-39f24a75", Component.options)
   }
   module.hot.dispose(function (data) {
     disposed = true
@@ -37341,23 +35594,23 @@ if (false) {(function () {
 
 
 /***/ }),
-/* 285 */
+/* 279 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(286);
+var content = __webpack_require__(280);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(26)("6808ec86", content, false);
+var update = __webpack_require__(27)("8a412528", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
  if(!content.locals) {
-   module.hot.accept("!!../../../node_modules/_css-loader@0.28.7@css-loader/index.js!../../../node_modules/_vue-loader@13.6.0@vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-ca70c736\",\"scoped\":false,\"hasInlineConfig\":false}!../../../node_modules/_vue-loader@13.6.0@vue-loader/lib/selector.js?type=styles&index=0&bustCache!./Upload.vue", function() {
-     var newContent = require("!!../../../node_modules/_css-loader@0.28.7@css-loader/index.js!../../../node_modules/_vue-loader@13.6.0@vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-ca70c736\",\"scoped\":false,\"hasInlineConfig\":false}!../../../node_modules/_vue-loader@13.6.0@vue-loader/lib/selector.js?type=styles&index=0&bustCache!./Upload.vue");
+   module.hot.accept("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-39f24a75\",\"scoped\":false,\"hasInlineConfig\":false}!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Upload.vue", function() {
+     var newContent = require("!!../../../node_modules/css-loader/index.js!../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-39f24a75\",\"scoped\":false,\"hasInlineConfig\":false}!../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Upload.vue");
      if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
      update(newContent);
    });
@@ -37367,7 +35620,7 @@ if(false) {
 }
 
 /***/ }),
-/* 286 */
+/* 280 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(5)(undefined);
@@ -37375,34 +35628,173 @@ exports = module.exports = __webpack_require__(5)(undefined);
 
 
 // module
-exports.push([module.i, "\n.oss_file {\n    height: 100px;\n    width: 100%;\n    /*margin: -2rem 0 1rem 8rem;*/\n}\n.oss_file  input {\n    right: 0;\n    top: 0;\n    opacity: 0;\n    filter: alpha(opacity=0);\n    cursor: pointer;\n    width: 100%;\n    height: 100%;\n}\n.finish_room{\n      width: 430px;\n      height: auto;\n}\n.time {\n    font-size: 13px;\n    color: #999;\n}\n.bottom {\n    margin-top: 13px;\n    line-height: 12px;\n}\n.button {\n    padding: 0;\n    float: right;\n}\n.image {\n    width: 100px;\n    height: 100px;\n    display: block;\n}\n.clearfix:before,\n  .clearfix:after {\n      display: table;\n      content: \"\";\n}\n.clearfix:after {\n      clear: both\n}\n.close{\n    width: 100%\n}\n.el-tag .el-icon-close {\n    right: -32px;\n}\n.upload{\n        border: 1px solid #ddd;\n        width: 100px;\n        height: 100px;\n        border-radius: 4px;\n        background: url(" + __webpack_require__(287) + ");\n        background-size: contain;\n        float:left;\n        margin-bottom: 2rem;\n}\n", ""]);
+exports.push([module.i, "\n.oss_file {\n    height: 100px;\n    width: 100%;\n    /*margin: -2rem 0 1rem 8rem;*/\n}\n.oss_file  input {\n    right: 0;\n    top: 0;\n    opacity: 0;\n    filter: alpha(opacity=0);\n    cursor: pointer;\n    width: 100%;\n    height: 100%;\n}\n.finish_room{\n      width: 430px;\n      height: auto;\n}\n.time {\n    font-size: 13px;\n    color: #999;\n}\n.bottom {\n    margin-top: 13px;\n    line-height: 12px;\n}\n.button {\n    padding: 0;\n    float: right;\n}\n.image {\n    width: 100px;\n    height: 100px;\n    display: block;\n}\n.clearfix:before,\n  .clearfix:after {\n      display: table;\n      content: \"\";\n}\n.clearfix:after {\n      clear: both\n}\n.close{\n    width: 100%\n}\n.el-tag .el-icon-close {\n    right: -32px;\n}\n.upload{\n        border: 1px solid #ddd;\n        width: 100px;\n        height: 100px;\n        border-radius: 4px;\n        background: url(" + __webpack_require__(186) + ");\n        background-size: contain;\n        float:left;\n        margin-bottom: 2rem;\n}\n", ""]);
 
 // exports
 
 
 /***/ }),
-/* 287 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = __webpack_require__.p + "add_upload.png";
-
-/***/ }),
-/* 288 */
+/* 281 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-var render = function() {
-  var _vm = this
-  var _h = _vm.$createElement
-  var _c = _vm._self._c || _h
-  return _c("div", { ref: "doUp", staticClass: "upload" }, [
-    _c("div", { staticClass: "oss_file" }, [
-      _c("input", {
-        attrs: { type: "file", id: _vm.id, multiple: _vm.multiple },
-        on: { change: _vm.doUpload }
-      })
-    ])
-  ])
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+
+/* harmony default export */ __webpack_exports__["a"] = ({
+  props: {
+    multiple: {
+      type: Boolean
+    },
+    id: {
+      type: String
+    },
+    bucketUrl: {
+      type: String
+    }, url: Array, text: Array
+  },
+  data() {
+    return {
+      region: 'oss-cn-shenzhen',
+      bucket: 'azz-test',
+      selectType: 0,
+      targetFlag: false,
+      input: "",
+      loading: false
+    };
+  },
+  created() {
+    // console.log("props",this.url)
+    // console.log("text",this.text)
+  },
+  methods: {
+    handleClose(item) {
+      this.$message({
+        showClose: true,
+        message: '此功能还没开放哦',
+        type: 'warning'
+      });
+    }, focusInput(e) {
+      e.path[0].value = "";
+    },
+    async doUpload(e) {
+      this.loading = true;
+
+      this.getid = e.target.id;
+      const _this = this;
+      this.$ajax.get('http://test.legle.cc:82/getStsQc').then(res => {
+
+        let result = res.data;
+        this.selectType = e.target.id;
+        this.$emit('select-type', e.target.id);
+        const client = new OSS.Wrapper({
+          region: _this.region,
+          accessKeyId: result.token.AccessKeyId,
+          accessKeySecret: result.token.AccessKeySecret,
+          stsToken: result.token.SecurityToken,
+          bucket: _this.bucket
+        });
+
+        const files = document.getElementById(_this.id);
+
+        const resultUpload = [];
+        if (files.files) {
+          const fileLen = document.getElementById(_this.id).files;
+          //随机
+
+          let len = 32;
+          var chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
+          var maxPos = chars.length;
+          var pwd = '';
+          for (let i = 0; i < len; i++) {
+            pwd += chars.charAt(Math.floor(Math.random() * maxPos));
+          }
+          for (let i = 0; i < fileLen.length; i++) {
+            const file = fileLen[i];
+
+            const storeAs = "admin/" + pwd + file.name;
+
+            if (this.selectType == "videoUrl") {
+              if (storeAs.indexOf(".mp4") != "-1") {
+                // console.log(storeAs.indexOf(".mp4"))
+              } else {
+                this.loading = false;
+                return this.$message({
+                  message: '只能上传mp4',
+                  type: 'warning'
+                });
+              }
+            }
+            client.multipartUpload(storeAs, file, {}).then(results => {
+
+              if (results.res) {
+                let img = results.res.requestUrls[0].split("?")[0];
+                _this.url.push(img);
+                // console.log('1',results.res.requestUrls[0].split("?")[0])
+                // console.log('1',results.res.requestUrls[0])
+                // _this.url = resultUpload
+                // console.log("url",_this.url)
+                // console.log('13541351',this.url)
+                console.log("img", img);
+
+                // 
+              } else {
+                if (results.name === file.name) {
+                  _this.url.push(this.bucketUrl + file.name);
+                  // resultUpload.push(url);
+                }
+              }
+              // _this.url = resultUpload
+              // console.log("last url",_this.url)
+              this.$emit('select-url', _this.url);
+              this.loading = false;
+            }).catch(err => {
+              console.log(err);
+            });
+          }
+        }
+      }).catch(err => {
+        console.log(err);
+      });
+      // console.log(result)
+    }
+  }
+});
+
+/***/ }),
+/* 282 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
+  return _c('div', {
+    ref: "doUp",
+    staticClass: "upload"
+  }, [_c('div', {
+    staticClass: "oss_file"
+  }, [_c('input', {
+    attrs: {
+      "type": "file",
+      "id": _vm.id,
+      "multiple": _vm.multiple
+    },
+    on: {
+      "change": _vm.doUpload
+    }
+  })])])
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -37411,12 +35803,12 @@ var esExports = { render: render, staticRenderFns: staticRenderFns }
 if (false) {
   module.hot.accept()
   if (module.hot.data) {
-    require("vue-loader/node_modules/vue-hot-reload-api")      .rerender("data-v-ca70c736", esExports)
+     require("vue-hot-reload-api").rerender("data-v-39f24a75", esExports)
   }
 }
 
 /***/ }),
-/* 289 */
+/* 283 */
 /***/ (function(module, exports) {
 
 module.exports = function(module) {
@@ -37444,248 +35836,240 @@ module.exports = function(module) {
 
 
 /***/ }),
-/* 290 */
+/* 284 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var map = {
-	"./af": 71,
-	"./af.js": 71,
-	"./ar": 72,
-	"./ar-dz": 73,
-	"./ar-dz.js": 73,
-	"./ar-kw": 74,
-	"./ar-kw.js": 74,
-	"./ar-ly": 75,
-	"./ar-ly.js": 75,
-	"./ar-ma": 76,
-	"./ar-ma.js": 76,
-	"./ar-sa": 77,
-	"./ar-sa.js": 77,
-	"./ar-tn": 78,
-	"./ar-tn.js": 78,
-	"./ar.js": 72,
-	"./az": 79,
-	"./az.js": 79,
-	"./be": 80,
-	"./be.js": 80,
-	"./bg": 81,
-	"./bg.js": 81,
-	"./bm": 82,
-	"./bm.js": 82,
-	"./bn": 83,
-	"./bn.js": 83,
-	"./bo": 84,
-	"./bo.js": 84,
-	"./br": 85,
-	"./br.js": 85,
-	"./bs": 86,
-	"./bs.js": 86,
-	"./ca": 87,
-	"./ca.js": 87,
-	"./cs": 88,
-	"./cs.js": 88,
-	"./cv": 89,
-	"./cv.js": 89,
-	"./cy": 90,
-	"./cy.js": 90,
-	"./da": 91,
-	"./da.js": 91,
-	"./de": 92,
-	"./de-at": 93,
-	"./de-at.js": 93,
-	"./de-ch": 94,
-	"./de-ch.js": 94,
-	"./de.js": 92,
-	"./dv": 95,
-	"./dv.js": 95,
-	"./el": 96,
-	"./el.js": 96,
-	"./en-au": 97,
-	"./en-au.js": 97,
-	"./en-ca": 98,
-	"./en-ca.js": 98,
-	"./en-gb": 99,
-	"./en-gb.js": 99,
-	"./en-ie": 100,
-	"./en-ie.js": 100,
-	"./en-nz": 101,
-	"./en-nz.js": 101,
-	"./eo": 102,
-	"./eo.js": 102,
-	"./es": 103,
-	"./es-do": 104,
-	"./es-do.js": 104,
-	"./es-us": 105,
-	"./es-us.js": 105,
-	"./es.js": 103,
-	"./et": 106,
-	"./et.js": 106,
-	"./eu": 107,
-	"./eu.js": 107,
-	"./fa": 108,
-	"./fa.js": 108,
-	"./fi": 109,
-	"./fi.js": 109,
-	"./fo": 110,
-	"./fo.js": 110,
-	"./fr": 111,
-	"./fr-ca": 112,
-	"./fr-ca.js": 112,
-	"./fr-ch": 113,
-	"./fr-ch.js": 113,
-	"./fr.js": 111,
-	"./fy": 114,
-	"./fy.js": 114,
-	"./gd": 115,
-	"./gd.js": 115,
-	"./gl": 116,
-	"./gl.js": 116,
-	"./gom-latn": 117,
-	"./gom-latn.js": 117,
-	"./gu": 118,
-	"./gu.js": 118,
-	"./he": 119,
-	"./he.js": 119,
-	"./hi": 120,
-	"./hi.js": 120,
-	"./hr": 121,
-	"./hr.js": 121,
-	"./hu": 122,
-	"./hu.js": 122,
-	"./hy-am": 123,
-	"./hy-am.js": 123,
-	"./id": 124,
-	"./id.js": 124,
-	"./is": 125,
-	"./is.js": 125,
-	"./it": 126,
-	"./it.js": 126,
-	"./ja": 127,
-	"./ja.js": 127,
-	"./jv": 128,
-	"./jv.js": 128,
-	"./ka": 129,
-	"./ka.js": 129,
-	"./kk": 130,
-	"./kk.js": 130,
-	"./km": 131,
-	"./km.js": 131,
-	"./kn": 132,
-	"./kn.js": 132,
-	"./ko": 133,
-	"./ko.js": 133,
-	"./ky": 134,
-	"./ky.js": 134,
-	"./lb": 135,
-	"./lb.js": 135,
-	"./lo": 136,
-	"./lo.js": 136,
-	"./lt": 137,
-	"./lt.js": 137,
-	"./lv": 138,
-	"./lv.js": 138,
-	"./me": 139,
-	"./me.js": 139,
-	"./mi": 140,
-	"./mi.js": 140,
-	"./mk": 141,
-	"./mk.js": 141,
-	"./ml": 142,
-	"./ml.js": 142,
-	"./mr": 143,
-	"./mr.js": 143,
-	"./ms": 144,
-	"./ms-my": 145,
-	"./ms-my.js": 145,
-	"./ms.js": 144,
-	"./mt": 146,
-	"./mt.js": 146,
-	"./my": 147,
-	"./my.js": 147,
-	"./nb": 148,
-	"./nb.js": 148,
-	"./ne": 149,
-	"./ne.js": 149,
-	"./nl": 150,
-	"./nl-be": 151,
-	"./nl-be.js": 151,
-	"./nl.js": 150,
-	"./nn": 152,
-	"./nn.js": 152,
-	"./pa-in": 153,
-	"./pa-in.js": 153,
-	"./pl": 154,
-	"./pl.js": 154,
-	"./pt": 155,
-	"./pt-br": 156,
-	"./pt-br.js": 156,
-	"./pt.js": 155,
-	"./ro": 157,
-	"./ro.js": 157,
-	"./ru": 158,
-	"./ru.js": 158,
-	"./sd": 159,
-	"./sd.js": 159,
-	"./se": 160,
-	"./se.js": 160,
-	"./si": 161,
-	"./si.js": 161,
-	"./sk": 162,
-	"./sk.js": 162,
-	"./sl": 163,
-	"./sl.js": 163,
-	"./sq": 164,
-	"./sq.js": 164,
-	"./sr": 165,
-	"./sr-cyrl": 166,
-	"./sr-cyrl.js": 166,
-	"./sr.js": 165,
-	"./ss": 167,
-	"./ss.js": 167,
-	"./sv": 168,
-	"./sv.js": 168,
-	"./sw": 169,
-	"./sw.js": 169,
-	"./ta": 170,
-	"./ta.js": 170,
-	"./te": 171,
-	"./te.js": 171,
-	"./tet": 172,
-	"./tet.js": 172,
-	"./th": 173,
-	"./th.js": 173,
-	"./tl-ph": 174,
-	"./tl-ph.js": 174,
-	"./tlh": 175,
-	"./tlh.js": 175,
-	"./tr": 176,
-	"./tr.js": 176,
-	"./tzl": 177,
-	"./tzl.js": 177,
-	"./tzm": 178,
-	"./tzm-latn": 179,
-	"./tzm-latn.js": 179,
-	"./tzm.js": 178,
-	"./uk": 180,
-	"./uk.js": 180,
-	"./ur": 181,
-	"./ur.js": 181,
-	"./uz": 182,
-	"./uz-latn": 183,
-	"./uz-latn.js": 183,
-	"./uz.js": 182,
-	"./vi": 184,
-	"./vi.js": 184,
-	"./x-pseudo": 185,
-	"./x-pseudo.js": 185,
-	"./yo": 186,
-	"./yo.js": 186,
-	"./zh-cn": 187,
-	"./zh-cn.js": 187,
-	"./zh-hk": 188,
-	"./zh-hk.js": 188,
-	"./zh-tw": 189,
-	"./zh-tw.js": 189
+	"./af": 68,
+	"./af.js": 68,
+	"./ar": 69,
+	"./ar-dz": 70,
+	"./ar-dz.js": 70,
+	"./ar-kw": 71,
+	"./ar-kw.js": 71,
+	"./ar-ly": 72,
+	"./ar-ly.js": 72,
+	"./ar-ma": 73,
+	"./ar-ma.js": 73,
+	"./ar-sa": 74,
+	"./ar-sa.js": 74,
+	"./ar-tn": 75,
+	"./ar-tn.js": 75,
+	"./ar.js": 69,
+	"./az": 76,
+	"./az.js": 76,
+	"./be": 77,
+	"./be.js": 77,
+	"./bg": 78,
+	"./bg.js": 78,
+	"./bn": 79,
+	"./bn.js": 79,
+	"./bo": 80,
+	"./bo.js": 80,
+	"./br": 81,
+	"./br.js": 81,
+	"./bs": 82,
+	"./bs.js": 82,
+	"./ca": 83,
+	"./ca.js": 83,
+	"./cs": 84,
+	"./cs.js": 84,
+	"./cv": 85,
+	"./cv.js": 85,
+	"./cy": 86,
+	"./cy.js": 86,
+	"./da": 87,
+	"./da.js": 87,
+	"./de": 88,
+	"./de-at": 89,
+	"./de-at.js": 89,
+	"./de-ch": 90,
+	"./de-ch.js": 90,
+	"./de.js": 88,
+	"./dv": 91,
+	"./dv.js": 91,
+	"./el": 92,
+	"./el.js": 92,
+	"./en-au": 93,
+	"./en-au.js": 93,
+	"./en-ca": 94,
+	"./en-ca.js": 94,
+	"./en-gb": 95,
+	"./en-gb.js": 95,
+	"./en-ie": 96,
+	"./en-ie.js": 96,
+	"./en-nz": 97,
+	"./en-nz.js": 97,
+	"./eo": 98,
+	"./eo.js": 98,
+	"./es": 99,
+	"./es-do": 100,
+	"./es-do.js": 100,
+	"./es.js": 99,
+	"./et": 101,
+	"./et.js": 101,
+	"./eu": 102,
+	"./eu.js": 102,
+	"./fa": 103,
+	"./fa.js": 103,
+	"./fi": 104,
+	"./fi.js": 104,
+	"./fo": 105,
+	"./fo.js": 105,
+	"./fr": 106,
+	"./fr-ca": 107,
+	"./fr-ca.js": 107,
+	"./fr-ch": 108,
+	"./fr-ch.js": 108,
+	"./fr.js": 106,
+	"./fy": 109,
+	"./fy.js": 109,
+	"./gd": 110,
+	"./gd.js": 110,
+	"./gl": 111,
+	"./gl.js": 111,
+	"./gom-latn": 112,
+	"./gom-latn.js": 112,
+	"./he": 113,
+	"./he.js": 113,
+	"./hi": 114,
+	"./hi.js": 114,
+	"./hr": 115,
+	"./hr.js": 115,
+	"./hu": 116,
+	"./hu.js": 116,
+	"./hy-am": 117,
+	"./hy-am.js": 117,
+	"./id": 118,
+	"./id.js": 118,
+	"./is": 119,
+	"./is.js": 119,
+	"./it": 120,
+	"./it.js": 120,
+	"./ja": 121,
+	"./ja.js": 121,
+	"./jv": 122,
+	"./jv.js": 122,
+	"./ka": 123,
+	"./ka.js": 123,
+	"./kk": 124,
+	"./kk.js": 124,
+	"./km": 125,
+	"./km.js": 125,
+	"./kn": 126,
+	"./kn.js": 126,
+	"./ko": 127,
+	"./ko.js": 127,
+	"./ky": 128,
+	"./ky.js": 128,
+	"./lb": 129,
+	"./lb.js": 129,
+	"./lo": 130,
+	"./lo.js": 130,
+	"./lt": 131,
+	"./lt.js": 131,
+	"./lv": 132,
+	"./lv.js": 132,
+	"./me": 133,
+	"./me.js": 133,
+	"./mi": 134,
+	"./mi.js": 134,
+	"./mk": 135,
+	"./mk.js": 135,
+	"./ml": 136,
+	"./ml.js": 136,
+	"./mr": 137,
+	"./mr.js": 137,
+	"./ms": 138,
+	"./ms-my": 139,
+	"./ms-my.js": 139,
+	"./ms.js": 138,
+	"./my": 140,
+	"./my.js": 140,
+	"./nb": 141,
+	"./nb.js": 141,
+	"./ne": 142,
+	"./ne.js": 142,
+	"./nl": 143,
+	"./nl-be": 144,
+	"./nl-be.js": 144,
+	"./nl.js": 143,
+	"./nn": 145,
+	"./nn.js": 145,
+	"./pa-in": 146,
+	"./pa-in.js": 146,
+	"./pl": 147,
+	"./pl.js": 147,
+	"./pt": 148,
+	"./pt-br": 149,
+	"./pt-br.js": 149,
+	"./pt.js": 148,
+	"./ro": 150,
+	"./ro.js": 150,
+	"./ru": 151,
+	"./ru.js": 151,
+	"./sd": 152,
+	"./sd.js": 152,
+	"./se": 153,
+	"./se.js": 153,
+	"./si": 154,
+	"./si.js": 154,
+	"./sk": 155,
+	"./sk.js": 155,
+	"./sl": 156,
+	"./sl.js": 156,
+	"./sq": 157,
+	"./sq.js": 157,
+	"./sr": 158,
+	"./sr-cyrl": 159,
+	"./sr-cyrl.js": 159,
+	"./sr.js": 158,
+	"./ss": 160,
+	"./ss.js": 160,
+	"./sv": 161,
+	"./sv.js": 161,
+	"./sw": 162,
+	"./sw.js": 162,
+	"./ta": 163,
+	"./ta.js": 163,
+	"./te": 164,
+	"./te.js": 164,
+	"./tet": 165,
+	"./tet.js": 165,
+	"./th": 166,
+	"./th.js": 166,
+	"./tl-ph": 167,
+	"./tl-ph.js": 167,
+	"./tlh": 168,
+	"./tlh.js": 168,
+	"./tr": 169,
+	"./tr.js": 169,
+	"./tzl": 170,
+	"./tzl.js": 170,
+	"./tzm": 171,
+	"./tzm-latn": 172,
+	"./tzm-latn.js": 172,
+	"./tzm.js": 171,
+	"./uk": 173,
+	"./uk.js": 173,
+	"./ur": 174,
+	"./ur.js": 174,
+	"./uz": 175,
+	"./uz-latn": 176,
+	"./uz-latn.js": 176,
+	"./uz.js": 175,
+	"./vi": 177,
+	"./vi.js": 177,
+	"./x-pseudo": 178,
+	"./x-pseudo.js": 178,
+	"./yo": 179,
+	"./yo.js": 179,
+	"./zh-cn": 180,
+	"./zh-cn.js": 180,
+	"./zh-hk": 181,
+	"./zh-hk.js": 181,
+	"./zh-tw": 182,
+	"./zh-tw.js": 182
 };
 function webpackContext(req) {
 	return __webpack_require__(webpackContextResolve(req));
@@ -37701,30 +36085,26 @@ webpackContext.keys = function webpackContextKeys() {
 };
 webpackContext.resolve = webpackContextResolve;
 module.exports = webpackContext;
-webpackContext.id = 290;
+webpackContext.id = 284;
 
 /***/ }),
-/* 291 */
+/* 285 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_script_index_0_bustCache_app_vue__ = __webpack_require__(190);
-/* empty harmony namespace reexport */
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_13_6_0_vue_loader_lib_template_compiler_index_id_data_v_5ef48958_hasScoped_false_buble_transforms_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_template_index_0_bustCache_app_vue__ = __webpack_require__(296);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_lib_selector_type_script_index_0_app_vue__ = __webpack_require__(288);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_lib_template_compiler_index_id_data_v_4d273148_hasScoped_false_node_modules_vue_loader_lib_selector_type_template_index_0_app_vue__ = __webpack_require__(291);
 var disposed = false
 function injectStyle (ssrContext) {
   if (disposed) return
-  __webpack_require__(292)
+  __webpack_require__(286)
 }
-var normalizeComponent = __webpack_require__(27)
+var normalizeComponent = __webpack_require__(26)
 /* script */
-
 
 /* template */
 
-/* template functional */
-var __vue_template_functional__ = false
 /* styles */
 var __vue_styles__ = injectStyle
 /* scopeId */
@@ -37732,25 +36112,26 @@ var __vue_scopeId__ = null
 /* moduleIdentifier (server only) */
 var __vue_module_identifier__ = null
 var Component = normalizeComponent(
-  __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_script_index_0_bustCache_app_vue__["a" /* default */],
-  __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_13_6_0_vue_loader_lib_template_compiler_index_id_data_v_5ef48958_hasScoped_false_buble_transforms_node_modules_vue_loader_13_6_0_vue_loader_lib_selector_type_template_index_0_bustCache_app_vue__["a" /* default */],
-  __vue_template_functional__,
+  __WEBPACK_IMPORTED_MODULE_0__babel_loader_node_modules_vue_loader_lib_selector_type_script_index_0_app_vue__["a" /* default */],
+  __WEBPACK_IMPORTED_MODULE_1__node_modules_vue_loader_lib_template_compiler_index_id_data_v_4d273148_hasScoped_false_node_modules_vue_loader_lib_selector_type_template_index_0_app_vue__["a" /* default */],
   __vue_styles__,
   __vue_scopeId__,
   __vue_module_identifier__
 )
-Component.options.__file = "src/app.vue"
+Component.options.__file = "src\\app.vue"
+if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key.substr(0, 2) !== "__"})) {console.error("named exports are not supported in *.vue files.")}
+if (Component.options.functional) {console.error("[vue-loader] app.vue: functional components are not supported with templates, they should use render functions.")}
 
 /* hot reload */
 if (false) {(function () {
-  var hotAPI = require("vue-loader/node_modules/vue-hot-reload-api")
+  var hotAPI = require("vue-hot-reload-api")
   hotAPI.install(require("vue"), false)
   if (!hotAPI.compatible) return
   module.hot.accept()
   if (!module.hot.data) {
-    hotAPI.createRecord("data-v-5ef48958", Component.options)
+    hotAPI.createRecord("data-v-4d273148", Component.options)
   } else {
-    hotAPI.reload("data-v-5ef48958", Component.options)
+    hotAPI.reload("data-v-4d273148", Component.options)
   }
   module.hot.dispose(function (data) {
     disposed = true
@@ -37761,23 +36142,23 @@ if (false) {(function () {
 
 
 /***/ }),
-/* 292 */
+/* 286 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(293);
+var content = __webpack_require__(287);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(26)("4cb977d8", content, false);
+var update = __webpack_require__(27)("63482680", content, false);
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
  if(!content.locals) {
-   module.hot.accept("!!../node_modules/_css-loader@0.28.7@css-loader/index.js!../node_modules/_vue-loader@13.6.0@vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-5ef48958\",\"scoped\":false,\"hasInlineConfig\":false}!../node_modules/_vue-loader@13.6.0@vue-loader/lib/selector.js?type=styles&index=0&bustCache!./app.vue", function() {
-     var newContent = require("!!../node_modules/_css-loader@0.28.7@css-loader/index.js!../node_modules/_vue-loader@13.6.0@vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-5ef48958\",\"scoped\":false,\"hasInlineConfig\":false}!../node_modules/_vue-loader@13.6.0@vue-loader/lib/selector.js?type=styles&index=0&bustCache!./app.vue");
+   module.hot.accept("!!../node_modules/css-loader/index.js!../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-4d273148\",\"scoped\":false,\"hasInlineConfig\":false}!../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./app.vue", function() {
+     var newContent = require("!!../node_modules/css-loader/index.js!../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-4d273148\",\"scoped\":false,\"hasInlineConfig\":false}!../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./app.vue");
      if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
      update(newContent);
    });
@@ -37787,7 +36168,7 @@ if(false) {
 }
 
 /***/ }),
-/* 293 */
+/* 287 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(5)(undefined);
@@ -37801,7 +36182,77 @@ exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\
 
 
 /***/ }),
-/* 294 */
+/* 288 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__api_getData__ = __webpack_require__(183);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__api_getData___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__api_getData__);
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+
+
+/* harmony default export */ __webpack_exports__["a"] = ({
+	data() {
+		return {};
+	}, created() {
+		//AXIOS
+		// 用户登录
+		// this.$ajax.post('clientLogin',
+		// 	{username:'jige',password:"123321"}
+		// ).then(res=>{
+		// 		// console.log(res)
+
+		// 	}).catch(error=> {
+		//     console.log(error);
+		//   });
+
+
+		//   封装的ajax
+		// this.ajax('POST', this.baseUrl+'clientLogin',{username:'jige',password:"123321"}).then(res=>{
+		// 	console.log("res",res)
+		// }).catch(err=>{
+		// 	console.log("err",err)
+
+		// })
+		this.login();
+	}, methods: {
+		async login() {
+			let msg = await Object(__WEBPACK_IMPORTED_MODULE_0__api_getData__["clientLogin"])({ username: 'jige', password: "123" });
+			console.log("msg", msg);
+		}
+	}
+});
+
+/***/ }),
+/* 289 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -37811,23 +36262,23 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
-var _typeof2 = __webpack_require__(47);
+var _typeof2 = __webpack_require__(46);
 
 var _typeof3 = _interopRequireDefault(_typeof2);
 
-var _promise = __webpack_require__(63);
+var _promise = __webpack_require__(62);
 
 var _promise2 = _interopRequireDefault(_promise);
 
-var _stringify = __webpack_require__(61);
+var _stringify = __webpack_require__(60);
 
 var _stringify2 = _interopRequireDefault(_stringify);
 
-var _keys = __webpack_require__(62);
+var _keys = __webpack_require__(61);
 
 var _keys2 = _interopRequireDefault(_keys);
 
-var _env = __webpack_require__(295);
+var _env = __webpack_require__(290);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -37913,7 +36364,7 @@ exports.default = async function () {
 };
 
 /***/ }),
-/* 295 */
+/* 290 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -37949,75 +36400,64 @@ exports.routerMode = routerMode;
 exports.baseImgPath = baseImgPath;
 
 /***/ }),
-/* 296 */
+/* 291 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-var render = function() {
-  var _vm = this
-  var _h = _vm.$createElement
-  var _c = _vm._self._c || _h
-  return _c(
-    "div",
-    [
-      _c("mt-header", { attrs: { title: "爱咋整" } }),
-      _vm._v(" "),
-      _c("router-view"),
-      _vm._v(" "),
-      _c(
-        "nav",
-        { staticClass: "mui-bar mui-bar-tab" },
-        [
-          _c(
-            "router-link",
-            { staticClass: "mui-tab-item", attrs: { to: { name: "home" } } },
-            [
-              _c("span", { staticClass: "mui-icon icon-shouye" }),
-              _vm._v(" "),
-              _c("span", { staticClass: "mui-tab-label" }, [_vm._v("首页")])
-            ]
-          ),
-          _vm._v(" "),
-          _c(
-            "router-link",
-            { staticClass: "mui-tab-item", attrs: { to: { name: "member" } } },
-            [
-              _c("span", { staticClass: "mui-icon icon-huiyuan" }),
-              _vm._v(" "),
-              _c("span", { staticClass: "mui-tab-label" }, [_vm._v("会员")])
-            ]
-          ),
-          _vm._v(" "),
-          _c(
-            "router-link",
-            {
-              staticClass: "mui-tab-item",
-              attrs: { to: { name: "shopcart" } }
-            },
-            [
-              _c("span", { staticClass: "mui-icon icon-gouwuche" }, [
-                _c("span", { staticClass: "mui-badge" }, [_vm._v("9")])
-              ]),
-              _vm._v(" "),
-              _c("span", { staticClass: "mui-tab-label" }, [_vm._v("购物车")])
-            ]
-          ),
-          _vm._v(" "),
-          _c(
-            "router-link",
-            { staticClass: "mui-tab-item", attrs: { to: { name: "search" } } },
-            [
-              _c("span", { staticClass: "mui-icon mui-icon-search" }),
-              _vm._v(" "),
-              _c("span", { staticClass: "mui-tab-label" }, [_vm._v("查找")])
-            ]
-          )
-        ],
-        1
-      )
-    ],
-    1
-  )
+var render = function () {var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
+  return _c('div', [_c('mt-header', {
+    attrs: {
+      "title": "爱咋整"
+    }
+  }), _vm._v(" "), _c('router-view'), _vm._v(" "), _c('nav', {
+    staticClass: "mui-bar mui-bar-tab"
+  }, [_c('router-link', {
+    staticClass: "mui-tab-item",
+    attrs: {
+      "to": {
+        name: 'home'
+      }
+    }
+  }, [_c('span', {
+    staticClass: "mui-icon icon-shouye"
+  }), _vm._v(" "), _c('span', {
+    staticClass: "mui-tab-label"
+  }, [_vm._v("首页")])]), _vm._v(" "), _c('router-link', {
+    staticClass: "mui-tab-item",
+    attrs: {
+      "to": {
+        name: 'member'
+      }
+    }
+  }, [_c('span', {
+    staticClass: "mui-icon icon-huiyuan"
+  }), _vm._v(" "), _c('span', {
+    staticClass: "mui-tab-label"
+  }, [_vm._v("会员")])]), _vm._v(" "), _c('router-link', {
+    staticClass: "mui-tab-item",
+    attrs: {
+      "to": {
+        name: 'shopcart'
+      }
+    }
+  }, [_c('span', {
+    staticClass: "mui-icon icon-gouwuche"
+  }, [_c('span', {
+    staticClass: "mui-badge"
+  }, [_vm._v("9")])]), _vm._v(" "), _c('span', {
+    staticClass: "mui-tab-label"
+  }, [_vm._v("购物车")])]), _vm._v(" "), _c('router-link', {
+    staticClass: "mui-tab-item",
+    attrs: {
+      "to": {
+        name: 'search'
+      }
+    }
+  }, [_c('span', {
+    staticClass: "mui-icon mui-icon-search"
+  }), _vm._v(" "), _c('span', {
+    staticClass: "mui-tab-label"
+  }, [_vm._v("查找")])])], 1)], 1)
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -38026,7 +36466,7 @@ var esExports = { render: render, staticRenderFns: staticRenderFns }
 if (false) {
   module.hot.accept()
   if (module.hot.data) {
-    require("vue-loader/node_modules/vue-hot-reload-api")      .rerender("data-v-5ef48958", esExports)
+     require("vue-hot-reload-api").rerender("data-v-4d273148", esExports)
   }
 }
 

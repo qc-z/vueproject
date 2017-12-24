@@ -11,9 +11,9 @@
 
     </div>
 </template>
-
 <script>
-
+import  Lrz  from '../config/lrz.bundle.js';
+  
   export default{
     props:{
       multiple:{
@@ -55,10 +55,9 @@
 
         this.getid = e.target.id
         const _this = this;
-        
-        //发起请求
         this.$ajax.get('http://test.legle.cc:82/getStsQc')
         .then(res=>{
+
             let result = res.data
             this.selectType = e.target.id
         this.$emit('select-type', e.target.id)
@@ -75,6 +74,7 @@
           if(files.files){
             const fileLen = document.getElementById(_this.id).files
             //随机
+
             let len =  32;
             var chars = 'ABCDEFGHJKMNPQRSTWXYZabcdefhijkmnprstwxyz2345678';
             var maxPos = chars.length;
@@ -85,9 +85,22 @@
             for (let i = 0; i < fileLen.length; i++) {
               const file = fileLen[i]
 
-              const storeAs = "admin/"+pwd+file.name
+              lrz(file, {width: 100})
+              .then(function (rst) {
+                  // 处理成功会执行
+                  var img = new Image();
+                  img.src = rst.base64;
 
-              if(this.selectType == "videoUrl"){
+            img.onload = function () {
+                // document.body.appendChild(img);
+                console.log("我是onload",img.src)
+            };
+
+            return rst;
+                  console.log("res原型",rst)
+              }).then(function(rst){
+                console.log("boss",rst)
+                if(_this.selectType == "videoUrl"){
                 if(storeAs.indexOf(".mp4") != "-1"){
                   // console.log(storeAs.indexOf(".mp4"))
                 }else{
@@ -99,22 +112,36 @@
 
                 }
               }
+              //up
+              })
+              .catch(function (err){
+                  // 处理失败会执行
+                  console.log(err)
+
+              })
+              .always(function () {
+                  // 不管是成功失败，都会执行
+
+              });
+
+              const storeAs = "admin/"+pwd+file.name
+
+              
+
               client.multipartUpload(storeAs, file, {
 
               }).then((results) => {
 
                 if(results.res){
-
-                  _this.url.push(results.res.requestUrls[0].split("?")[0]);
+                  let img = results.res.requestUrls[0].split("?")[0]
+                  _this.url.push(img);
                   // console.log('1',results.res.requestUrls[0].split("?")[0])
                   // console.log('1',results.res.requestUrls[0])
                   // _this.url = resultUpload
                   // console.log("url",_this.url)
                   // console.log('13541351',this.url)
-                console.log("results.res.requestUrls",results.res.requestUrls[0].split("?")[0])
-                console.log("这是ref",_this.$refs.doUp.style.backgroundImage)
-                _this.$refs.doUp.style.backgroundImage
-= results.res.requestUrls[0].split("?")[0]
+                console.log("img",img)
+                
                   // 
                 }else{
                   if(results.name === file.name){

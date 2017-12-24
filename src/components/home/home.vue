@@ -20,9 +20,9 @@
 		                </router-link>
 		            </li>
 		            <li class="mui-table-view-cell mui-media mui-col-xs-4 mui-col-sm-3">
-		            	<router-link :to="{name:'news.list'}">
+		            	<router-link :to="{name:'newCamera'}">
 		                    <span class="mui-icon mui-icon-chatbubble"></span>
-		                    <div class="mui-media-body">商品展示</div>
+		                    <div class="mui-media-body">照相机</div>
 		                </router-link>
 		            </li>
 		            <li class="mui-table-view-cell mui-media mui-col-xs-4 mui-col-sm-3">
